@@ -1,0 +1,128 @@
+.dashboard-page { padding: 0 0 3rem; }
+
+/* Alert */
+.alert-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(230, 57, 70, 0.12);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+  color: var(--danger);
+}
+
+.alert-content { flex: 1; }
+.alert-content strong { display: block; font-weight: 700; margin-bottom: 0.25rem; }
+.alert-content p { font-size: 0.875rem; color: var(--text2); margin: 0; }
+
+.alert-close {
+  background: none; border: none; color: var(--danger); opacity: 0.7; padding: 0.2rem;
+}
+.alert-close:hover { opacity: 1; }
+
+/* Metric cards */
+.metric-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+}
+
+.mc-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.mc-content { flex: 1; }
+
+.mc-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.mc-unit { font-size: 0.75rem; font-weight: 400; color: var(--text3); }
+
+.mc-label { font-size: 0.8rem; color: var(--text3); margin-top: 0.15rem; }
+
+.mc-trend {
+  display: flex; align-items: center; gap: 0.25rem;
+  font-size: 0.82rem; font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+}
+.mc-trend.up { color: var(--danger); background: rgba(230,57,70,0.1); }
+.mc-trend.down { color: var(--success); background: rgba(42,157,143,0.1); }
+
+/* Chart header */
+.chart-header { margin-bottom: 1.25rem; }
+
+.period-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg3);
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.period-tab {
+  padding: 0.4rem 0.9rem;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+.period-tab.active { background: var(--primary); color: white; }
+.period-tab:hover:not(.active) { color: var(--text); background: var(--bg2); }
+
+/* Model performance */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.perf-metric {
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.perf-metric.highlight {
+  background: rgba(26,110,181,0.1);
+  border-color: rgba(26,110,181,0.3);
+}
+
+.perf-label { font-size: 0.78rem; color: var(--text3); font-weight: 600; }
+.perf-value { font-size: 1.2rem; font-weight: 800; color: var(--text); margin: 0.2rem 0; }
+.perf-value.accent { color: var(--accent); }
+.perf-unit { font-size: 0.72rem; color: var(--text3); }
+
+.r2-bar-wrap { margin-top: 1rem; }
+.r2-label { font-size: 0.82rem; color: var(--text2); margin-bottom: 0.5rem; }
+.r2-track { height: 10px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.r2-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); border-radius: 5px; }
+
+/* Feature importance */
+.feature-bars { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.feat-row { display: flex; align-items: center; gap: 0.75rem; }
+.feat-label { width: 150px; font-size: 0.82rem; color: var(--text2); flex-shrink: 0; }
+.feat-track { flex: 1; height: 10px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.feat-fill { height: 100%; background: linear-gradient(90deg, var(--primary-dark), var(--primary-light)); border-radius: 5px; transition: width 1s ease; }
+.feat-val { width: 36px; text-align: right; font-size: 0.82rem; color: var(--text3); font-weight: 600; }
+
+@media (max-width: 768px) {
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+}

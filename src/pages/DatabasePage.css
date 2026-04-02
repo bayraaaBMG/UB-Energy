@@ -1,0 +1,107 @@
+.database-page { padding: 0 0 3rem; }
+
+.db-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+}
+
+.db-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.search-input {
+  padding: 0.6rem 0.75rem 0.6rem 2.2rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  outline: none;
+  width: 220px;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.search-input:focus { border-color: var(--primary); }
+
+.type-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text3);
+}
+
+.db-download-btns { display: flex; gap: 0.5rem; }
+
+.db-stats {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.db-stat-badge {
+  padding: 0.4rem 0.85rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.83rem;
+  color: var(--text2);
+}
+
+.db-stat-badge strong { color: var(--primary-light); }
+
+/* Table overrides */
+.building-name-cell { font-weight: 500; }
+
+.type-badge {
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.usage-val { font-weight: 600; }
+.usage-val.high { color: var(--danger); }
+.usage-val.mid { color: var(--warning); }
+.usage-val.low { color: var(--success); }
+
+.table-actions { display: flex; gap: 0.4rem; }
+
+.action-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+
+.action-btn.view { color: var(--primary-light); }
+.action-btn.view:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.action-btn.delete { color: var(--danger); }
+.action-btn.delete:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.75rem; padding: 3rem; color: var(--text3);
+}
