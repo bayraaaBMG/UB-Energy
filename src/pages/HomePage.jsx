@@ -2,24 +2,35 @@ import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Users, Target
+  Building2, Zap, Users, Target, Info,
 } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { monthlyEnergyData } from "../data/mockData";
-import { APP_NAME } from "../config/constants";
 import "./HomePage.css";
 
-const stats = (t) => [
-  { icon: Building2, value: "1,247", label: t.home.stat1_label, color: "#3a8fd4" },
-  { icon: Zap, value: "28,400", label: t.home.stat2_label, color: "#e9c46a" },
-  { icon: Target, value: "92.4%", label: t.home.stat3_label, color: "#2a9d8f" },
-  { icon: Users, value: "389", label: t.home.stat4_label, color: "#f4a261" },
+const STATS = (t) => [
+  {
+    icon: Building2, value: "1,247", label: t.home.stat1_label,
+    color: "#3a8fd4", src: t.home.stat1_src,
+  },
+  {
+    icon: Zap, value: "28,400", label: t.home.stat2_label,
+    color: "#e9c46a", src: t.home.stat2_src,
+  },
+  {
+    icon: Target, value: "92.4%", label: t.home.stat3_label,
+    color: "#2a9d8f", src: t.home.stat3_src,
+  },
+  {
+    icon: Users, value: "389", label: t.home.stat4_label,
+    color: "#f4a261", src: t.home.stat4_src,
+  },
 ];
 
-const features = (t) => [
-  { icon: Brain, title: t.home.feature1_title, text: t.home.feature1_text, color: "#3a8fd4" },
+const FEATURES = (t) => [
+  { icon: Brain,     title: t.home.feature1_title, text: t.home.feature1_text, color: "#3a8fd4" },
   { icon: CloudRain, title: t.home.feature2_title, text: t.home.feature2_text, color: "#2a9d8f" },
   { icon: BarChart2, title: t.home.feature3_title, text: t.home.feature3_text, color: "#e9c46a" },
   { icon: Lightbulb, title: t.home.feature4_title, text: t.home.feature4_text, color: "#f4a261" },
@@ -27,17 +38,22 @@ const features = (t) => [
 
 export default function HomePage() {
   const { t, lang } = useLang();
-  const monthlyData = monthlyEnergyData.map(d => ({ ...d, month: lang === "mn" ? d.month : d.month_en }));
+  const mn = lang === "mn";
+  const monthlyData = monthlyEnergyData.map(d => ({
+    ...d,
+    month: mn ? d.month : d.month_en,
+  }));
 
   return (
     <div className="home-page">
-      {/* Hero */}
+
+      {/* ── Hero ── */}
       <section className="hero">
         <div className="hero-bg-grid" />
         <div className="container hero-content animate-fade">
           <div className="hero-badge">
             <Zap size={14} />
-            <span>Machine Learning · Energy Prediction</span>
+            <span>EUI Model · Random Forest · Open-Meteo</span>
           </div>
           <h1 className="hero-title">{t.home.hero_title}</h1>
           <p className="hero-subtitle">{t.home.hero_subtitle}</p>
@@ -54,11 +70,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* ── Stats ── */}
       <section className="stats-section">
         <div className="container">
           <div className="grid grid-4">
-            {stats(t).map(({ icon: Icon, value, label, color }) => (
+            {STATS(t).map(({ icon: Icon, value, label, color }) => (
               <div className="stat-card card animate-fade" key={label}>
                 <div className="stat-icon" style={{ background: `${color}22`, color }}>
                   <Icon size={24} />
@@ -68,20 +84,40 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {/* Stats source table */}
+          <div className="stats-source-box">
+            <div className="ssb-head">
+              <Info size={14} />
+              {mn ? "Дээрх тоонууд хаанаас авсан бэ?" : "Where do these numbers come from?"}
+            </div>
+            <div className="ssb-rows">
+              {STATS(t).map(({ icon: Icon, value, label, color, src }) => (
+                <div className="ssb-row" key={label}>
+                  <span className="ssb-val" style={{ color }}>
+                    <Icon size={12} /> {value}
+                  </span>
+                  <span className="ssb-label">{label}</span>
+                  <span className="ssb-src">{src}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Chart Preview */}
+      {/* ── Chart + Intro ── */}
       <section className="chart-preview">
         <div className="container">
           <div className="grid grid-2 gap-3" style={{ gridTemplateColumns: "1fr 1.4fr" }}>
+
             <div className="card intro-card">
               <h2 className="section-title">{t.home.intro_title}</h2>
               <p style={{ color: "var(--text2)", lineHeight: 1.7, marginBottom: "1.5rem" }}>
                 {t.home.intro_text}
               </p>
               <div className="tech-tags">
-                {["Random Forest", "Gradient Boosting", "XGBoost", "SHAP", "Python", "React"].map(tag => (
+                {["Random Forest", "Gradient Boosting", "XGBoost", "EUI Model", "SHAP", "Open-Meteo API"].map(tag => (
                   <span key={tag} className="tech-tag">{tag}</span>
                 ))}
               </div>
@@ -93,9 +129,9 @@ export default function HomePage() {
 
             <div className="card">
               <h3 className="section-title" style={{ fontSize: "1rem" }}>
-                {t.dashboard.monthly} ({t.common.units_mwh})
+                {t.home.chart_title}
               </h3>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
@@ -109,21 +145,53 @@ export default function HomePage() {
                   <Tooltip
                     contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)" }}
                     labelStyle={{ color: "var(--accent)" }}
+                    formatter={(v, name) => [
+                      `${v.toLocaleString()} kWh`,
+                      name === "usage"
+                        ? t.home.chart_src_usage
+                        : t.home.chart_src_pred,
+                    ]}
                   />
-                  <Area type="monotone" dataKey="usage" stroke="#1a6eb5" fill="url(#colorUsage)" strokeWidth={2} name={t.common.usage} />
-                  <Area type="monotone" dataKey="predicted" stroke="#2a9d8f" fill="none" strokeWidth={2} strokeDasharray="4 4" name={t.common.predicted} />
+                  <Area type="monotone" dataKey="usage"     stroke="#1a6eb5" fill="url(#colorUsage)" strokeWidth={2} name="usage" />
+                  <Area type="monotone" dataKey="predicted" stroke="#2a9d8f" fill="none" strokeWidth={2} strokeDasharray="4 4" name="predicted" />
                 </AreaChart>
               </ResponsiveContainer>
+
+              {/* Chart source explanation */}
+              <div className="chart-source-box">
+                <div className="csb-head">
+                  <Info size={13} />
+                  {t.home.chart_src_title}
+                </div>
+                <div className="csb-items">
+                  <div className="csb-item">
+                    <span className="csb-swatch" style={{ background: "#1a6eb5" }} />
+                    <div>
+                      <strong>{t.home.chart_src_usage}</strong>
+                      <span>{t.home.chart_src_usage_desc}</span>
+                    </div>
+                  </div>
+                  <div className="csb-item">
+                    <span className="csb-swatch dashed" style={{ borderColor: "#2a9d8f" }} />
+                    <div>
+                      <strong>{t.home.chart_src_pred}</strong>
+                      <span>{t.home.chart_src_pred_desc}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="csb-note">⚠️ {t.home.chart_src_note}</div>
+              </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Features ── */}
       <section className="features-section">
         <div className="container">
           <div className="grid grid-4">
-            {features(t).map(({ icon: Icon, title, text, color }) => (
+            {FEATURES(t).map(({ icon: Icon, title, text, color }) => (
               <div className="feature-card card animate-fade" key={title}>
                 <div className="feature-icon" style={{ background: `${color}22`, color }}>
                   <Icon size={28} />
@@ -135,6 +203,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
     </div>
   );
 }
