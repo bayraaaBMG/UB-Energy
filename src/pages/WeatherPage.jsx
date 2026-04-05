@@ -538,8 +538,47 @@ export default function WeatherPage() {
             </ComposedChart>
           </ResponsiveContainer>
           <div className="forecast-legend">
-            <span className="fl-item"><span className="fl-dot" style={{ background: "#1a6eb5" }} />{mn ? "Бодит өгөгдөл" : "Actual data"}</span>
-            <span className="fl-item"><span className="fl-dot" style={{ background: "#e9c46a" }} />{mn ? "Температур (°C)" : "Temperature (°C)"}</span>
+            <span className="fl-item"><span className="fl-dot" style={{ background: "#1a6eb5" }} />{mn ? "Тооцоолсон эрчим хүч (kWh)" : "Estimated energy (kWh)"}</span>
+            <span className="fl-item"><span className="fl-dot" style={{ background: "#e9c46a" }} />{mn ? "Дундаж температур (°C)" : "Mean temperature (°C)"}</span>
+          </div>
+
+          {/* Data source methodology */}
+          <div className="energy-source-box">
+            <div className="esb-title">
+              {mn ? "📊 Эрчим хүчний өгөгдөл хаанаас ирж байна вэ?" : "📊 Where does the energy data come from?"}
+            </div>
+            <div className="esb-chain">
+              <div className="esb-step">
+                <div className="esb-step-badge api">API</div>
+                <div className="esb-step-body">
+                  <strong>{mn ? "Open-Meteo температур" : "Open-Meteo temperature"}</strong>
+                  <span>{mn ? "Улаанбаатарын бодит хэмжсэн өдрийн хамгийн өндөр/доод температур" : "Measured daily max/min temperature for Ulaanbaatar"}</span>
+                </div>
+              </div>
+              <div className="esb-arrow">→</div>
+              <div className="esb-step">
+                <div className="esb-step-badge calc">HDD</div>
+                <div className="esb-step-body">
+                  <strong>{mn ? "Халааны зэрэг-өдөр тооцоолол" : "Heating Degree Day calculation"}</strong>
+                  <span>HDD = max(0,&nbsp;18°C&nbsp;−&nbsp;T<sub>дундаж</sub>)&nbsp;&nbsp;·&nbsp;&nbsp;T<sub>дундаж</sub> = (T<sub>max</sub>&nbsp;+&nbsp;T<sub>min</sub>)&nbsp;÷&nbsp;2</span>
+                </div>
+              </div>
+              <div className="esb-arrow">→</div>
+              <div className="esb-step">
+                <div className="esb-step-badge est">kWh</div>
+                <div className="esb-step-body">
+                  <strong>{mn ? "Барилгын дулааны хэрэглээний таамаглал" : "Building heating demand estimate"}</strong>
+                  <span>{mn
+                    ? "Эрчим хүч = HDD × 143 kWh — УБ-ын дундаж орон сууцны барилгын нэг өдрийн дулааны хэрэглээний коэффициент"
+                    : "Energy = HDD × 143 kWh — coefficient based on average UB apartment building's daily heating demand"}</span>
+                </div>
+              </div>
+            </div>
+            <div className="esb-note">
+              {mn
+                ? "⚠️ Энэ нь ойролцоо таамаглал бөгөөд бодит барилга бүрийн хэрэглээ нь талбай, дулаалга, халаалтын системийн төрлөөс хамаарч өөр байна."
+                : "⚠️ This is an approximation. Actual consumption per building varies by area, insulation quality, and heating system type."}
+            </div>
           </div>
         </div>
 

@@ -554,3 +554,78 @@
 /* ─── Spin animation ─── */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 0.85s linear infinite; }
+
+/* ─── Energy source methodology box ─── */
+.energy-source-box {
+  margin-top: 1.1rem;
+  padding: 1rem 1.1rem 0.9rem;
+  background: rgba(58,143,212,0.05);
+  border: 1px solid rgba(58,143,212,0.18);
+  border-radius: 10px;
+}
+
+.esb-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.85rem;
+}
+
+.esb-chain {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.esb-arrow {
+  color: var(--text3);
+  font-size: 1rem;
+  padding-top: 0.55rem;
+  flex-shrink: 0;
+}
+
+.esb-step {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 160px;
+}
+
+.esb-step-badge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.esb-step-badge.api  { background: rgba(42,157,143,0.18); color: #2a9d8f; border: 1px solid rgba(42,157,143,0.3); }
+.esb-step-badge.calc { background: rgba(233,196,106,0.18); color: #c9a227; border: 1px solid rgba(233,196,106,0.3); }
+.esb-step-badge.est  { background: rgba(58,143,212,0.18);  color: #3a8fd4; border: 1px solid rgba(58,143,212,0.3);  }
+
+.esb-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.esb-step-body strong { font-size: 0.78rem; color: var(--text); }
+.esb-step-body span   { font-size: 0.71rem; color: var(--text3); line-height: 1.5; }
+
+.esb-note {
+  margin-top: 0.85rem;
+  font-size: 0.72rem;
+  color: var(--text3);
+  line-height: 1.6;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 0.65rem;
+}
+
+@media (max-width: 700px) {
+  .esb-chain { flex-direction: column; }
+  .esb-arrow { padding-top: 0; transform: rotate(90deg); align-self: center; }
+}
