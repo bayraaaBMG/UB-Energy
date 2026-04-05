@@ -1,82 +1,169 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import {
-  Cloud, Sun, CloudSnow, Wind, Droplets, Thermometer,
-  Eye, Gauge, CloudRain, Snowflake, AlertTriangle,
-  TrendingDown, TrendingUp, Clock, CalendarDays, Zap
+  Cloud, Wind, Droplets, Thermometer,
+  Eye, Gauge, Snowflake, AlertTriangle,
+  TrendingDown, TrendingUp, Clock, CalendarDays, Zap, RefreshCw,
 } from "lucide-react";
 import {
   ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Line, Legend
+  ResponsiveContainer, Line, Legend,
 } from "recharts";
 import "./WeatherPage.css";
 
-// ─── Static weather data (2026-04-01 Ulaanbaatar) ────────────────────────────
-const TODAY = {
-  date: "2026-04-01",
-  weekday_key: "weekday_wed",
-  temp: -4, feels_like: -9, temp_max: 2, temp_min: -9,
-  code: "snow", humidity: 72, wind: 18, wind_dir_mn: "ХБ", wind_dir_en: "NW",
-  visibility: 6, pressure: 1018, uv: 3, snow_chance: 80, hdd: 29,
-  sunrise: "06:58", sunset: "19:42", aqi: 178,
-  energy_val: 4150,
-  impact_key: "impact_high",
+// ─── Ulaanbaatar coordinates ──────────────────────────────────────────────────
+const LAT = 47.9184;
+const LON = 106.9177;
+
+const METEO_URL =
+  `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+  `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code` +
+  `,wind_speed_10m,wind_direction_10m,surface_pressure,visibility,precipitation_probability` +
+  `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability` +
+  `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max` +
+  `,wind_speed_10m_max,sunrise,sunset` +
+  `&past_days=7&forecast_days=8&timezone=Asia%2FUlaanbaatar`;
+
+const AQI_URL =
+  `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}` +
+  `&current=us_aqi,pm2_5&timezone=Asia%2FUlaanbaatar`;
+
+const CACHE_KEY = "ub_weather_v2";
+const CACHE_TTL = 30 * 60 * 1000; // 30 min
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function wmoToCode(wmo) {
+  if (wmo === 0) return "sunny";
+  if (wmo <= 2) return "partly_cloudy";
+  if (wmo <= 48) return "cloudy";
+  if (wmo <= 67 || (wmo >= 80 && wmo <= 82)) return "rain";
+  if ((wmo >= 71 && wmo <= 77) || wmo === 85 || wmo === 86) return "snow";
+  return "thunderstorm";
+}
+
+const WIND_MN = ["Хойд", "ХЗ", "Зүүн", "ЗУ", "Урд", "УБ", "Баруун", "ХБ"];
+const WIND_EN = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const windDir = (deg, lang) => (lang === "mn" ? WIND_MN : WIND_EN)[Math.round((deg % 360) / 45) % 8];
+
+const WD_KEYS = ["weekday_sun", "weekday_mon", "weekday_tue", "weekday_wed", "weekday_thu", "weekday_fri", "weekday_sat"];
+const dayKey = (dateStr) => WD_KEYS[new Date(dateStr + "T00:00:00").getDay()];
+
+const hdd = (max, min) => Math.max(0, Math.round(18 - (max + min) / 2));
+const energyVal = (h) => Math.round(h * 143);
+const impactKey = (h) => h > 25 ? "impact_high" : h > 15 ? "impact_medium" : "impact_low";
+
+const HOURLY_SLOTS = ["00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00"];
+const nearestSlot = () => {
+  const h = new Date().getHours();
+  return SLOTS_NUM.reduce((best, s) => Math.abs(h - s) < Math.abs(h - best) ? s : best, 0);
 };
+const SLOTS_NUM = [0, 3, 6, 9, 12, 15, 18, 21];
 
-const TOMORROW = {
-  date: "2026-04-02",
-  weekday_key: "weekday_thu",
-  temp: 1, feels_like: -4, temp_max: 6, temp_min: -5,
-  code: "partly_cloudy", humidity: 55, wind: 12, wind_dir_mn: "Б", wind_dir_en: "N",
-  visibility: 14, pressure: 1022, uv: 5, snow_chance: 20, hdd: 24,
-  sunrise: "06:56", sunset: "19:44", aqi: 95,
-  energy_val: 3820,
-  impact_key: "impact_medium",
-};
+function getCached() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (c && Date.now() - c.ts < CACHE_TTL) return c.data;
+  } catch { /* */ }
+  return null;
+}
+function setCached(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* */ }
+}
 
-const WEEK_FORECAST = [
-  { weekday_key: "weekday_fri", code: "sunny",        temp_max: 8,  temp_min: -2, hdd: 17 },
-  { weekday_key: "weekday_sat", code: "cloudy",       temp_max: 5,  temp_min: -4, hdd: 22 },
-  { weekday_key: "weekday_sun", code: "snow",         temp_max: -1, temp_min: -10, hdd: 31 },
-  { weekday_key: "weekday_mon", code: "partly_cloudy",temp_max: 4,  temp_min: -6, hdd: 26 },
-  { weekday_key: "weekday_tue", code: "sunny",        temp_max: 10, temp_min: -1, hdd: 15 },
-];
+function parseResponse(meteo, aq) {
+  const { current, daily, hourly } = meteo;
+  const todayIdx = 7; // past_days=7
+  const todayDate = daily.time[todayIdx];
 
-const HOURLY_TODAY = [
-  { hour: "00:00", temp: -8, feels: -13, code: "snow",          precip: 75 },
-  { hour: "03:00", temp: -9, feels: -14, code: "snow",          precip: 80 },
-  { hour: "06:00", temp: -8, feels: -13, code: "snow",          precip: 70 },
-  { hour: "09:00", temp: -5, feels: -10, code: "cloudy",        precip: 40 },
-  { hour: "12:00", temp: -2, feels: -7,  code: "partly_cloudy", precip: 25 },
-  { hour: "15:00", temp: 2,  feels: -3,  code: "partly_cloudy", precip: 20 },
-  { hour: "18:00", temp: -1, feels: -6,  code: "cloudy",        precip: 35 },
-  { hour: "21:00", temp: -5, feels: -10, code: "snow",          precip: 60 },
-];
+  function buildDay(i, useCurrent = false) {
+    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
+    return {
+      date: daily.time[i],
+      weekday_key: dayKey(daily.time[i]),
+      temp: useCurrent
+        ? Math.round(current.temperature_2m)
+        : Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2),
+      feels_like: useCurrent
+        ? Math.round(current.apparent_temperature)
+        : Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2 - 4),
+      temp_max: Math.round(daily.temperature_2m_max[i]),
+      temp_min: Math.round(daily.temperature_2m_min[i]),
+      code: useCurrent ? wmoToCode(current.weather_code) : wmoToCode(daily.weather_code[i]),
+      humidity: useCurrent ? Math.round(current.relative_humidity_2m) : 60,
+      wind: useCurrent
+        ? Math.round(current.wind_speed_10m)
+        : Math.round(daily.wind_speed_10m_max[i]),
+      wind_deg: useCurrent ? current.wind_direction_10m : 0,
+      visibility: useCurrent ? Math.round((current.visibility || 10000) / 1000) : 10,
+      pressure: useCurrent ? Math.round(current.surface_pressure) : 1015,
+      snow_chance: Math.round(daily.precipitation_probability_max[i] || 0),
+      sunrise: (daily.sunrise[i] || "").slice(11, 16) || "--:--",
+      sunset:  (daily.sunset[i]  || "").slice(11, 16) || "--:--",
+      aqi: Math.round(aq?.current?.us_aqi || 0),
+      hdd: h,
+      energy_val: energyVal(h),
+      impact_key: impactKey(h),
+    };
+  }
 
-const ENERGY_WEATHER_HISTORY = [
-  { date: "03/25", temp: -12, hdd: 37, energy: 4820 },
-  { date: "03/26", temp: -10, hdd: 35, energy: 4650 },
-  { date: "03/27", temp: -7,  hdd: 32, energy: 4380 },
-  { date: "03/28", temp: -3,  hdd: 28, energy: 4100 },
-  { date: "03/29", temp: 0,   hdd: 23, energy: 3750 },
-  { date: "03/30", temp: -5,  hdd: 30, energy: 4200 },
-  { date: "03/31", temp: -6,  hdd: 31, energy: 4290 },
-  { date: "04/01", temp: -4,  hdd: 29, energy: 4150 },
-  { date: "04/02", temp: 1,   hdd: 24, energy: 3820, forecast: true },
-  { date: "04/03", temp: 8,   hdd: 17, energy: 3100, forecast: true },
-];
+  const todayData    = buildDay(todayIdx, true);
+  const tomorrowData = buildDay(todayIdx + 1, false);
 
-// ─── Weather icon SVG ─────────────────────────────────────────────────────────
+  const weekForecast = [];
+  for (let i = todayIdx + 2; i < todayIdx + 7; i++) {
+    if (!daily.time[i]) break;
+    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
+    weekForecast.push({
+      weekday_key: dayKey(daily.time[i]),
+      code: wmoToCode(daily.weather_code[i]),
+      temp_max: Math.round(daily.temperature_2m_max[i]),
+      temp_min: Math.round(daily.temperature_2m_min[i]),
+      hdd: h,
+    });
+  }
+
+  const hourlyToday = [];
+  hourly.time.forEach((ts, idx) => {
+    if (!ts.startsWith(todayDate)) return;
+    const slot = ts.slice(11, 16);
+    if (!HOURLY_SLOTS.includes(slot)) return;
+    hourlyToday.push({
+      hour: slot,
+      temp: Math.round(hourly.temperature_2m[idx]),
+      feels: Math.round(hourly.apparent_temperature[idx]),
+      code: wmoToCode(hourly.weather_code[idx]),
+      precip: Math.round(hourly.precipitation_probability[idx] || 0),
+    });
+  });
+
+  const historyChart = [];
+  for (let i = 0; i <= todayIdx + 1; i++) {
+    if (!daily.time[i]) break;
+    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
+    const [, mm, dd] = daily.time[i].split("-");
+    historyChart.push({
+      date: `${mm}/${dd}`,
+      temp: Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2),
+      hdd: h,
+      energy: energyVal(h),
+      forecast: i > todayIdx,
+    });
+  }
+
+  return { todayData, tomorrowData, weekForecast, hourlyToday, historyChart };
+}
+
+// ─── Weather icon ─────────────────────────────────────────────────────────────
 function WeatherIcon({ code, size = 40, animated = false }) {
   const cls = `weather-icon-svg ${animated ? "animated" : ""}`;
   if (code === "sunny")
     return (
       <svg viewBox="0 0 80 80" width={size} height={size} className={cls}>
         <circle cx="40" cy="40" r="16" fill="#e9c46a" className="sun-core" />
-        {[0,45,90,135,180,225,270,315].map((a, i) => (
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => (
           <line key={i}
-            x1={40 + Math.cos(a*Math.PI/180)*22} y1={40 + Math.sin(a*Math.PI/180)*22}
-            x2={40 + Math.cos(a*Math.PI/180)*30} y2={40 + Math.sin(a*Math.PI/180)*30}
+            x1={40 + Math.cos(a * Math.PI / 180) * 22} y1={40 + Math.sin(a * Math.PI / 180) * 22}
+            x2={40 + Math.cos(a * Math.PI / 180) * 30} y2={40 + Math.sin(a * Math.PI / 180) * 30}
             stroke="#e9c46a" strokeWidth="3" strokeLinecap="round" />
         ))}
       </svg>
@@ -86,11 +173,24 @@ function WeatherIcon({ code, size = 40, animated = false }) {
       <svg viewBox="0 0 80 80" width={size} height={size} className={cls}>
         <ellipse cx="42" cy="32" rx="22" ry="14" fill="#a8c5e0" opacity={0.9} />
         <ellipse cx="28" cy="36" rx="14" ry="10" fill="#c5d8ea" opacity={0.85} />
-        {[35,42,49,56].map((x, i) => (
+        {[35, 42, 49, 56].map((x, i) => (
           <g key={i}>
-            <line x1={x} y1="48" x2={x} y2="62" stroke="#8ec6f0" strokeWidth="2" strokeLinecap="round"/>
-            <line x1={x-4} y1="53" x2={x+4} y2="53" stroke="#8ec6f0" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1={x} y1="48" x2={x} y2="62" stroke="#8ec6f0" strokeWidth="2" strokeLinecap="round" />
+            <line x1={x - 4} y1="53" x2={x + 4} y2="53" stroke="#8ec6f0" strokeWidth="1.5" strokeLinecap="round" />
           </g>
+        ))}
+      </svg>
+    );
+  if (code === "rain" || code === "thunderstorm")
+    return (
+      <svg viewBox="0 0 80 80" width={size} height={size} className={cls}>
+        <ellipse cx="44" cy="28" rx="22" ry="13" fill="#7090b0" opacity={0.9} />
+        <ellipse cx="30" cy="34" rx="14" ry="9" fill="#8098b0" opacity={0.85} />
+        {[32, 40, 48, 56].map((x, i) => (
+          <line key={i} x1={x} y1="48" x2={x - 4} y2="64"
+            stroke={code === "thunderstorm" && i === 2 ? "#e9c46a" : "#5a8ec0"}
+            strokeWidth={code === "thunderstorm" && i === 2 ? "2.5" : "2"}
+            strokeLinecap="round" />
         ))}
       </svg>
     );
@@ -98,16 +198,17 @@ function WeatherIcon({ code, size = 40, animated = false }) {
     return (
       <svg viewBox="0 0 80 80" width={size} height={size} className={cls}>
         <circle cx="28" cy="30" r="14" fill="#e9c46a" opacity={0.9} />
-        {[270,315,0,45].map((a, i) => (
+        {[270, 315, 0, 45].map((a, i) => (
           <line key={i}
-            x1={28 + Math.cos(a*Math.PI/180)*18} y1={30 + Math.sin(a*Math.PI/180)*18}
-            x2={28 + Math.cos(a*Math.PI/180)*24} y2={30 + Math.sin(a*Math.PI/180)*24}
+            x1={28 + Math.cos(a * Math.PI / 180) * 18} y1={30 + Math.sin(a * Math.PI / 180) * 18}
+            x2={28 + Math.cos(a * Math.PI / 180) * 24} y2={30 + Math.sin(a * Math.PI / 180) * 24}
             stroke="#e9c46a" strokeWidth="2.5" strokeLinecap="round" />
         ))}
         <ellipse cx="50" cy="44" rx="22" ry="13" fill="#a8c5e0" opacity={0.95} />
         <ellipse cx="36" cy="48" rx="14" ry="9" fill="#c5d8ea" opacity={0.9} />
       </svg>
     );
+  // cloudy (default)
   return (
     <svg viewBox="0 0 80 80" width={size} height={size} className={cls}>
       <ellipse cx="44" cy="34" rx="22" ry="14" fill="#8098b0" opacity={0.9} />
@@ -133,12 +234,12 @@ function AQIBar({ aqi, t }) {
         <span style={{ color: "#f4a261" }}>{t.weather.aqi_bad}</span>
         <span style={{ color: "#e63946" }}>{t.weather.aqi_danger}</span>
       </div>
-      <div className="aqi-current" style={{ color }}>AQI: {aqi} — {label}</div>
+      <div className="aqi-current" style={{ color }}>AQI {aqi} — {label}</div>
     </div>
   );
 }
 
-function DayCard({ day, active, onClick, t, lang }) {
+function DayCard({ day, active, onClick, t }) {
   const condKey = `cond_${day.code}`;
   return (
     <button className={`day-card ${active ? "active" : ""}`} onClick={onClick}>
@@ -152,29 +253,95 @@ function DayCard({ day, active, onClick, t, lang }) {
   );
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function WeatherPage() {
   const { t, lang } = useLang();
-  const [activeDay, setActiveDay] = useState("today");
-  const [now, setNow] = useState(new Date("2026-04-01T14:23:00"));
+  const mn = lang === "mn";
 
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading]  = useState(true);
+  const [error, setError]      = useState(null);
+  const [fetchedAt, setFetchedAt] = useState(null);
+  const [activeDay, setActiveDay]  = useState("today");
+  const [now, setNow] = useState(new Date());
+
+  // Real-time clock
   useEffect(() => {
-    const id = setInterval(() => setNow(d => new Date(d.getTime() + 1000)), 1000);
+    const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const data = activeDay === "today" ? TODAY : TOMORROW;
-  const timeStr = now.toLocaleTimeString(lang === "mn" ? "mn-MN" : "en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const dateLabel = lang === "mn"
-    ? `2026 оны 4-р сарын ${now.getDate()} — ${t.weather[data.weekday_key]} гараг`
-    : `April ${now.getDate()}, 2026 — ${t.weather[data.weekday_key]}`;
+  const fetchWeather = useCallback(async (force = false) => {
+    if (!force) {
+      const cached = getCached();
+      if (cached) { setWeather(cached); setLoading(false); setFetchedAt(new Date(JSON.parse(localStorage.getItem(CACHE_KEY)).ts)); return; }
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [meteoRes, aqRes] = await Promise.all([
+        fetch(METEO_URL),
+        fetch(AQI_URL).catch(() => null),
+      ]);
+      if (!meteoRes.ok) throw new Error(`HTTP ${meteoRes.status}`);
+      const [meteoData, aqData] = await Promise.all([
+        meteoRes.json(),
+        aqRes ? aqRes.json().catch(() => null) : null,
+      ]);
+      const parsed = parseResponse(meteoData, aqData);
+      setWeather(parsed);
+      setCached(parsed);
+      setFetchedAt(new Date());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const impactColor = { impact_high: "#e63946", impact_medium: "#f4a261", impact_low: "#2a9d8f" }[data.impact_key] || "#3a8fd4";
+  useEffect(() => { fetchWeather(); }, [fetchWeather]);
+
+  // ── Render states ──
+  if (loading && !weather)
+    return (
+      <div className="weather-page">
+        <div className="weather-loading">
+          <div className="wl-spinner" />
+          <p>{mn ? "Цаг уурын мэдээлэл ачааллаж байна..." : "Loading weather data..."}</p>
+          <p className="wl-sub">{mn ? "Open-Meteo API · Улаанбаатар" : "Open-Meteo API · Ulaanbaatar"}</p>
+        </div>
+      </div>
+    );
+
+  if (error && !weather)
+    return (
+      <div className="weather-page">
+        <div className="weather-loading">
+          <AlertTriangle size={40} style={{ color: "#e63946" }} />
+          <p style={{ color: "#e63946" }}>{mn ? "Цаг уурын мэдээлэл авахад алдаа гарлаа" : "Failed to load weather data"}</p>
+          <p className="wl-sub">{error}</p>
+          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => fetchWeather(true)}>
+            <RefreshCw size={15} /> {mn ? "Дахин оролдох" : "Retry"}
+          </button>
+        </div>
+      </div>
+    );
+
+  const data = activeDay === "today" ? weather.todayData : weather.tomorrowData;
+
+  const timeStr  = now.toLocaleTimeString(mn ? "mn-MN" : "en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const dateLabel = mn
+    ? `${now.getFullYear()} оны ${now.getMonth() + 1}-р сарын ${now.getDate()} — ${t.weather[data.weekday_key] || ""} гараг`
+    : now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const impactColor = { impact_high: "#e63946", impact_medium: "#f4a261", impact_low: "#2a9d8f" }[data.impact_key];
   const aqiColor = data.aqi < 100 ? "#2a9d8f" : data.aqi < 150 ? "#f4a261" : "#e63946";
-  const windDir = lang === "mn" ? data.wind_dir_mn : data.wind_dir_en;
 
   const impactDesc = data.impact_key === "impact_high"
     ? t.weather.impact_high_desc.replace("{val}", data.energy_val.toLocaleString())
     : t.weather.impact_low_desc.replace("{val}", data.energy_val.toLocaleString());
+
+  const nowSlot = `${String(nearestSlot()).padStart(2, "0")}:00`;
 
   return (
     <div className="weather-page">
@@ -193,9 +360,16 @@ export default function WeatherPage() {
               <span className="clock-time">{timeStr}</span>
               <span className="clock-date">{dateLabel}</span>
             </div>
+            <button
+              className="weather-refresh-btn"
+              onClick={() => fetchWeather(true)}
+              title={mn ? "Шинэчлэх" : "Refresh"}
+              disabled={loading}
+            >
+              <RefreshCw size={14} className={loading ? "spin" : ""} />
+            </button>
           </div>
 
-          {/* Day selector */}
           <div className="day-selector">
             <button className={`day-sel-btn ${activeDay === "today" ? "active" : ""}`} onClick={() => setActiveDay("today")}>
               <CalendarDays size={15} /> {t.weather.today}
@@ -205,7 +379,6 @@ export default function WeatherPage() {
             </button>
           </div>
 
-          {/* Main weather card */}
           <div className="main-weather-card animate-fade">
             <div className="mwc-left">
               <WeatherIcon code={data.code} size={100} animated />
@@ -233,7 +406,7 @@ export default function WeatherPage() {
                 <div className="mwc-stat">
                   <Wind size={16} style={{ color: "#a8c5e0" }} />
                   <span>{data.wind} {t.common.unit_kmh}</span>
-                  <span className="stat-lbl">{t.weather.wind} {windDir}</span>
+                  <span className="stat-lbl">{t.weather.wind} {windDir(data.wind_deg, lang)}</span>
                 </div>
                 <div className="mwc-stat">
                   <Eye size={16} style={{ color: "#6a9bbf" }} />
@@ -252,7 +425,7 @@ export default function WeatherPage() {
                 <span>🌇 {data.sunset}</span>
               </div>
 
-              {data.snow_chance >= 70 && (
+              {data.snow_chance >= 40 && (
                 <div className="snow-alert">
                   <Snowflake size={14} />
                   {t.weather.snow_chance}: <strong>{data.snow_chance}%</strong>
@@ -289,7 +462,7 @@ export default function WeatherPage() {
             <div className="impact-value" style={{ color: impactColor }}>{t.weather[data.impact_key]}</div>
             <div className="impact-desc">{impactDesc}</div>
             <div className="impact-badge" style={{ background: `${impactColor}22`, color: impactColor, border: `1px solid ${impactColor}44` }}>
-              HDD {data.hdd} → ~{Math.round(data.hdd * 143).toLocaleString()} {t.common.units_kwh}/{t.weather.city_label}
+              HDD {data.hdd} → ~{data.energy_val.toLocaleString()} {t.common.units_kwh}/{t.weather.city_label}
             </div>
           </div>
 
@@ -306,12 +479,12 @@ export default function WeatherPage() {
         </div>
 
         {/* Hourly (today only) */}
-        {activeDay === "today" && (
+        {activeDay === "today" && weather.hourlyToday.length > 0 && (
           <div className="card mb-3">
             <h3 className="section-title">{t.weather.hourly_title}</h3>
             <div className="hourly-scroll">
-              {HOURLY_TODAY.map(h => (
-                <div key={h.hour} className={`hourly-item ${h.hour === "15:00" ? "now" : ""}`}>
+              {weather.hourlyToday.map(h => (
+                <div key={h.hour} className={`hourly-item ${h.hour === nowSlot ? "now" : ""}`}>
                   <span className="h-time">{h.hour}</span>
                   <WeatherIcon code={h.code} size={32} />
                   <span className="h-temp">{h.temp > 0 ? "+" : ""}{h.temp}°</span>
@@ -330,12 +503,10 @@ export default function WeatherPage() {
         <div className="card mb-3">
           <h3 className="section-title">{t.weather.weekly_title}</h3>
           <div className="week-scroll">
-            <DayCard day={{ ...TODAY, label: t.weather.today }} active={activeDay === "today"}
-              onClick={() => setActiveDay("today")} t={t} lang={lang} />
-            <DayCard day={{ ...TOMORROW, label: t.weather.tomorrow }} active={activeDay === "tomorrow"}
-              onClick={() => setActiveDay("tomorrow")} t={t} lang={lang} />
-            {WEEK_FORECAST.map(d => (
-              <DayCard key={d.weekday_key} day={d} active={false} onClick={() => {}} t={t} lang={lang} />
+            <DayCard day={{ ...weather.todayData }}    active={activeDay === "today"}    onClick={() => setActiveDay("today")}    t={t} lang={lang} />
+            <DayCard day={{ ...weather.tomorrowData }} active={activeDay === "tomorrow"} onClick={() => setActiveDay("tomorrow")} t={t} lang={lang} />
+            {weather.weekForecast.map((d, i) => (
+              <DayCard key={i} day={d} active={false} onClick={() => {}} t={t} lang={lang} />
             ))}
           </div>
         </div>
@@ -343,9 +514,9 @@ export default function WeatherPage() {
         {/* Energy-weather correlation chart */}
         <div className="card mb-3">
           <h3 className="section-title">{t.weather.correlation_title}</h3>
-          <div className="chart-note">{t.weather.chart_note}</div>
+          <div className="chart-note">{mn ? "Сүүлийн 7 хоног + өнөөдрийн таамаглал (Open-Meteo)" : "Last 7 days + today's forecast (Open-Meteo)"}</div>
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={ENERGY_WEATHER_HISTORY} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <ComposedChart data={weather.historyChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="energyGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#1a6eb5" stopOpacity={0.9} />
@@ -367,8 +538,8 @@ export default function WeatherPage() {
             </ComposedChart>
           </ResponsiveContainer>
           <div className="forecast-legend">
-            <span className="fl-item"><span className="fl-dot" style={{ background: "#1a6eb5" }} />{t.weather.forecast_actual}</span>
-            <span className="fl-item"><span className="fl-dot" style={{ background: "#2a9d8f" }} />{t.weather.forecast_predicted}</span>
+            <span className="fl-item"><span className="fl-dot" style={{ background: "#1a6eb5" }} />{mn ? "Бодит өгөгдөл" : "Actual data"}</span>
+            <span className="fl-item"><span className="fl-dot" style={{ background: "#e9c46a" }} />{mn ? "Температур (°C)" : "Temperature (°C)"}</span>
           </div>
         </div>
 
@@ -388,11 +559,13 @@ export default function WeatherPage() {
           <div className="ws-inner">
             <div>
               <h4>{t.weather.source_title}</h4>
-              <p>{t.weather.source_desc}</p>
+              <p>{mn
+                ? "Open-Meteo API (open-meteo.com) · Цаг агаарын бодит өгөгдөл · API түлхүүр шаардлагагүй"
+                : "Open-Meteo API (open-meteo.com) · Real weather data · No API key required"}</p>
             </div>
             <div className="ws-badges">
               <span className="ws-badge">🕐 {timeStr}</span>
-              <span className="ws-badge">📅 {t.weather.source_updated}</span>
+              <span className="ws-badge">🔄 {fetchedAt ? (mn ? `${fetchedAt.getHours()}:${String(fetchedAt.getMinutes()).padStart(2,"0")} шинэчлэгдсэн` : `Updated ${fetchedAt.getHours()}:${String(fetchedAt.getMinutes()).padStart(2,"0")}`) : "—"}</span>
               <span className="ws-badge">🌡️ {t.weather.city_name}</span>
             </div>
           </div>

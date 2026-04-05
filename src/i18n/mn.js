@@ -515,6 +515,8 @@ const mn = {
     cond_sunny: "Нартай",
     cond_cloudy: "Үүлэрхэг",
     cond_partly_cloudy: "Хэсэгчлэн үүлэрхэг",
+    cond_rain: "Бороотой",
+    cond_thunderstorm: "Аянга бороо",
     impact_high: "Өндөр",
     impact_medium: "Дунд",
     impact_low: "Бага",

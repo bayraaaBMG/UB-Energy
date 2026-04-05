@@ -515,6 +515,8 @@ const en = {
     cond_sunny: "Sunny",
     cond_cloudy: "Cloudy",
     cond_partly_cloudy: "Partly Cloudy",
+    cond_rain: "Rainy",
+    cond_thunderstorm: "Thunderstorm",
     impact_high: "High",
     impact_medium: "Medium",
     impact_low: "Low",

@@ -509,3 +509,48 @@
   .main-weather-card { padding: 1.25rem; }
   .mwc-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ─── Loading / Error state ─── */
+.weather-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+  color: var(--text2);
+  text-align: center;
+}
+
+.wl-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary-light);
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+.wl-sub { font-size: 0.82rem; color: var(--text3); }
+
+/* ─── Refresh button ─── */
+.weather-refresh-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.7);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.weather-refresh-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.weather-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Spin animation ─── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.85s linear infinite; }
