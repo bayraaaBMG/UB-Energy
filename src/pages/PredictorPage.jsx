@@ -1,14 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import {
-  Brain, Zap, TrendingUp, BarChart3, Thermometer,
+  Brain, Zap, TrendingUp, Thermometer,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
-  Home, Users, Cpu, Snowflake, Sun, Info
+  Home, Users, Snowflake, Info, Save,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, RadarChart,
-  PolarGrid, PolarAngleAxis, Radar
+  ResponsiveContainer, Legend,
 } from "recharts";
 import { monthlyEnergyData } from "../data/mockData";
 import "./PredictorPage.css";
@@ -145,7 +145,6 @@ function runPrediction(form) {
   const chart_data = months.map((m, i) => ({
     month: m,
     usage: Math.round(annual * seasonalWeights[i] / weightSum),
-    predicted: Math.round(annual * seasonalWeights[i] / weightSum * (0.95 + Math.random() * 0.1)),
   }));
 
   // Feature importance (contribution %)
@@ -165,12 +164,44 @@ function runPrediction(form) {
     pct: Math.round(v / contribTotal * 100)
   })).sort((a, b) => b.pct - a.pct);
 
-  return { annual, monthly_avg, daily_avg, intensity: intensity_rounded, chart_data, features };
+  // CO₂: ~60% heating (0.28 kgCO₂/kWh) + ~40% electric (0.73 kgCO₂/kWh)
+  const co2 = +((annual * 0.6 * 0.28 + annual * 0.4 * 0.73) / 1000).toFixed(1);
+  const pm25 = Math.round(co2 * 1350);
+
+  const grade =
+    intensity_rounded < 50  ? "A" : intensity_rounded < 100 ? "B" :
+    intensity_rounded < 150 ? "C" : intensity_rounded < 200 ? "D" :
+    intensity_rounded < 250 ? "E" : intensity_rounded < 300 ? "F" : "G";
+
+  return { annual, monthly_avg, daily_avg, intensity: intensity_rounded, chart_data, features, co2, pm25, grade };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+const GRADE_COLORS = {
+  A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20",
+};
+const GRADES = ["A","B","C","D","E","F","G"];
+
+function GradeBar({ grade }) {
+  return (
+    <div className="pred-grade-row">
+      {GRADES.map(g => (
+        <div key={g} className={`pred-grade-cell${g === grade ? " active" : ""}`}
+          style={{
+            background: g === grade ? GRADE_COLORS[g] : `${GRADE_COLORS[g]}22`,
+            color:      g === grade ? "#fff"          : GRADE_COLORS[g],
+          }}>
+          {g}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PredictorPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const mn = lang === "mn";
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     area: 1200,
     building_type: "apartment",
@@ -401,12 +432,30 @@ export default function PredictorPage() {
                     <div className="metric-label">{t.predictor.monthly_avg} ({t.predictor.unit_kwh_mo})</div>
                   </div>
                   <div className="result-metric">
-                    <div className="metric-value secondary">{result.daily_avg.toLocaleString()}</div>
-                    <div className="metric-label">{t.predictor.daily_avg} ({t.predictor.unit_kwh_day})</div>
+                    <div className="metric-value secondary" style={{ color: result.co2 > 60 ? "#e63946" : result.co2 > 30 ? "#f4a261" : "#2a9d8f" }}>
+                      {result.co2}
+                    </div>
+                    <div className="metric-label">CO₂ т/жил</div>
+                    <div className="metric-sub">≈ {result.pm25.toLocaleString()} μg PM2.5</div>
                   </div>
                   <div className="result-metric">
-                    <div className="metric-value secondary">{result.intensity}</div>
+                    <div className="metric-value secondary" style={{ color: GRADE_COLORS[result.grade] }}>
+                      {result.intensity}
+                    </div>
                     <div className="metric-label">{t.predictor.intensity} ({t.predictor.unit_kwh_m2})</div>
+                  </div>
+                </div>
+
+                {/* Grade bar */}
+                <div className="pred-grade-section">
+                  <div className="pred-grade-label">
+                    <TrendingUp size={13} />
+                    {mn ? "Үр ашгийн зэрэглэл" : "Efficiency Grade"}
+                    <span className="pred-grade-badge" style={{ background: GRADE_COLORS[result.grade] }}>{result.grade}</span>
+                  </div>
+                  <GradeBar grade={result.grade} />
+                  <div className="pred-grade-hint">
+                    {mn ? `Эрч: ${result.intensity} kWh/м²/жил` : `Intensity: ${result.intensity} kWh/m²/yr`}
                   </div>
                 </div>
 
@@ -422,9 +471,7 @@ export default function PredictorPage() {
                         contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 11 }}
                         formatter={(val) => [`${val.toLocaleString()} ${t.common.units_kwh}`]}
                       />
-                      <Bar dataKey="usage" fill="#1a6eb5" name={t.common.usage} radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="predicted" fill="#2a9d8f" name={t.common.predicted} radius={[3, 3, 0, 0]} />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Bar dataKey="usage" fill="#1a6eb5" name={mn ? "Тооцоолсон хэрэглээ" : "Predicted usage"} radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -443,34 +490,19 @@ export default function PredictorPage() {
                   ))}
                 </div>
 
-                {/* Efficiency rating */}
-                <div className="efficiency-bar">
-                  <div className="efficiency-label">
-                    <TrendingUp size={14} />
-                    <span>
-                      {t.predictor.efficiency_label}:{" "}
-                      <strong style={{ color: result.intensity < 180 ? "var(--success)" : result.intensity < 280 ? "var(--warning)" : "var(--danger)" }}>
-                        {result.intensity < 180
-                          ? t.predictor.eff_good
-                          : result.intensity < 280
-                          ? t.predictor.eff_medium
-                          : t.predictor.eff_poor}
-                      </strong>
-                    </span>
-                  </div>
-                  <div className="eff-track">
-                    <div className="eff-fill" style={{
-                      width: `${Math.min(100, result.intensity / 4)}%`,
-                      background: result.intensity < 180 ? "var(--success)" : result.intensity < 280 ? "var(--warning)" : "var(--danger)"
-                    }} />
-                  </div>
-                </div>
-
-                {/* Model info */}
+                {/* Model info + save */}
                 <div className="model-info-row">
-                  <span className="model-badge">Random Forest</span>
+                  <span className="model-badge">EUI + RF</span>
                   <span className="model-badge">R² ≈ 0.94</span>
                   <span className="model-badge">MAE ≈ 4.2%</span>
+                  <button
+                    className="btn btn-secondary pred-save-btn"
+                    onClick={() => navigate("/data-input")}
+                    title={mn ? "Дата санд хадгалах" : "Save to database"}
+                  >
+                    <Save size={14} />
+                    {mn ? "Хадгалах" : "Save"}
+                  </button>
                 </div>
               </div>
             )}

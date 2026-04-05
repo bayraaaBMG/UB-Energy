@@ -255,33 +255,65 @@
   text-align: right;
 }
 
-/* ── Efficiency ─────────────────────────────────────────────────────────────── */
-.efficiency-bar {
+/* ── Grade bar ──────────────────────────────────────────────────────────────── */
+.pred-grade-section {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
 }
 
-.efficiency-label {
+.pred-grade-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text2);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.55rem;
 }
 
-.eff-track {
-  height: 8px;
-  background: var(--bg3);
-  border-radius: 4px;
-  overflow: hidden;
+.pred-grade-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #fff;
+  margin-left: auto;
 }
 
-.eff-fill {
-  height: 100%;
+.pred-grade-row {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 0.35rem;
+}
+
+.pred-grade-cell {
+  flex: 1;
+  text-align: center;
+  padding: 0.28rem 0;
+  font-size: 0.72rem;
+  font-weight: 800;
   border-radius: 4px;
-  transition: width 1s ease;
+}
+
+.pred-grade-cell.active {
+  transform: scale(1.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+.pred-grade-hint {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 0.25rem;
+}
+
+/* ── Metric sub ─────────────────────────────────────────────────────────────── */
+.metric-sub {
+  font-size: 0.63rem;
+  color: var(--text3);
+  margin-top: 2px;
 }
 
 /* ── Model info row ─────────────────────────────────────────────────────────── */
@@ -289,7 +321,17 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
   margin-top: 0.85rem;
+}
+
+.pred-save-btn {
+  margin-left: auto;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .model-badge {

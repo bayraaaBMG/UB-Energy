@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import { Lightbulb, Home, Sun, Thermometer, Zap, Users, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
+import SmartHomePage from "./SmartHomePage";
 import "./RecommendationsPage.css";
 
 const RECS = [
@@ -217,6 +218,9 @@ export default function RecommendationsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Smart Home section ── */}
+      <SmartHomePage />
     </div>
   );
 }

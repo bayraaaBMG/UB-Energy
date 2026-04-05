@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   Home, LogIn, Brain, LayoutDashboard, Upload, Database,
   Settings, Accessibility, Lightbulb, Map, Menu, X, Globe, LogOut, Zap,
-  CloudSun, Wifi, BarChart2
+  CloudSun, BarChart2
 } from "lucide-react";
 import { APP_NAME } from "../../config/constants";
 import "./Navbar.css";
@@ -18,7 +18,6 @@ const navItems = (t, user) => [
   { path: "/data-input", label: t.nav.dataInput, icon: Upload },
   { path: "/database", label: t.nav.database, icon: Database },
   { path: "/map", label: t.nav.map, icon: Map },
-  { path: "/smart-home", label: t.nav.smartHome, icon: Wifi, badge: t.nav.badge_new },
   { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
   { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
   { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },

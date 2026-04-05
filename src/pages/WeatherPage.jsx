@@ -6,7 +6,7 @@ import {
   TrendingDown, TrendingUp, Clock, CalendarDays, Zap
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Line, Legend
 } from "recharts";
 import "./WeatherPage.css";
@@ -345,7 +345,7 @@ export default function WeatherPage() {
           <h3 className="section-title">{t.weather.correlation_title}</h3>
           <div className="chart-note">{t.weather.chart_note}</div>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={ENERGY_WEATHER_HISTORY} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <ComposedChart data={ENERGY_WEATHER_HISTORY} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="energyGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#1a6eb5" stopOpacity={0.9} />
@@ -364,7 +364,7 @@ export default function WeatherPage() {
               />
               <Line yAxisId="temp" type="monotone" dataKey="temp" stroke="#e9c46a"
                 strokeWidth={2} dot={{ r: 4, fill: "#e9c46a" }} name={t.weather.temp_c} />
-            </BarChart>
+            </ComposedChart>
           </ResponsiveContainer>
           <div className="forecast-legend">
             <span className="fl-item"><span className="fl-dot" style={{ background: "#1a6eb5" }} />{t.weather.forecast_actual}</span>

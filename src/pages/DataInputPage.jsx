@@ -1,11 +1,30 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
-  File, Link2, X, CloudUpload, FilePlus, Trash2, Eye
+  File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+const STORAGE_KEY = "ub_buildings_user";
+
+export function getUserBuildings() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function saveUserBuilding(record) {
+  const existing = getUserBuildings();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
+}
+
+export function deleteUserBuilding(id) {
+  const updated = getUserBuildings().filter(b => b.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
 
 // ─── Supported file types ─────────────────────────────────────────────────────
 const ACCEPTED_TYPES = {
@@ -54,9 +73,25 @@ function FileItem({ file, t, onRemove, onPreview }) {
   );
 }
 
+// ─── Section header helper ────────────────────────────────────────────────────
+function FormSection({ emoji, title, color, children }) {
+  return (
+    <div className="form-section">
+      <div className="form-section-header" style={{ borderColor: color }}>
+        <span className="form-section-emoji">{emoji}</span>
+        <span className="form-section-title" style={{ color }}>{title}</span>
+      </div>
+      <div className="grid grid-2">{children}</div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const mn = lang === "mn";
   const fileRef = useRef(null);
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("manual");
   const [files, setFiles] = useState([]);
@@ -67,14 +102,44 @@ export default function DataInputPage() {
   const [previewFile, setPreviewFile] = useState(null);
 
   const [form, setForm] = useState({
-    building_name: "", address: "", district: "Сүхбаатар",
-    building_type: "apartment", area: "", year: "",
-    floors: "", wall_material: "panel", heating_type: "central",
-    occupancy: "", latitude: "47.9184", longitude: "106.9177",
-    annual_usage: "",
+    // 🏢 Location & structure
+    building_name: "",
+    address: "",
+    district: "Сүхбаатар",
+    year: "",
+    total_floors: "",
+    floor_number: "",
+    units_per_floor: "",
+    // 📐 Apartment
+    building_type: "apartment",
+    area: "",
+    rooms: "",
+    balcony: false,
+    // 🪟 Heat loss
+    window_count: "",
+    window_direction: "south",
+    window_type: "double",
+    door_type: "metal",
+    // 🔥 Heating
+    heating_type: "central",
+    insulation_quality: "medium",
+    wall_material: "panel",
+    // 👨‍👩‍👧‍👦 Occupancy
+    occupancy: "",
+    // 🌡️ Environment
+    outdoor_temp: "",
+    season: "winter",
+    // 🎯 Output (target)
+    monthly_usage: "",
+    // Location coords
+    latitude: "47.9184",
+    longitude: "106.9177",
   });
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm(f => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+  };
 
   const addFiles = (newFiles) => {
     const arr = Array.from(newFiles);
@@ -105,9 +170,46 @@ export default function DataInputPage() {
 
   const handleManualSubmit = (e) => {
     e.preventDefault();
+    // Build a record and persist to localStorage
+    const monthly = parseFloat(form.monthly_usage) || 0;
+    const record = {
+      id: `user_${Date.now()}`,
+      name:     form.building_name || (mn ? "Нэргүй барилга" : "Unnamed Building"),
+      type:     form.building_type,
+      area:     parseFloat(form.area) || 0,
+      floors:   parseInt(form.total_floors) || parseInt(form.floor_number) || 1,
+      year:     parseInt(form.year) || new Date().getFullYear(),
+      district: form.district,
+      usage:    Math.round(monthly * 12),   // estimated annual kWh
+      monthly_usage: monthly,
+      floor_number:    parseInt(form.floor_number) || null,
+      units_per_floor: parseInt(form.units_per_floor) || null,
+      rooms:           parseInt(form.rooms) || null,
+      balcony:         form.balcony,
+      window_count:    parseInt(form.window_count) || null,
+      window_direction: form.window_direction,
+      window_type:     form.window_type,
+      door_type:       form.door_type,
+      heating_type:    form.heating_type,
+      insulation_quality: form.insulation_quality,
+      wall_material:   form.wall_material,
+      occupancy:       parseInt(form.occupancy) || null,
+      outdoor_temp:    parseFloat(form.outdoor_temp) || null,
+      season:          form.season,
+      latitude:        parseFloat(form.latitude),
+      longitude:       parseFloat(form.longitude),
+      source: "user",
+      submittedAt: new Date().toISOString(),
+    };
+    saveUserBuilding(record);
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-    setForm({ building_name: "", address: "", district: "Сүхбаатар", building_type: "apartment", area: "", year: "", floors: "", wall_material: "panel", heating_type: "central", occupancy: "", latitude: "47.9184", longitude: "106.9177", annual_usage: "" });
+    setForm(f => ({
+      ...f,
+      building_name: "", address: "", year: "", total_floors: "",
+      floor_number: "", units_per_floor: "", area: "", rooms: "",
+      balcony: false, window_count: "", outdoor_temp: "", monthly_usage: "",
+      occupancy: "",
+    }));
   };
 
   const handleFileSubmit = () => {
@@ -133,7 +235,14 @@ export default function DataInputPage() {
         {submitted && (
           <div className="success-banner animate-fade">
             <CheckCircle size={20} />
-            {t.dataInput.success_msg}
+            <span>{t.dataInput.success_msg}</span>
+            <button
+              className="success-db-btn"
+              onClick={() => navigate("/database")}
+            >
+              {mn ? "Мэдээлэл харах" : "View in Database"}
+              <ArrowRight size={15} />
+            </button>
           </div>
         )}
 
@@ -150,12 +259,13 @@ export default function DataInputPage() {
         {activeTab === "manual" && (
           <div className="input-layout animate-fade">
             <form onSubmit={handleManualSubmit} className="card input-form">
-              <h2 className="section-title">
-                <Building2 size={16} style={{ marginLeft: 8 }} />
-                {t.dataInput.section_general}
-              </h2>
 
-              <div className="grid grid-2">
+              {/* 🏢 Байршил ба бүтэц */}
+              <FormSection
+                emoji="🏢"
+                title={mn ? "Байршил ба бүтэц" : "Location & Structure"}
+                color="#3a8fd4"
+              >
                 <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                   <label className="form-label">{t.dataInput.building_name} *</label>
                   <input name="building_name" value={form.building_name} onChange={handleChange}
@@ -169,35 +279,136 @@ export default function DataInputPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.dataInput.district}</label>
+                  <label className="form-label">{mn ? "Байршил (дүүрэг)" : "District"}</label>
                   <select name="district" value={form.district} onChange={handleChange} className="form-select">
                     {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.building_type}</label>
+                  <label className="form-label">{mn ? "Барилгын ашиглалтанд орсон он" : "Year Built"}</label>
+                  <input name="year" type="number" value={form.year} onChange={handleChange}
+                    className="form-input" placeholder="1950–2026" min={1950} max={2026} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Нийт давхар (ж: 18)" : "Total Floors (e.g. 18)"}</label>
+                  <input name="total_floors" type="number" value={form.total_floors} onChange={handleChange}
+                    className="form-input" placeholder="18" min={1} max={60} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Хэдэн давхарт (ж: 10)" : "Your Floor (e.g. 10)"}</label>
+                  <input name="floor_number" type="number" value={form.floor_number} onChange={handleChange}
+                    className="form-input" placeholder="10" min={1} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Давхартаа хэдэн айлтай" : "Units per Floor"}</label>
+                  <input name="units_per_floor" type="number" value={form.units_per_floor} onChange={handleChange}
+                    className="form-input" placeholder="4" min={1} />
+                </div>
+              </FormSection>
+
+              {/* 📐 Айлын мэдээлэл */}
+              <FormSection
+                emoji="📐"
+                title={mn ? "Айлын мэдээлэл" : "Apartment Info"}
+                color="#9b72cf"
+              >
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Барилгын төрөл" : "Building Type"}</label>
                   <select name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
                     {Object.entries(t.predictor.building_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.area}</label>
+                  <label className="form-label">{mn ? "Талбай (м²)" : "Area (m²)"} *</label>
                   <input name="area" type="number" value={form.area} onChange={handleChange}
-                    className="form-input" placeholder={t.common.units_sqm} min={10} />
+                    className="form-input" placeholder="m²" min={10} required />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.year}</label>
-                  <input name="year" type="number" value={form.year} onChange={handleChange}
-                    className="form-input" placeholder="1950–2026" min={1950} max={2026} />
+                  <label className="form-label">{mn ? "Өрөөний тоо" : "Number of Rooms"}</label>
+                  <input name="rooms" type="number" value={form.rooms} onChange={handleChange}
+                    className="form-input" placeholder="3" min={1} max={20} />
+                </div>
+
+                <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingTop: "1.6rem" }}>
+                  <input
+                    type="checkbox" name="balcony" id="balcony"
+                    checked={form.balcony} onChange={handleChange}
+                    style={{ width: 18, height: 18, accentColor: "#9b72cf", cursor: "pointer" }}
+                  />
+                  <label htmlFor="balcony" className="form-label" style={{ margin: 0, cursor: "pointer" }}>
+                    {mn ? "Тагт байгаа" : "Has Balcony"}
+                  </label>
+                </div>
+              </FormSection>
+
+              {/* 🪟 Дулаан алдагдал */}
+              <FormSection
+                emoji="🪟"
+                title={mn ? "Дулаан алдагдал" : "Heat Loss Factors"}
+                color="#e9c46a"
+              >
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Цонхны тоо" : "Number of Windows"}</label>
+                  <input name="window_count" type="number" value={form.window_count} onChange={handleChange}
+                    className="form-input" placeholder="6" min={0} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.floors}</label>
-                  <input name="floors" type="number" value={form.floors} onChange={handleChange}
-                    className="form-input" min={1} />
+                  <label className="form-label">{mn ? "Цонхны чиглэл" : "Window Orientation"}</label>
+                  <select name="window_direction" value={form.window_direction} onChange={handleChange} className="form-select">
+                    <option value="south">{mn ? "Урд" : "South"}</option>
+                    <option value="north">{mn ? "Хойд" : "North"}</option>
+                    <option value="east">{mn ? "Зүүн" : "East"}</option>
+                    <option value="west">{mn ? "Баруун" : "West"}</option>
+                    <option value="mixed">{mn ? "Холимог" : "Mixed"}</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Цонхны төрөл" : "Window Type"}</label>
+                  <select name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
+                    <option value="single">{mn ? "1 давхар шил" : "Single glazed"}</option>
+                    <option value="double">{mn ? "2 давхар шил" : "Double glazed"}</option>
+                    <option value="triple">{mn ? "3 давхар шил" : "Triple glazed"}</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Хаалганы төрөл" : "Door Type"}</label>
+                  <select name="door_type" value={form.door_type} onChange={handleChange} className="form-select">
+                    <option value="metal">{mn ? "Металл хаалга" : "Metal door"}</option>
+                    <option value="wood">{mn ? "Мод хаалга" : "Wooden door"}</option>
+                    <option value="insulated">{mn ? "Дулаалгатай хаалга" : "Insulated door"}</option>
+                  </select>
+                </div>
+              </FormSection>
+
+              {/* 🔥 Халаалт */}
+              <FormSection
+                emoji="🔥"
+                title={mn ? "Халаалт" : "Heating"}
+                color="#f4a261"
+              >
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Халаалтын төрөл" : "Heating Type"}</label>
+                  <select name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
+                    {Object.entries(t.predictor.heating_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Дулаалгын түвшин" : "Insulation Quality"}</label>
+                  <select name="insulation_quality" value={form.insulation_quality} onChange={handleChange} className="form-select">
+                    <option value="good">{mn ? "Сайн" : "Good"}</option>
+                    <option value="medium">{mn ? "Дунд" : "Medium"}</option>
+                    <option value="poor">{mn ? "Муу" : "Poor"}</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -206,42 +417,92 @@ export default function DataInputPage() {
                     {Object.entries(t.predictor.wall_materials).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
+              </FormSection>
+
+              {/* 👨‍👩‍👧‍👦 Хэрэглээ */}
+              <FormSection
+                emoji="👨‍👩‍👧‍👦"
+                title={mn ? "Хэрэглээ" : "Occupancy"}
+                color="#2a9d8f"
+              >
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Амьдарч буй хүний тоо" : "Number of Residents"}</label>
+                  <input name="occupancy" type="number" value={form.occupancy} onChange={handleChange}
+                    className="form-input" placeholder="4" min={1} />
+                </div>
+              </FormSection>
+
+              {/* 🌡️ Орчны өгөгдөл */}
+              <FormSection
+                emoji="🌡️"
+                title={mn ? "Орчны өгөгдөл" : "Environmental Data"}
+                color="#6a9bbf"
+              >
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Гадаад температур (°C, сарын дундаж)" : "Outdoor Temp (°C, monthly avg)"}</label>
+                  <input name="outdoor_temp" type="number" value={form.outdoor_temp} onChange={handleChange}
+                    className="form-input" placeholder="-15" min={-50} max={40} />
+                </div>
 
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.heating_type}</label>
-                  <select name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
-                    {Object.entries(t.predictor.heating_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  <label className="form-label">{mn ? "Улирал" : "Season"}</label>
+                  <select name="season" value={form.season} onChange={handleChange} className="form-select">
+                    <option value="winter">{mn ? "Өвөл" : "Winter"}</option>
+                    <option value="spring">{mn ? "Хавар" : "Spring"}</option>
+                    <option value="summer">{mn ? "Зун" : "Summer"}</option>
+                    <option value="autumn">{mn ? "Намар" : "Autumn"}</option>
                   </select>
                 </div>
+              </FormSection>
 
-                <div className="form-group">
-                  <label className="form-label">{t.predictor.occupancy}</label>
-                  <input name="occupancy" type="number" value={form.occupancy} onChange={handleChange}
-                    className="form-input" min={1} />
+              {/* 🎯 Гаралт */}
+              <div className="form-section form-section-output">
+                <div className="form-section-header" style={{ borderColor: "#2a9d8f" }}>
+                  <span className="form-section-emoji">🎯</span>
+                  <span className="form-section-title" style={{ color: "#2a9d8f" }}>
+                    {mn ? "Гаралт — хамгийн чухал" : "Output — Target Variable"}
+                  </span>
+                  <span className="form-section-badge">✅</span>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">{t.dataInput.annual_usage}</label>
-                  <input name="annual_usage" type="number" value={form.annual_usage} onChange={handleChange}
-                    className="form-input" placeholder={t.dataInput.annual_usage_placeholder} />
+                <div className="output-field-wrap">
+                  <label className="form-label output-label">
+                    {mn ? "Сарын цахилгаан хэрэглээ (kWh)" : "Monthly Electricity Consumption (kWh)"}
+                  </label>
+                  <div className="output-input-row">
+                    <input
+                      name="monthly_usage" type="number" value={form.monthly_usage} onChange={handleChange}
+                      className="form-input output-input"
+                      placeholder={mn ? "ж: 320" : "e.g. 320"} min={0}
+                    />
+                    <span className="output-unit">kWh / {mn ? "сар" : "month"}</span>
+                  </div>
+                  <p className="output-hint">
+                    {mn
+                      ? "Цахилгааны тооцооны дэвтэр эсвэл нийлүүлэгчийн мэдээллээс авна уу."
+                      : "Take this from your electricity bill or supplier data."}
+                  </p>
                 </div>
               </div>
 
-              <h2 className="section-title mt-3" style={{ fontSize: "1rem" }}>
-                <MapPin size={14} style={{ marginLeft: 8 }} />
-                {t.dataInput.section_location}
-              </h2>
-
-              <div className="grid grid-2">
-                <div className="form-group">
-                  <label className="form-label">{t.dataInput.latitude}</label>
-                  <input name="latitude" value={form.latitude} onChange={handleChange}
-                    className="form-input" placeholder="47.9184" />
+              {/* Location */}
+              <div className="form-section">
+                <div className="form-section-header" style={{ borderColor: "#3a8fd4" }}>
+                  <MapPin size={14} style={{ color: "#3a8fd4" }} />
+                  <span className="form-section-title" style={{ color: "#3a8fd4" }}>
+                    {t.dataInput.section_location}
+                  </span>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">{t.dataInput.longitude}</label>
-                  <input name="longitude" value={form.longitude} onChange={handleChange}
-                    className="form-input" placeholder="106.9177" />
+                <div className="grid grid-2">
+                  <div className="form-group">
+                    <label className="form-label">{t.dataInput.latitude}</label>
+                    <input name="latitude" value={form.latitude} onChange={handleChange}
+                      className="form-input" placeholder="47.9184" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">{t.dataInput.longitude}</label>
+                    <input name="longitude" value={form.longitude} onChange={handleChange}
+                      className="form-input" placeholder="106.9177" />
+                  </div>
                 </div>
               </div>
 
@@ -251,6 +512,7 @@ export default function DataInputPage() {
               </button>
             </form>
 
+            {/* Guide sidebar */}
             <div className="input-guide card">
               <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.dataInput.guide_title}</h3>
               <ul className="guide-list">
@@ -332,41 +594,26 @@ export default function DataInputPage() {
                 </button>
               </div>
 
-              {/* Guide */}
               <div className="card">
                 <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.dataInput.file_guide_title}</h3>
-
                 <div className="format-guide">
                   <div className="fg-item">
                     <FileSpreadsheet size={18} style={{ color: "#2a9d8f" }} />
-                    <div>
-                      <strong>CSV / Excel</strong>
-                      <p>{t.dataInput.csv_desc}</p>
-                    </div>
+                    <div><strong>CSV / Excel</strong><p>{t.dataInput.csv_desc}</p></div>
                   </div>
                   <div className="fg-item">
                     <FileText size={18} style={{ color: "#3a8fd4" }} />
-                    <div>
-                      <strong>JSON</strong>
-                      <p>{t.dataInput.json_desc}</p>
-                    </div>
+                    <div><strong>JSON</strong><p>{t.dataInput.json_desc}</p></div>
                   </div>
                   <div className="fg-item">
                     <FileText size={18} style={{ color: "#e63946" }} />
-                    <div>
-                      <strong>PDF / Word</strong>
-                      <p>{t.dataInput.pdf_desc}</p>
-                    </div>
+                    <div><strong>PDF / Word</strong><p>{t.dataInput.pdf_desc}</p></div>
                   </div>
                   <div className="fg-item">
                     <File size={18} style={{ color: "#f4a261" }} />
-                    <div>
-                      <strong>ZIP</strong>
-                      <p>{t.dataInput.zip_desc}</p>
-                    </div>
+                    <div><strong>ZIP</strong><p>{t.dataInput.zip_desc}</p></div>
                   </div>
                 </div>
-
                 <div className="guide-note mt-2">
                   <strong>{t.dataInput.template_label}</strong><br />
                   <a href="#" className="text-primary" style={{ fontSize: "0.85rem" }}

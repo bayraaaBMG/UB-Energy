@@ -23,7 +23,7 @@ export default function UBMap({ buildings, selected, onSelect, northLabel, usage
       aria-label={ariaLabel}
     >
       {/* Background */}
-      <rect width="480" height="360" fill="#162433" rx="8" />
+      <rect width="240" height="180" fill="#162433" rx="8" />
 
       {/* Grid */}
       {Array.from({ length: 10 }, (_, i) => (

@@ -12,7 +12,25 @@
   color: var(--success);
   font-weight: 600;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
+
+.success-db-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  background: rgba(42,157,143,0.2);
+  border: 1px solid rgba(42,157,143,0.5);
+  border-radius: 6px;
+  color: var(--success);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.success-db-btn:hover { background: rgba(42,157,143,0.35); }
 
 /* ── Tabs ───────────────────────────────────────────────────────────────────── */
 .di-tabs {
@@ -61,6 +79,74 @@
   justify-content: center;
   padding: 0.85rem;
   font-size: 1rem;
+}
+
+/* ── Form sections ──────────────────────────────────────────────────────────── */
+.form-section {
+  margin-top: 1.5rem;
+}
+
+.form-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-left: 3px solid;
+  padding-left: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.form-section-emoji { font-size: 1rem; line-height: 1; }
+
+.form-section-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-section-badge {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+/* ── Output section ─────────────────────────────────────────────────────────── */
+.form-section-output {
+  background: rgba(42,157,143,0.05);
+  border: 1px solid rgba(42,157,143,0.2);
+  border-radius: 10px;
+  padding: 1rem 1rem 1.1rem;
+  margin-top: 1.5rem;
+}
+
+.output-field-wrap { margin-top: 0.1rem; }
+
+.output-label {
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+}
+
+.output-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.output-input { flex: 1; font-size: 1.05rem !important; font-weight: 600 !important; }
+
+.output-unit {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #2a9d8f;
+  white-space: nowrap;
+}
+
+.output-hint {
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-top: 0.5rem;
+  line-height: 1.5;
 }
 
 /* ── Guide sidebar ──────────────────────────────────────────────────────────── */

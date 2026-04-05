@@ -59,17 +59,19 @@ export const modelMetrics = {
   mape: 8.2,
 };
 
+// height = floors × 3m, volume = area × height, co2 = usage × 0.7 / 1000 (tonnes)
+// rating: A=2015+, B=2010-14, C=2004-09, D=1995-2003, E=1990-94, F=1983-89, G=<1983
 export const buildingsData = [
-  { id: 1, name: "Сансар 15-р байр", type: "apartment", area: 2400, usage: 38500, year: 1992, district: "Чингэлтэй", lat: 47.915, lng: 106.915, floors: 9 },
-  { id: 2, name: "Монгол Цахилгаан ХК", type: "office", area: 3200, usage: 52000, year: 2005, district: "Сүхбаатар", lat: 47.920, lng: 106.920, floors: 8 },
-  { id: 3, name: "1-р Дунд сургууль", type: "school", area: 4500, usage: 65000, year: 1985, district: "Баянзүрх", lat: 47.910, lng: 106.940, floors: 3 },
-  { id: 4, name: "Энхтайвны 5-р байр", type: "apartment", area: 1800, usage: 29000, year: 1998, district: "Баянгол", lat: 47.905, lng: 106.890, floors: 5 },
-  { id: 5, name: "Хан-Уул оффис", type: "office", area: 1500, usage: 24500, year: 2010, district: "Хан-Уул", lat: 47.895, lng: 106.870, floors: 4 },
-  { id: 6, name: "3-р эмнэлэг", type: "hospital", area: 6000, usage: 98000, year: 1988, district: "Сүхбаатар", lat: 47.925, lng: 106.930, floors: 6 },
-  { id: 7, name: "Нарантуул 8-р байр", type: "apartment", area: 3600, usage: 58000, year: 2001, district: "Чингэлтэй", lat: 47.918, lng: 106.900, floors: 12 },
-  { id: 8, name: "Их Дэлгүүр", type: "commercial", area: 8000, usage: 125000, year: 2008, district: "Сүхбаатар", lat: 47.922, lng: 106.915, floors: 5 },
-  { id: 9, name: "Зайсан 12-р байр", type: "apartment", area: 5000, usage: 75000, year: 2015, district: "Хан-Уул", lat: 47.888, lng: 106.865, floors: 16 },
-  { id: 10, name: "Технологийн Их Сургууль", type: "school", area: 12000, usage: 185000, year: 1969, district: "Чингэлтэй", lat: 47.912, lng: 106.905, floors: 4 },
+  { id: 1,  name: "Сансар 15-р байр",        type: "apartment",  area: 2400,  usage: 38500,  year: 1992, district: "Чингэлтэй", lat: 47.915, lng: 106.915, floors: 9,  height: 27, volume: 64800,  co2: 27.0, rating: "E" },
+  { id: 2,  name: "Монгол Цахилгаан ХК",     type: "office",     area: 3200,  usage: 52000,  year: 2005, district: "Сүхбаатар", lat: 47.920, lng: 106.920, floors: 8,  height: 24, volume: 76800,  co2: 36.4, rating: "C" },
+  { id: 3,  name: "1-р Дунд сургууль",       type: "school",     area: 4500,  usage: 65000,  year: 1985, district: "Баянзүрх",  lat: 47.910, lng: 106.940, floors: 3,  height: 9,  volume: 40500,  co2: 45.5, rating: "F" },
+  { id: 4,  name: "Энхтайвны 5-р байр",      type: "apartment",  area: 1800,  usage: 29000,  year: 1998, district: "Баянгол",   lat: 47.905, lng: 106.890, floors: 5,  height: 15, volume: 27000,  co2: 20.3, rating: "D" },
+  { id: 5,  name: "Хан-Уул оффис",           type: "office",     area: 1500,  usage: 24500,  year: 2010, district: "Хан-Уул",   lat: 47.895, lng: 106.870, floors: 4,  height: 12, volume: 18000,  co2: 17.2, rating: "B" },
+  { id: 6,  name: "3-р эмнэлэг",             type: "hospital",   area: 6000,  usage: 98000,  year: 1988, district: "Сүхбаатар", lat: 47.925, lng: 106.930, floors: 6,  height: 18, volume: 108000, co2: 68.6, rating: "F" },
+  { id: 7,  name: "Нарантуул 8-р байр",      type: "apartment",  area: 3600,  usage: 58000,  year: 2001, district: "Чингэлтэй", lat: 47.918, lng: 106.900, floors: 12, height: 36, volume: 129600, co2: 40.6, rating: "D" },
+  { id: 8,  name: "Их Дэлгүүр",              type: "commercial", area: 8000,  usage: 125000, year: 2008, district: "Сүхбаатар", lat: 47.922, lng: 106.915, floors: 5,  height: 15, volume: 120000, co2: 87.5, rating: "C" },
+  { id: 9,  name: "Зайсан 12-р байр",        type: "apartment",  area: 5000,  usage: 75000,  year: 2015, district: "Хан-Уул",   lat: 47.888, lng: 106.865, floors: 16, height: 48, volume: 240000, co2: 52.5, rating: "A" },
+  { id: 10, name: "Технологийн Их Сургууль", type: "school",     area: 12000, usage: 185000, year: 1969, district: "Чингэлтэй", lat: 47.912, lng: 106.905, floors: 4,  height: 12, volume: 144000, co2: 129.5,rating: "G" },
 ];
 
 export const ulaanbaatarDistricts = [

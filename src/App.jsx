@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -16,7 +16,6 @@ import AccessibilityPage from "./pages/AccessibilityPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import MapPage from "./pages/MapPage";
 import WeatherPage from "./pages/WeatherPage";
-import SmartHomePage from "./pages/SmartHomePage";
 import OWIDPage from "./pages/OWIDPage";
 
 function AppLayout({ children }) {
@@ -51,7 +50,7 @@ export default function App() {
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/map" element={<MapPage />} />
                 <Route path="/weather" element={<WeatherPage />} />
-                <Route path="/smart-home" element={<SmartHomePage />} />
+                <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
                 <Route path="/owid" element={<OWIDPage />} />
               </Routes>
             </AppLayout>
