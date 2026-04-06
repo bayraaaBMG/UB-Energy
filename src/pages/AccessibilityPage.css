@@ -6,8 +6,6 @@
   gap: 1.5rem;
 }
 
-.access-section { }
-
 .access-header {
   display: flex;
   align-items: center;
@@ -154,8 +152,6 @@
   min-width: 70px;
   text-align: center;
 }
-
-.access-note { }
 
 @media (max-width: 768px) {
   .access-grid { grid-template-columns: 1fr; }

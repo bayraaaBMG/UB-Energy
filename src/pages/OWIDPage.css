@@ -216,8 +216,6 @@
 .owid-ext-link:hover { color: var(--accent); }
 
 /* Key facts */
-.owid-facts { }
-
 .facts-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -242,7 +240,6 @@
 .fact-note { font-size: 0.75rem; color: var(--text3); }
 
 /* Citation */
-.owid-citation { }
 .owid-citation h4 { color: var(--text); margin-bottom: 0.75rem; font-size: 0.95rem; }
 
 .citation-box {

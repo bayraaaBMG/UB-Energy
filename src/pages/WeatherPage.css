@@ -235,8 +235,6 @@
 .weather-content { padding-top: 0; }
 
 /* HDD Card */
-.hdd-card, .energy-impact-card, .aqi-card { }
-
 .hdd-header {
   display: flex;
   align-items: center;
@@ -467,8 +465,6 @@
 .air-warning p { font-size: 0.875rem; color: var(--text2); line-height: 1.6; }
 
 /* ─── Source ─── */
-.weather-source { }
-
 .ws-inner {
   display: flex;
   align-items: flex-start;

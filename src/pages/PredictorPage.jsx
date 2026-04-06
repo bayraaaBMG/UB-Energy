@@ -394,8 +394,8 @@ export default function PredictorPage() {
                     className="form-input" min={0} max={8000} />
                 </div>
               </div>
-              <div className="hdd-formula">
-                <span className="hdd-formula-text">HDD = Σ max(0, 18°C − T<sub>day</sub>)</span>
+              <div className="pred-hdd-formula">
+                <span className="pred-hdd-formula-text">HDD = Σ max(0, 18°C − T<sub>day</sub>)</span>
                 <span className="hdd-badge">{t.predictor.ub_hdd_note}</span>
               </div>
             </Section>
