@@ -15,11 +15,15 @@ export const monthlyEnergyData = [
   { month: "12-р сар", month_en: "Dec", usage: 4000, temperature: -16, hdd: 530, predicted: 3950 },
 ];
 
+// Static daily data — seeded to avoid chart flicker on hot-reload
+const _DAILY_USAGE     = [128,142,115,138,121,109,145,132,118,140,125,112,137,123,119,143,130,116,141,127,113,139,124,120,144,131,117,136,122,118];
+const _DAILY_TEMP      = [-19,-18,-20,-19,-17,-21,-18,-20,-19,-18,-20,-17,-19,-21,-18,-20,-19,-17,-21,-18,-20,-19,-18,-21,-17,-20,-18,-19,-20,-18];
+const _DAILY_PREDICTED = [122,138,110,133,116,104,140,127,114,135,119,108,132,118,115,138,125,111,136,122,109,134,119,116,139,126,113,131,117,114];
 export const dailyEnergyData = Array.from({ length: 30 }, (_, i) => ({
-  day: `${i + 1}`,
-  usage: Math.round(100 + Math.random() * 60 + (i < 10 ? 20 : 0)),
-  temperature: Math.round(-20 + Math.random() * 5),
-  predicted: Math.round(95 + Math.random() * 65),
+  day:         `${i + 1}`,
+  usage:       _DAILY_USAGE[i],
+  temperature: _DAILY_TEMP[i],
+  predicted:   _DAILY_PREDICTED[i],
 }));
 
 export const yearlyEnergyData = [
@@ -29,7 +33,9 @@ export const yearlyEnergyData = [
   { year: "2021", usage: 30000, predicted: 29800 },
   { year: "2022", usage: 31500, predicted: 31200 },
   { year: "2023", usage: 32000, predicted: 31900 },
-  { year: "2026", usage: 33500, predicted: 33200 },
+  { year: "2024", usage: 33000, predicted: 32800 },
+  { year: "2025", usage: 33500, predicted: 33300 },
+  { year: "2026", usage: null,  predicted: 34000 },
 ];
 
 export const featureImportanceData = [
@@ -78,12 +84,6 @@ export const ulaanbaatarDistricts = [
   "Баянгол", "Баянзүрх", "Чингэлтэй", "Сүхбаатар", "Сонгинохайрхан", "Хан-Уул", "Налайх", "Багануур", "Багахангай"
 ];
 
-export const weatherScenarios = {
-  cold_winter: { name: "Хүйтэн өвөл", avg_temp: -22, hdd: 5200 },
-  normal_winter: { name: "Энгийн өвөл", avg_temp: -18, hdd: 4600 },
-  warm_winter: { name: "Дулаан өвөл", avg_temp: -14, hdd: 4000 },
-};
-
 export const adminStats = {
   totalUsers: 1247,
   activeUsers: 389,
@@ -93,19 +93,3 @@ export const adminStats = {
   lastBackup: "2026-04-01 03:00",
 };
 
-export const usersData = [
-  { id: 1, name: "Б. Болд", email: "bold@example.mn", type: "official", org: "Эрчим Хүчний Яам", status: "active", created: "2026-01-15" },
-  { id: 2, name: "Д. Дорж", email: "dorj@example.mn", type: "personal", org: null, status: "active", created: "2026-02-20" },
-  { id: 3, name: "О. Оюун", email: "oyun@example.mn", type: "official", org: "Дулааны Компани", status: "active", created: "2026-03-10" },
-  { id: 4, name: "Э. Энхбат", email: "enhbat@example.mn", type: "personal", org: null, status: "inactive", created: "2026-04-05" },
-  { id: 5, name: "Н. Нарангэрэл", email: "narangerel@example.mn", type: "official", org: "УБЕГ", status: "active", created: "2026-05-12" },
-];
-
-export const chatbotResponses = {
-  "эрчим хүч": "Монголын барилгуудын жилийн дундаж эрчим хүчний хэрэглээ нь 150-350 кВт·цаг/м² байдаг. Энэ нь барилгын насжилт, хийц, халаалтын системээс хамаарна.",
-  "hdd": "HDD (Heating Degree Days) нь халааны шаардлагатай өдрүүдийн тооцоолол. Улаанбаатар хот жилд 4500-5000 HDD-тэй бөгөөд энэ нь дэлхийн хамгийн өндөр үзүүлэлтүүдийн нэг.",
-  "таамаглал": "AI таамаглагч нь Random Forest болон Gradient Boosting алгоритмуудыг ашиглан 92% нарийвчлалтайгаар эрчим хүчний хэрэглээг тооцоолно.",
-  "зөвлөмж": "Эрчим хүч хэмнэх гол зөвлөмжүүд: 1) Тусгаарлалтыг сайжруулах, 2) Энергийн хэмнэлттэй цонх суурилуулах, 3) Smart thermostat ашиглах, 4) LED гэрэлтүүлэгт шилжих.",
-  "температур": "Улаанбаатарын өвлийн дундаж температур -20°C хүрдэг. Температур 1°C-аар буурах нь барилгын эрчим хүчний хэрэглээг 2-3%-иар нэмэгдүүлдэг.",
-  "default": "Уучлаарай, тухайн асуудлаар мэдээлэл олдсонгүй. Эрчим хүчний хэрэглээ, цаг уур, HDD, таамаглал, зөвлөмж зэрэг сэдвээр асуух боломжтой.",
-};

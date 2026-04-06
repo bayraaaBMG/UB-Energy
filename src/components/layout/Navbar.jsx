@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLang } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -11,17 +11,19 @@ import { APP_NAME } from "../../config/constants";
 import "./Navbar.css";
 
 const navItems = (t, user) => [
-  { path: "/", label: t.nav.home, icon: Home },
-  { path: "/weather", label: t.nav.weather, icon: CloudSun, badge: t.nav.badge_new },
-  { path: "/predictor", label: t.nav.predictor, icon: Brain },
-  { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
-  { path: "/data-input", label: t.nav.dataInput, icon: Upload },
-  { path: "/database", label: t.nav.database, icon: Database },
-  { path: "/map", label: t.nav.map, icon: Map },
-  { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
-  { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
-  { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },
-  ...(user?.role === "admin" ? [{ path: "/admin", label: t.nav.admin, icon: Settings }] : []),
+  { path: "/", label: t.nav.home, icon: Home, public: true },
+  ...(user ? [
+    { path: "/weather", label: t.nav.weather, icon: CloudSun, badge: t.nav.badge_new },
+    { path: "/predictor", label: t.nav.predictor, icon: Brain },
+    { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
+    { path: "/data-input", label: t.nav.dataInput, icon: Upload },
+    { path: "/database", label: t.nav.database, icon: Database },
+    { path: "/map", label: t.nav.map, icon: Map },
+    { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
+    { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
+    { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },
+    ...(user.role === "admin" ? [{ path: "/admin", label: t.nav.admin, icon: Settings }] : []),
+  ] : []),
 ];
 
 export default function Navbar() {
@@ -29,11 +31,25 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  // Close menu on route change
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   const items = navItems(t, user);
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" ref={navRef}>
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
           <Zap size={22} className="brand-icon" />
@@ -82,9 +98,11 @@ export default function Navbar() {
             </Link>
           )}
 
-          <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {user && (
+            <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          )}
         </div>
       </div>
     </nav>

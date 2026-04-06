@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import Chatbot from "./components/layout/Chatbot";
@@ -17,6 +18,13 @@ import RecommendationsPage from "./pages/RecommendationsPage";
 import MapPage from "./pages/MapPage";
 import WeatherPage from "./pages/WeatherPage";
 import OWIDPage from "./pages/OWIDPage";
+
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  return children;
+}
 
 function AppLayout({ children }) {
   return (
@@ -41,17 +49,18 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/predictor" element={<PredictorPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/data-input" element={<DataInputPage />} />
-                <Route path="/database" element={<DatabasePage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/accessibility" element={<AccessibilityPage />} />
-                <Route path="/recommendations" element={<RecommendationsPage />} />
-                <Route path="/map" element={<MapPage />} />
-                <Route path="/weather" element={<WeatherPage />} />
+                <Route path="/predictor" element={<ProtectedRoute><PredictorPage /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/data-input" element={<ProtectedRoute><DataInputPage /></ProtectedRoute>} />
+                <Route path="/database" element={<ProtectedRoute><DatabasePage /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+                <Route path="/accessibility" element={<ProtectedRoute><AccessibilityPage /></ProtectedRoute>} />
+                <Route path="/recommendations" element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>} />
+                <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+                <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
                 <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
-                <Route path="/owid" element={<OWIDPage />} />
+                <Route path="/owid" element={<ProtectedRoute><OWIDPage /></ProtectedRoute>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppLayout>
           </AuthProvider>

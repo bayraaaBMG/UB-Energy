@@ -1,39 +1,116 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Trash2 } from "lucide-react";
 import { useLang } from "../../contexts/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { APP_NAME } from "../../config/constants";
 import "./Chatbot.css";
 
-// ─── Өргөн мэдлэгийн сан ──────────────────────────────────────────────────────
+// ─── Bilingual knowledge base ─────────────────────────────────────────────────
 const KB = [
-  // Эрчим хүч
-  { keys: ["эрчим хүч", "electricity", "energy"], ans: "Монголын барилгуудын жилийн дундаж эрчим хүчний хэрэглээ нь 150–350 кВт·цаг/м² байдаг. Энэ нь барилгын насжилт, хийц, халаалтын системээс хамаарна." },
-  { keys: ["hdd", "heating degree", "халааны зэрэг"], ans: "HDD (Heating Degree Days) нь халааны шаардлагатай өдрүүдийн тооцоолол. Улаанбаатар хот жилд 4500–5000 HDD-тэй — дэлхийн хамгийн өндрийн нэг. Томьёо: HDD = Σ(18°C − T_өдөр)" },
-  { keys: ["таамаглал", "predict", "forecast"], ans: "AI таамаглагч нь Random Forest болон Gradient Boosting алгоритмуудыг ашиглан ~92% нарийвчлалтайгаар эрчим хүчний хэрэглээг тооцоолно. Барилгын талбай, HDD, барилгасан он хамгийн нөлөөтэй хүчин зүйлс." },
-  { keys: ["зөвлөмж", "хэмнэх", "сave", "recommend"], ans: "Эрчим хүч хэмнэх гол арга: 1) Ханын тусгаарлалт (100мм+) — 25–35% хэмнэлт, 2) 3 давхар шилтэй цонх — 15–20%, 3) Smart thermostat — 20–30%, 4) LED гэрэлтүүлэг — 10–15%. Нийт 40–60% хэмнэх боломжтой." },
-  { keys: ["температур", "temperature", "цаг агаар", "weather"], ans: "Улаанбаатарын өвлийн дундаж температур −20°C, хамгийн хүйтэн −40°C хүрдэг. Температур 1°C-аар буурах нь барилгын эрчим хүчний хэрэглээг 2–3%-иар нэмэгдүүлдэг." },
-  { keys: ["smart home", "ухаалаг гэр", "iot"], ans: "Smart Home буюу ухаалаг гэрийн систем нь гэрэл, халаалт, камер, цоож зэргийг гар утас эсвэл компьютерээр алсаас хянах боломж олгодог. Home Assistant, Google Home, Apple HomeKit зэрэг платформ байдаг. Зөв хэрэгжүүлбэл 30–40% эрчим хүч хэмнэнэ." },
-  { keys: ["co2", "co₂", "нүүрстөрөгч", "carbon", "ялгаруулалт"], ans: "Монгол Улсын нэг хүнд ногдох CO₂ ялгаруулалт ~7.5 тонн/жил — дэлхийн дундажаас 2 дахин их. Голлох шалтгаан нь цахилгааны 92% нүүрснээс үйлдвэрлэгддэгтэй холбоотой." },
-  { keys: ["нарны", "solar", "сэргэн засагдах", "renewable"], ans: "Монгол Улс нарны хамгийн их цацрагтай орнуудын нэг — жилд 260–280 нарлаг өдөртэй. 2018-оос нарны эрчим хүчний суурилсан хүчин чадал 10 дахин нэмэгдсэн. Гэрийн нарны хавтан суурилуулбал жилд 30–40% хэмнэнэ." },
-  { keys: ["халаалт", "heating", "дулаан", "central", "төвлөрсөн"], ans: "Улаанбаатарын 70%+ барилга төвлөрсөн дулаан хангамжид холбогдсон. Нийлүүлэлтийн алдагдал өндөртэй тул орон нутгийн халаалт, дулааны насостой системд шилжих нь 20–30% хэмнэлт авчирна." },
-  { keys: ["тусгаарлалт", "insulation", "дулаалга"], ans: "Монгол орны хатуу уур амьсгалд тусгаарлалт хамгийн чухал хүчин зүйл. Гадна хана: 100–150мм EPS, дээвэр: 200мм минеральн хөвөн. Сайн тусгаарлалт нь барилгын дулааны алдагдлыг 50%–иар бууруулна." },
-  // Ерөнхий асуулт
-  { keys: ["сайн байна", "сайн уу", "hello", "hi", "сайхан"], ans: `Сайн байна уу! Би ${APP_NAME}-ийн AI туслагч. Эрчим хүч, барилга, цаг уур, Smart Home, таамаглал болон ямар ч сэдвээр асуулт тавьж болно. Юу мэдэхийг хүсэж байна вэ?` },
-  { keys: ["баярлалаа", "thanks", "thank you", "танд баярлалаа"], ans: "Баярлалаа! Цааш ч бас асуух зүйл байвал чөлөөтэй асуугаарай. Таны эрчим хүчний асуудлыг шийдэхэд туслахад таатай байна." },
-  { keys: ["чи хэн", "who are you", "танилцуулга", "намайг тань"], ans: `Би ${APP_NAME}-ийн AI туслагч. Барилгын эрчим хүчний хэрэглээ, цаг уур, HDD тооцоо, Smart Home болон эрчим хүч хэмнэх арга хэмжээний талаар мэдээлэл өгч, зөвлөгөө өгч чадна.` },
-  { keys: ["улаанбаатар", "ulaanbaatar", "ub", "монгол", "mongolia"], ans: "Улаанбаатар хот нь дэлхийн хамгийн хүйтэн нийслэл — өвлийн дундаж −20°C, жилийн HDD 4500+. Энэ нь барилгын эрчим хүчний хэрэглээнд асар их нөлөөтэй. Хотын дулааны систем 1930-аад оноос хэрэгжиж ирсэн." },
-  { keys: ["аqи", "aqi", "агаарын чанар", "air quality", "бохирдол"], ans: "Улаанбаатар хотын агаарын бохирдол өвөлдөө (11–3-р сар) дэлхийн хамгийн өндрийн нэг. AQI 200–300 хүрэх нь элбэг. Шалтгаан: гэрийн зуух дулаалах, тоосго, нүүрс шатаалт." },
-  { keys: ["kwh", "киловатт", "кВт", "мегаватт", "мвт"], ans: "1 кВт·цаг (kWh) = 1 киловатт хүчний тоноглол 1 цаг ажилласан эрчим хүч. Монголын ердийн орон сууц жилд 5,000–15,000 кВт·цаг зарцуулдаг. Дундаж тарифф ≈ 100–120 төг/кВт·цаг." },
-  { keys: ["random forest", "gradient boosting", "xgboost", "machine learning", "ml"], ans: "Бидний систем Random Forest болон Gradient Boosting (XGBoost) алгоритмуудыг ашигладаг. R² = 0.924 буюу барилгуудын хэрэглээний 92.4%-ийг зөв тайлбарлана. Хамгийн чухал feature: талбай, HDD, барилгасан он." },
-  { keys: ["csv", "excel", "файл", "өгөгдөл оруулах", "import"], ans: "Өгөгдөл оруулах хуудаснаас CSV, Excel, JSON, PDF, Word болон бусад форматаар өгөгдөл оруулах боломжтой. Жинхэнэ өгөгдөл оруулах нь таамаглалын нарийвчлалыг улам дээшлүүлнэ." },
-  { keys: ["dashboard", "хяналт", "статистик", "график"], ans: "Хяналтын самбар дээр өдөр, сар, жилийн эрчим хүчний хэрэглээний график, загварын үзүүлэлт (MAE, RMSE, R²), feature importance болон SHAP шинжилгээ харагдана." },
+  {
+    keys: ["эрчим хүч", "electricity", "energy"],
+    mn: "Монголын барилгуудын жилийн дундаж эрчим хүчний хэрэглээ нь 150–350 кВт·цаг/м² байдаг. Энэ нь барилгын насжилт, хийц, халаалтын системээс хамаарна.",
+    en: "Mongolia's buildings average 150–350 kWh/m²/yr in energy consumption. This varies by building age, construction type, and heating system.",
+  },
+  {
+    keys: ["hdd", "heating degree", "халааны зэрэг"],
+    mn: "HDD (Heating Degree Days) нь халааны шаардлагатай өдрүүдийн тооцоолол. Улаанбаатар хот жилд 4500–5000 HDD-тэй — дэлхийн хамгийн өндрийн нэг. Томьёо: HDD = Σ(18°C − T_өдөр)",
+    en: "HDD (Heating Degree Days) measures cumulative heating demand. Ulaanbaatar has 4,500–5,000 HDD/year — among the world's highest. Formula: HDD = Σ max(0, 18°C − T_day).",
+  },
+  {
+    keys: ["таамаглал", "predict", "forecast"],
+    mn: "AI таамаглагч нь Random Forest болон Gradient Boosting алгоритмуудыг ашиглан ~92% нарийвчлалтайгаар эрчим хүчний хэрэглээг тооцоолно. Барилгын талбай, HDD, барилгасан он хамгийн нөлөөтэй хүчин зүйлс.",
+    en: "The AI Predictor uses Random Forest and Gradient Boosting to estimate energy consumption with ~92% accuracy. Building area, HDD, and construction year are the most influential factors.",
+  },
+  {
+    keys: ["зөвлөмж", "хэмнэх", "save", "recommend"],
+    mn: "Эрчим хүч хэмнэх гол арга: 1) Ханын тусгаарлалт (100мм+) — 25–35%, 2) 3 давхар шилтэй цонх — 15–20%, 3) Smart thermostat — 20–30%, 4) LED гэрэлтүүлэг — 10–15%. Нийт 40–60% хэмнэх боломжтой.",
+    en: "Top energy saving measures: 1) Wall insulation (100mm+) — 25–35%, 2) Triple-glazed windows — 15–20%, 3) Smart thermostat — 20–30%, 4) LED lighting — 10–15%. Total potential: 40–60% savings.",
+  },
+  {
+    keys: ["температур", "temperature", "цаг агаар", "weather"],
+    mn: "Улаанбаатарын өвлийн дундаж температур −20°C, хамгийн хүйтэн −40°C хүрдэг. Температур 1°C-аар буурах нь барилгын эрчим хүчний хэрэглээг 2–3%-иар нэмэгдүүлдэг.",
+    en: "Ulaanbaatar's winter average is −20°C, dropping to −40°C at its coldest. Each 1°C drop in temperature increases building energy consumption by 2–3%.",
+  },
+  {
+    keys: ["smart home", "ухаалаг гэр", "iot"],
+    mn: "Smart Home нь гэрэл, халаалт, камер, цоож зэргийг гар утас эсвэл компьютерээр алсаас хянах боломж олгодог. Home Assistant, Google Home, Apple HomeKit зэрэг платформ байдаг. Зөв хэрэгжүүлбэл 30–40% эрчим хүч хэмнэнэ.",
+    en: "Smart Home systems let you control lights, heating, cameras, and locks remotely via smartphone. Platforms include Home Assistant, Google Home, and Apple HomeKit. Proper implementation saves 30–40% on energy.",
+  },
+  {
+    keys: ["co2", "co₂", "нүүрстөрөгч", "carbon", "ялгаруулалт"],
+    mn: "Монгол Улсын нэг хүнд ногдох CO₂ ялгаруулалт ~7.5 тонн/жил — дэлхийн дундажаас 2 дахин их. Цахилгааны 92% нүүрснээс үйлдвэрлэгддэгтэй холбоотой.",
+    en: "Mongolia's per capita CO₂ emissions are ~7.5 tonnes/year — twice the global average. The main reason: 92% of electricity is generated from coal.",
+  },
+  {
+    keys: ["нарны", "solar", "сэргэн засагдах", "renewable"],
+    mn: "Монгол Улс нарны хамгийн их цацрагтай орнуудын нэг — жилд 260–280 нарлаг өдөртэй. 2018-оос нарны эрчим хүчний суурилсан хүчин чадал 10 дахин нэмэгдсэн.",
+    en: "Mongolia is among the world's sunniest countries — 260–280 sunny days per year. Installed solar capacity has grown 10× since 2018. Home solar panels can save 30–40% annually.",
+  },
+  {
+    keys: ["халаалт", "heating", "дулаан", "central", "төвлөрсөн"],
+    mn: "Улаанбаатарын 70%+ барилга төвлөрсөн дулаан хангамжид холбогдсон. Нийлүүлэлтийн алдагдал өндөртэй тул орон нутгийн халаалт, дулааны насостай системд шилжих нь 20–30% хэмнэлт авчирна.",
+    en: "70%+ of Ulaanbaatar's buildings are on the district heating network. Due to high distribution losses, switching to local heating or heat pump systems can save 20–30%.",
+  },
+  {
+    keys: ["тусгаарлалт", "insulation", "дулаалга"],
+    mn: "Монгол орны хатуу уур амьсгалд тусгаарлалт хамгийн чухал. Гадна хана: 100–150мм EPS, дээвэр: 200мм минеральн хөвөн. Сайн тусгаарлалт нь дулааны алдагдлыг 50%–иар бууруулна.",
+    en: "Insulation is the most critical factor in Mongolia's harsh climate. Exterior walls: 100–150mm EPS; roof: 200mm mineral wool. Good insulation reduces heat loss by up to 50%.",
+  },
+  {
+    keys: ["сайн байна", "сайн уу", "hello", "hi", "сайхан"],
+    mn: `Сайн байна уу! Би ${APP_NAME}-ийн AI туслагч. Эрчим хүч, барилга, цаг уур, Smart Home, таамаглал болон ямар ч сэдвээр асуулт тавьж болно!`,
+    en: `Hello! I'm the ${APP_NAME} AI assistant. Ask me anything about energy, buildings, weather, Smart Home, or predictions!`,
+  },
+  {
+    keys: ["баярлалаа", "thanks", "thank you", "танд баярлалаа"],
+    mn: "Баярлалаа! Цааш ч бас асуух зүйл байвал чөлөөтэй асуугаарай.",
+    en: "You're welcome! Feel free to ask anything else anytime.",
+  },
+  {
+    keys: ["чи хэн", "who are you", "танилцуулга", "намайг тань"],
+    mn: `Би ${APP_NAME}-ийн AI туслагч. Барилгын эрчим хүч, цаг уур, HDD, Smart Home болон эрчим хүч хэмнэх талаар зөвлөгөө өгч чадна.`,
+    en: `I'm the ${APP_NAME} AI assistant. I can advise on building energy consumption, weather, HDD calculations, Smart Home, and energy saving tips.`,
+  },
+  {
+    keys: ["улаанбаатар", "ulaanbaatar", "ub", "монгол", "mongolia"],
+    mn: "Улаанбаатар хот нь дэлхийн хамгийн хүйтэн нийслэл — өвлийн дундаж −20°C, жилийн HDD 4500+. Хотын дулааны систем 1930-аад оноос хэрэгжиж ирсэн.",
+    en: "Ulaanbaatar is the world's coldest capital — winter average −20°C, annual HDD 4,500+. The district heating system has been in operation since the 1930s.",
+  },
+  {
+    keys: ["aqi", "агаарын чанар", "air quality", "бохирдол"],
+    mn: "Улаанбаатарын агаарын бохирдол өвөлдөө (11–3-р сар) дэлхийн хамгийн өндрийн нэг. AQI 200–300 хүрэх нь элбэг. Шалтгаан: гэрийн зуух дулаалах, нүүрс шатаалт.",
+    en: "Ulaanbaatar's air pollution in winter (Nov–Mar) is among the world's worst. AQI reaching 200–300 is common. Main cause: residential coal burning for heating.",
+  },
+  {
+    keys: ["kwh", "киловатт", "кВт", "мегаватт"],
+    mn: "1 кВт·цаг (kWh) = 1 киловатт хүчний тоноглол 1 цаг ажилласан эрчим хүч. Монголын ердийн орон сууц жилд 5,000–15,000 кВт·цаг зарцуулдаг.",
+    en: "1 kWh = 1 kilowatt of power used for 1 hour. A typical Mongolian apartment uses 5,000–15,000 kWh per year. Average tariff ≈ 100–120 MNT/kWh.",
+  },
+  {
+    keys: ["random forest", "gradient boosting", "xgboost", "machine learning", "ml"],
+    mn: "Бидний систем Random Forest болон Gradient Boosting (XGBoost) алгоритмуудыг ашигладаг. R² = 0.924 — барилгуудын хэрэглээний 92.4%-ийг зөв тайлбарлана.",
+    en: "The system uses Random Forest and Gradient Boosting (XGBoost). R² = 0.924 — correctly explaining 92.4% of building energy variation. Top features: area, HDD, year built.",
+  },
+  {
+    keys: ["csv", "excel", "файл", "import", "өгөгдөл оруулах"],
+    mn: "Өгөгдөл оруулах хуудаснаас CSV, Excel, JSON, PDF, Word болон бусад форматаар өгөгдөл оруулах боломжтой.",
+    en: "The Data Input page supports CSV, Excel, JSON, PDF, Word, and ZIP file uploads. Real data improves model prediction accuracy.",
+  },
+  {
+    keys: ["dashboard", "хяналт", "статистик", "график"],
+    mn: "Хяналтын самбар дээр өдөр, сар, жилийн эрчим хүчний хэрэглээний график, загварын үзүүлэлт (MAE, RMSE, R²), feature importance болон SHAP шинжилгээ харагдана.",
+    en: "The Dashboard shows daily, monthly, and yearly energy usage charts, model metrics (MAE, RMSE, R²), feature importance, and SHAP analysis.",
+  },
 ];
 
 function getBotResponse(input, lang) {
   const lower = input.toLowerCase();
-  // Exact keyword match
+  // Keyword match — return answer in the correct language
   for (const item of KB) {
-    if (item.keys.some(k => lower.includes(k))) return item.ans;
+    if (item.keys.some(k => lower.includes(k))) {
+      return lang === "en" ? item.en : item.mn;
+    }
   }
   // Number questions
   if (/\d+/.test(lower) && (lower.includes("хэд") || lower.includes("хэчнээн") || lower.includes("how many") || lower.includes("how much"))) {
@@ -50,13 +127,19 @@ function getBotResponse(input, lang) {
 
 export default function Chatbot() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
+  const greeting = lang === "mn"
+    ? `Сайн байна уу${user ? `, ${user.name}` : ""}! Би ${APP_NAME}-ийн AI туслагч. Эрчим хүч, цаг уур, барилга, Smart Home болон ямар ч сэдвээр асуугаарай! 💬`
+    : `Hello${user ? `, ${user.name}` : ""}! I'm the ${APP_NAME} AI assistant. Ask me anything about energy, weather, buildings, or Smart Home!`;
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { from: "bot", text: lang === "mn"
-      ? `Сайн байна уу! Би ${APP_NAME}-ийн AI туслагч. Эрчим хүч, цаг уур, барилга, Smart Home болон ямар ч сэдвээр асуугаарай! 💬`
-      : `Hello! I'm the ${APP_NAME} AI assistant. Ask me anything about energy, weather, buildings, or Smart Home!` },
-  ]);
+  const [messages, setMessages] = useState([{ from: "bot", text: greeting }]);
   const [input, setInput] = useState("");
+
+  // Reset greeting when language switches
+  useEffect(() => {
+    setMessages([{ from: "bot", text: greeting }]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
 
@@ -85,8 +168,8 @@ export default function Chatbot() {
 
   const clearChat = () => setMessages([
     { from: "bot", text: lang === "mn"
-      ? `Шинэ яриа эхэллээ! Юу асуух вэ? 😊`
-      : "New conversation started! What would you like to know?" }
+      ? `Шинэ яриа эхэллээ${user ? `, ${user.name}` : ""}! Юу асуух вэ? 😊`
+      : `New conversation started${user ? `, ${user.name}` : ""}! What would you like to know?` }
   ]);
 
   // Quick question chips
@@ -141,7 +224,15 @@ export default function Chatbot() {
           {/* Quick chips */}
           <div className="chatbot-chips">
             {chips.map(c => (
-              <button key={c} className="chip" onClick={() => { setInput(c); }}>
+              <button key={c} className="chip" disabled={typing} onClick={() => {
+                const userMsg = { from: "user", text: c };
+                setMessages(prev => [...prev, userMsg]);
+                setTyping(true);
+                setTimeout(() => {
+                  setMessages(prev => [...prev, { from: "bot", text: getBotResponse(c, lang) }]);
+                  setTyping(false);
+                }, 600 + Math.random() * 400);
+              }}>
                 {c}
               </button>
             ))}

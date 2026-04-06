@@ -144,6 +144,20 @@
   display: inline-block;
 }
 
+.src-tag {
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.pred-tag {
+  background: #9b72cf22;
+  color: #9b72cf;
+  border: 1px solid #9b72cf44;
+}
+
 .user-badge {
   background: rgba(42,157,143,0.12) !important;
   border-color: rgba(42,157,143,0.3) !important;
@@ -152,26 +166,6 @@
   align-items: center;
   gap: 0.35rem;
 }
-
-/* ── Success banner DB button ────────────────────────────────────────────────── */
-.success-banner { flex-wrap: wrap; }
-
-.success-db-btn {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  background: rgba(42,157,143,0.2);
-  border: 1px solid rgba(42,157,143,0.5);
-  border-radius: 6px;
-  color: var(--success);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.success-db-btn:hover { background: rgba(42,157,143,0.35); }
 
 /* ── Results modal ──────────────────────────────────────────────────────────── */
 .results-modal {

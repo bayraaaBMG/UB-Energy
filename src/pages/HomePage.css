@@ -73,6 +73,38 @@
   font-size: 1rem;
 }
 
+.hero-welcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem 0.35rem 0.45rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-bottom: 0.75rem;
+}
+.hw-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.hero-login-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text3);
+  margin-top: 0.6rem;
+  justify-content: center;
+}
+
 /* Stats */
 .stats-section { padding: 2.5rem 0; }
 
