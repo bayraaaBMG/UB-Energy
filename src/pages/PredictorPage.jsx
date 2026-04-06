@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, Zap, TrendingUp, Thermometer,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
@@ -8,10 +9,18 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer,
 } from "recharts";
-import { monthlyEnergyData } from "../data/mockData";
+import { ulaanbaatarDistricts } from "../data/mockData";
 import "./PredictorPage.css";
+
+const STORAGE_KEY = "ub_buildings_user";
+function savePredictedBuilding(record) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
+  } catch { /* ignore */ }
+}
 
 const BUILDING_COLORS = {
   apartment: "#3a8fd4", office: "#2a9d8f", school: "#e9c46a",
@@ -200,9 +209,12 @@ function GradeBar({ grade }) {
 
 export default function PredictorPage() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
   const mn = lang === "mn";
   const navigate = useNavigate();
   const [form, setForm] = useState({
+    building_name: "",
+    district: "Сүхбаатар",
     area: 1200,
     building_type: "apartment",
     year: 1995,
@@ -220,6 +232,7 @@ export default function PredictorPage() {
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleChange = (e) => {
     const val = e.target.type === "number" || e.target.type === "range"
@@ -229,6 +242,7 @@ export default function PredictorPage() {
 
   const predict = () => {
     setLoading(true);
+    setSaved(false);
     setTimeout(() => {
       setResult(runPrediction(form));
       setLoading(false);
@@ -240,7 +254,7 @@ export default function PredictorPage() {
   const hTypes = t.predictor.heating_types;
 
   const FEAT_LABELS = {
-    hdd: "HDD (цаг уур)",
+    hdd: mn ? "HDD (цаг уур)" : "HDD (climate)",
     insulation: t.predictor.insulation_quality,
     material: t.predictor.wall_material,
     heating: t.predictor.heating_type,
@@ -266,6 +280,17 @@ export default function PredictorPage() {
 
             <Section icon={Building2} title={t.predictor.section_building}>
               <div className="grid grid-2">
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Барилгын нэр" : "Building Name"}</label>
+                  <input type="text" name="building_name" value={form.building_name} onChange={handleChange}
+                    className="form-input" placeholder={mn ? "ж: Цогцолбор 1" : "e.g. Building A"} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{mn ? "Дүүрэг" : "District"}</label>
+                  <select name="district" value={form.district} onChange={handleChange} className="form-select">
+                    {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
                 <div className="form-group">
                   <label className="form-label">{t.predictor.area}</label>
                   <input type="number" name="area" value={form.area} onChange={handleChange}
@@ -424,23 +449,23 @@ export default function PredictorPage() {
                 {/* Main metrics */}
                 <div className="result-metrics">
                   <div className="result-metric main-metric">
-                    <div className="metric-value">{result.annual.toLocaleString()}</div>
+                    <div className="metric-value">{result.annual.toLocaleString()} {t.common.units_kwh}</div>
                     <div className="metric-label">{t.predictor.annual_consumption} ({t.predictor.unit_kwh_yr})</div>
                   </div>
                   <div className="result-metric">
-                    <div className="metric-value secondary">{result.monthly_avg.toLocaleString()}</div>
+                    <div className="metric-value secondary">{result.monthly_avg.toLocaleString()} {t.common.units_kwh}</div>
                     <div className="metric-label">{t.predictor.monthly_avg} ({t.predictor.unit_kwh_mo})</div>
                   </div>
                   <div className="result-metric">
                     <div className="metric-value secondary" style={{ color: result.co2 > 60 ? "#e63946" : result.co2 > 30 ? "#f4a261" : "#2a9d8f" }}>
-                      {result.co2}
+                      {result.co2} {mn ? "т" : "t"}
                     </div>
-                    <div className="metric-label">CO₂ т/жил</div>
+                    <div className="metric-label">{mn ? "CO₂ т/жил" : "CO₂ t/yr"}</div>
                     <div className="metric-sub">≈ {result.pm25.toLocaleString()} μg PM2.5</div>
                   </div>
                   <div className="result-metric">
                     <div className="metric-value secondary" style={{ color: GRADE_COLORS[result.grade] }}>
-                      {result.intensity}
+                      {result.intensity} {t.predictor.unit_kwh_m2}
                     </div>
                     <div className="metric-label">{t.predictor.intensity} ({t.predictor.unit_kwh_m2})</div>
                   </div>
@@ -497,11 +522,39 @@ export default function PredictorPage() {
                   <span className="model-badge">MAE ≈ 4.2%</span>
                   <button
                     className="btn btn-secondary pred-save-btn"
-                    onClick={() => navigate("/data-input")}
+                    onClick={() => {
+                      const record = {
+                        id: `pred_${Date.now()}`,
+                        name: form.building_name.trim() ||
+                          `${form.area}${mn ? "м²" : "m²"} ${t.predictor.building_types[form.building_type] || form.building_type}`,
+                        type: form.building_type,
+                        area: form.area,
+                        floors: form.floors,
+                        year: form.year,
+                        district: form.district,
+                        usage: result.annual,
+                        monthly_usage: result.monthly_avg,
+                        rooms: form.rooms,
+                        wall_material: form.wall_material,
+                        heating_type: form.heating_type,
+                        insulation_quality: form.insulation_quality,
+                        window_type: form.window_type,
+                        occupancy: form.residents,
+                        outdoor_temp: form.temperature,
+                        latitude: 47.9184,
+                        longitude: 106.9177,
+                        source: "predictor",
+                        userId: user?.id || null,
+                        submittedAt: new Date().toISOString(),
+                      };
+                      savePredictedBuilding(record);
+                      setSaved(true);
+                      setTimeout(() => navigate("/database"), 900);
+                    }}
                     title={mn ? "Дата санд хадгалах" : "Save to database"}
                   >
                     <Save size={14} />
-                    {mn ? "Хадгалах" : "Save"}
+                    {saved ? (mn ? "Хадгалагдлаа ✓" : "Saved ✓") : (mn ? "Хадгалах" : "Save")}
                   </button>
                 </div>
               </div>

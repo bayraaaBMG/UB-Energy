@@ -1,29 +1,41 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import {
   Settings, Users, BarChart2, Database, Shield,
-  CheckCircle, TrendingUp, Edit, Trash2, Lock
+  CheckCircle, TrendingUp, Trash2, Lock
 } from "lucide-react";
-import { adminStats, usersData } from "../data/mockData";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
+import { adminStats } from "../data/mockData";
 import "./AdminPage.css";
+
+const ADMIN_USER = {
+  id: "admin_1", name: "Админ", email: "admin@test.mn",
+  type: "official", org: "UB Energy", role: "admin",
+  createdAt: new Date("2024-01-01").toISOString(),
+};
+
+function loadAllUsers() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("ub_users") || "[]");
+    return [ADMIN_USER, ...stored.filter(u => u.email !== ADMIN_USER.email)];
+  } catch { return [ADMIN_USER]; }
+}
 
 const COLORS = ["#1a6eb5", "#2a9d8f", "#e9c46a", "#e63946", "#f4a261"];
 
 export default function AdminPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [allUsers, setAllUsers] = useState(() => loadAllUsers());
 
   const buildingTypeData = [
-    { name: t.predictor.building_types.apartment, value: 45 },
-    { name: t.predictor.building_types.office,    value: 22 },
-    { name: t.predictor.building_types.school,    value: 15 },
-    { name: t.predictor.building_types.hospital,  value: 8  },
-    { name: t.admin.other,                        value: 10 },
+    { name: t.predictor.building_types.apartment, value: 45, fill: COLORS[0] },
+    { name: t.predictor.building_types.office,    value: 22, fill: COLORS[1] },
+    { name: t.predictor.building_types.school,    value: 15, fill: COLORS[2] },
+    { name: t.predictor.building_types.hospital,  value: 8,  fill: COLORS[3] },
+    { name: t.admin.other,                        value: 10, fill: COLORS[4] },
   ];
 
   if (!user || user.role !== "admin") {
@@ -33,10 +45,11 @@ export default function AdminPage() {
           <Lock size={48} opacity={0.4} />
           <h2>{t.admin.restricted_title}</h2>
           <p>{t.admin.restricted_msg}</p>
-          <p className="text-muted" style={{ fontSize: "0.85rem" }}>{t.admin.restricted_demo}</p>
-          <button className="btn btn-primary mt-2" onClick={() => navigate("/login")}>
-            {t.admin.login_btn}
-          </button>
+          <p className="text-muted" style={{ fontSize: "0.85rem" }}>
+            {lang === "mn"
+              ? `Таны бүртгэл (${user?.email}) admin эрхгүй байна.`
+              : `Your account (${user?.email}) does not have admin privileges.`}
+          </p>
         </div>
       </div>
     );
@@ -52,9 +65,9 @@ export default function AdminPage() {
   const sysInfoRows = [
     { label: t.admin.last_backup,   value: adminStats.lastBackup    },
     { label: t.admin.uptime,        value: adminStats.systemUptime  },
-    { label: t.admin.total_buildings, value: adminStats.totalBuildings },
+    { label: t.admin.total_buildings, value: `${adminStats.totalBuildings} ${mn ? "барилга" : "bldg"}` },
     { label: t.admin.ml_version,    value: "v2.3.1"                 },
-    { label: t.admin.api_today,     value: "1,842"                  },
+    { label: t.admin.api_today,     value: `1,842 ${mn ? "хүсэлт" : "req"}` },
     { label: t.admin.avg_response,  value: "124ms"                  },
   ];
 
@@ -67,11 +80,11 @@ export default function AdminPage() {
   ];
 
   const logEntries = [
-    { time: "2026-04-01 14:23", msg: "ML загвар амжилттай дахин сургагдлаа",              type: "success" },
-    { time: "2026-04-01 13:11", msg: "Шинэ хэрэглэгч бүртгэгдлээ: bold@example.mn",       type: "info"    },
-    { time: "2026-04-01 11:45", msg: "Нийт 842 таамаглал хийгдлээ",                       type: "info"    },
-    { time: "2026-04-01 09:00", msg: "Автомат нөөцлөлт дууслаа",                          type: "success" },
-    { time: "2026-03-31 22:34", msg: "API хүсэлтийн хязгаар давагдлаа (IP: 192.168.1.5)", type: "warning" },
+    { time: "2026-04-01 14:23", mn: "ML загвар амжилттай дахин сургагдлаа",              en: "ML model retrained successfully",               type: "success" },
+    { time: "2026-04-01 13:11", mn: "Шинэ хэрэглэгч бүртгэгдлээ: bold@example.mn",      en: "New user registered: bold@example.mn",           type: "info"    },
+    { time: "2026-04-01 11:45", mn: "Нийт 842 таамаглал хийгдлээ",                       en: "842 predictions completed",                      type: "info"    },
+    { time: "2026-04-01 09:00", mn: "Автомат нөөцлөлт дууслаа",                          en: "Automatic backup completed",                     type: "success" },
+    { time: "2026-03-31 22:34", mn: "API хүсэлтийн хязгаар давагдлаа (IP: 192.168.1.5)",en: "API rate limit exceeded (IP: 192.168.1.5)",      type: "warning" },
   ];
 
   const settingsFields = [
@@ -106,9 +119,9 @@ export default function AdminPage() {
           <div className="animate-fade">
             <div className="grid grid-4 mb-3">
               {[
-                { label: t.admin.total_users,  value: adminStats.totalUsers,                    icon: Users,        color: "#3a8fd4" },
-                { label: t.admin.active_users, value: adminStats.activeUsers,                   icon: CheckCircle,  color: "#2a9d8f" },
-                { label: t.admin.predictions,  value: adminStats.totalPredictions.toLocaleString(), icon: TrendingUp, color: "#e9c46a" },
+                { label: t.admin.total_users,  value: `${allUsers.length} ${mn ? "хэрэглэгч" : "users"}`,                          icon: Users,        color: "#3a8fd4" },
+                { label: t.admin.active_users, value: `${adminStats.activeUsers} ${mn ? "хэрэглэгч" : "users"}`,                   icon: CheckCircle,  color: "#2a9d8f" },
+                { label: t.admin.predictions,  value: `${adminStats.totalPredictions.toLocaleString()} ${mn ? "таамаглал" : "predictions"}`, icon: TrendingUp, color: "#e9c46a" },
                 { label: t.admin.uptime,       value: adminStats.systemUptime,                  icon: Shield,       color: "#f4a261" },
               ].map(({ label, value, icon: Icon, color }) => (
                 <div className="card admin-stat-card" key={label}>
@@ -128,10 +141,9 @@ export default function AdminPage() {
                   <PieChart>
                     <Pie data={buildingTypeData} cx="50%" cy="50%" outerRadius={80} dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false} fontSize={11}>
-                      {buildingTypeData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} />
+                      labelLine={false} fontSize={11}
+                    />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} formatter={(v) => [`${v} ${mn ? "барилга" : "bldg"}`]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -169,10 +181,13 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {usersData.map(u => (
+                  {allUsers.map((u, i) => (
                     <tr key={u.id}>
-                      <td className="text-muted">{u.id}</td>
-                      <td style={{ fontWeight: 500 }}>{u.name}</td>
+                      <td className="text-muted">{i + 1}</td>
+                      <td style={{ fontWeight: 500 }}>
+                        {u.name}
+                        {u.role === "admin" && <span className="badge badge-danger" style={{ marginLeft: 6, fontSize: "0.65rem" }}>admin</span>}
+                      </td>
                       <td className="text-muted">{u.email}</td>
                       <td>
                         <span className={`badge ${u.type === "official" ? "badge-primary" : "badge-warning"}`}>
@@ -181,15 +196,26 @@ export default function AdminPage() {
                       </td>
                       <td>{u.org || "—"}</td>
                       <td>
-                        <span className={`badge ${u.status === "active" ? "badge-success" : "badge-danger"}`}>
-                          {u.status === "active" ? t.admin.status_active : t.admin.status_inactive}
-                        </span>
+                        <span className="badge badge-success">{t.admin.status_active}</span>
                       </td>
-                      <td className="text-muted">{u.created}</td>
+                      <td className="text-muted">{u.createdAt ? u.createdAt.slice(0, 10) : "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "0.4rem" }}>
-                          <button className="action-btn-sm" title={t.admin.edit}><Edit size={13} /></button>
-                          <button className="action-btn-sm danger" title={t.database.delete}><Trash2 size={13} /></button>
+                          {u.role !== "admin" && (
+                            <button className="action-btn-sm danger" title={t.database.delete}
+                              onClick={() => {
+                                const msg = lang === "mn"
+                                  ? `"${u.name}" хэрэглэгчийг устгах уу?`
+                                  : `Delete user "${u.name}"?`;
+                                if (!window.confirm(msg)) return;
+                                const stored = JSON.parse(localStorage.getItem("ub_users") || "[]");
+                                const updated = stored.filter(s => s.id !== u.id);
+                                localStorage.setItem("ub_users", JSON.stringify(updated));
+                                setAllUsers(loadAllUsers());
+                              }}>
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -218,7 +244,7 @@ export default function AdminPage() {
                 {logEntries.map((log, i) => (
                   <div key={i} className={`log-entry ${log.type}`}>
                     <span className="log-time">{log.time}</span>
-                    <span className="log-msg">{log.msg}</span>
+                    <span className="log-msg">{lang === "mn" ? log.mn : log.en}</span>
                   </div>
                 ))}
               </div>

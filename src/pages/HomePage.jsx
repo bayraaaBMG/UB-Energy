@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Users, Target, Info,
+  Building2, Zap, Users, Target, Info, LogIn,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -10,13 +11,13 @@ import {
 import { monthlyEnergyData } from "../data/mockData";
 import "./HomePage.css";
 
-const STATS = (t) => [
+const STATS = (t, mn) => [
   {
-    icon: Building2, value: "1,247", label: t.home.stat1_label,
+    icon: Building2, value: `1,247 ${mn ? "барилга" : "bldg"}`, label: t.home.stat1_label,
     color: "#3a8fd4", src: t.home.stat1_src,
   },
   {
-    icon: Zap, value: "28,400", label: t.home.stat2_label,
+    icon: Zap, value: "28,400 MWh", label: t.home.stat2_label,
     color: "#e9c46a", src: t.home.stat2_src,
   },
   {
@@ -24,7 +25,7 @@ const STATS = (t) => [
     color: "#2a9d8f", src: t.home.stat3_src,
   },
   {
-    icon: Users, value: "389", label: t.home.stat4_label,
+    icon: Users, value: `389 ${mn ? "хэрэглэгч" : "users"}`, label: t.home.stat4_label,
     color: "#f4a261", src: t.home.stat4_src,
   },
 ];
@@ -38,6 +39,7 @@ const FEATURES = (t) => [
 
 export default function HomePage() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
   const mn = lang === "mn";
   const monthlyData = monthlyEnergyData.map(d => ({
     ...d,
@@ -55,6 +57,12 @@ export default function HomePage() {
             <Zap size={14} />
             <span>EUI Model · Random Forest · Open-Meteo</span>
           </div>
+          {user && (
+            <div className="hero-welcome">
+              <div className="hw-avatar">{user.name.charAt(0)}</div>
+              <span>{mn ? `Тавтай морил, ${user.name}!` : `Welcome back, ${user.name}!`}</span>
+            </div>
+          )}
           <h1 className="hero-title">{t.home.hero_title}</h1>
           <p className="hero-subtitle">{t.home.hero_subtitle}</p>
           <div className="hero-actions">
@@ -67,6 +75,17 @@ export default function HomePage() {
               {t.home.hero_btn2}
             </Link>
           </div>
+          {!user && (
+            <p className="hero-login-hint">
+              <LogIn size={13} />
+              {mn
+                ? "Бүх боломжийг ашиглахын тулд эхлээд нэвтэрнэ үү."
+                : "Sign in to access all features."}
+              {" "}<Link to="/login" style={{ color: "var(--accent)", fontWeight: 600 }}>
+                {mn ? "Нэвтрэх →" : "Login →"}
+              </Link>
+            </p>
+          )}
         </div>
       </section>
 
@@ -74,7 +93,7 @@ export default function HomePage() {
       <section className="stats-section">
         <div className="container">
           <div className="grid grid-4">
-            {STATS(t).map(({ icon: Icon, value, label, color }) => (
+            {STATS(t, mn).map(({ icon: Icon, value, label, color }) => (
               <div className="stat-card card animate-fade" key={label}>
                 <div className="stat-icon" style={{ background: `${color}22`, color }}>
                   <Icon size={24} />
@@ -92,7 +111,7 @@ export default function HomePage() {
               {mn ? "Дээрх тоонууд хаанаас авсан бэ?" : "Where do these numbers come from?"}
             </div>
             <div className="ssb-rows">
-              {STATS(t).map(({ icon: Icon, value, label, color, src }) => (
+              {STATS(t, mn).map(({ icon: Icon, value, label, color, src }) => (
                 <div className="ssb-row" key={label}>
                   <span className="ssb-val" style={{ color }}>
                     <Icon size={12} /> {value}

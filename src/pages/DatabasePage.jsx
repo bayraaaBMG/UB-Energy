@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
@@ -183,26 +184,26 @@ function ResultsModal({ building, lang, t, onClose }) {
             <StatCard
               label={mn ? "Жилийн хэрэглээ (тооцоо)" : "Annual energy (calc)"}
               value={calc.total.toLocaleString()}
-              unit="kWh/жил"
+              unit={mn ? "kWh/жил" : "kWh/yr"}
               color="#3a8fd4"
             />
             <StatCard
               label={mn ? "Сарын хэрэглээ (тооцоо)" : "Monthly predicted"}
               value={calc.monthlyPred.toLocaleString()}
-              unit="kWh/сар"
+              unit={mn ? "kWh/сар" : "kWh/mo"}
               color="#9b72cf"
             />
             <StatCard
               label={mn ? "CO₂ ялгарал" : "CO₂ emissions"}
               value={calc.co2}
-              unit="т CO₂/жил"
+              unit={mn ? "т CO₂/жил" : "t CO₂/yr"}
               color={calc.impactColor}
               sub={`≈ ${calc.pm25.toLocaleString()} μg PM2.5`}
             />
             <StatCard
               label={mn ? "Эрчим хүчний эрч" : "Energy intensity"}
               value={calc.intensity}
-              unit="kWh/м²"
+              unit="kWh/m²"
               color={GRADE_COLORS[calc.grade]}
             />
           </div>
@@ -239,7 +240,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <div className="res-compare-box actual">
                   <div className="rcb-label">{mn ? "Бодит (таны оруулсан)" : "Actual (submitted)"}</div>
                   <div className="rcb-value">{actualMonthly.toLocaleString()}</div>
-                  <div className="rcb-unit">kWh/сар</div>
+                  <div className="rcb-unit">{mn ? "kWh/сар" : "kWh/mo"}</div>
                 </div>
                 <div className={`res-compare-arrow ${diff > 0 ? "over" : "under"}`}>
                   {diff > 0
@@ -252,7 +253,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <div className="res-compare-box pred">
                   <div className="rcb-label">{mn ? "Тооцоолсон (EUI загвар)" : "Predicted (EUI model)"}</div>
                   <div className="rcb-value">{calc.monthlyPred.toLocaleString()}</div>
-                  <div className="rcb-unit">kWh/сар</div>
+                  <div className="rcb-unit">{mn ? "kWh/сар" : "kWh/mo"}</div>
                 </div>
               </div>
               <div className={`res-compare-note ${Math.abs(diff) <= 15 ? "ok" : Math.abs(diff) <= 30 ? "warn" : "bad"}`}>
@@ -346,26 +347,26 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <span className="rbd-formula">
                   {building.floors ?? parseInt(building.total_floors) ?? "?"} {mn ? "давхар" : "floors"} × {FLOOR_HEIGHT}m
                 </span>
-                <span className="rbd-val">{calc.height} м</span>
+                <span className="rbd-val">{calc.height} {mn ? "м" : "m"}</span>
               </div>
               <div className="res-bd-row">
                 <span className="rbd-label">{mn ? "Нийт эзэлхүүн" : "Total volume"}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} м² × {calc.height} м
+                  {(building.area||0).toLocaleString()} {mn ? "м²" : "m²"} × {calc.height} {mn ? "м" : "m"}
                 </span>
-                <span className="rbd-val">{calc.volume.toLocaleString()} м³</span>
+                <span className="rbd-val">{calc.volume.toLocaleString()} {mn ? "м³" : "m³"}</span>
               </div>
               <div className="res-bd-row">
                 <span className="rbd-label">{mn ? "Халаалтын ачаалал" : "Heating load"}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} × {calc.euiH} kWh/м²
+                  {(building.area||0).toLocaleString()} × {calc.euiH} kWh/{mn ? "м²" : "m²"}
                 </span>
                 <span className="rbd-val">{calc.heating.toLocaleString()} kWh</span>
               </div>
               <div className="res-bd-row">
                 <span className="rbd-label">{mn ? "Цахилгаан" : "Electricity"}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} × {calc.euiE} kWh/м²
+                  {(building.area||0).toLocaleString()} × {calc.euiE} kWh/{mn ? "м²" : "m²"}
                 </span>
                 <span className="rbd-val">{calc.electric.toLocaleString()} kWh</span>
               </div>
@@ -379,7 +380,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <span className="rbd-formula">
                   ({calc.heating.toLocaleString()}×0.28 + {calc.electric.toLocaleString()}×0.73) / 1000
                 </span>
-                <span className="rbd-val" style={{ color: calc.impactColor }}>{calc.co2} т</span>
+                <span className="rbd-val" style={{ color: calc.impactColor }}>{calc.co2} {mn ? "т" : "t"}</span>
               </div>
               {calc.adj !== 1 && (
                 <div className="res-adj-note">
@@ -415,12 +416,14 @@ function ResultsModal({ building, lang, t, onClose }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DatabasePage() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
   const mn = lang === "mn";
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [resultsBuilding, setResultsBuilding] = useState(null);
-  const [userRecords, setUserRecords] = useState(() => getUserBuildings());
+  const isAdmin = user?.role === "admin";
+  const [userRecords, setUserRecords] = useState(() => getUserBuildings(isAdmin ? null : user?.id));
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
 
@@ -428,6 +431,14 @@ export default function DatabasePage() {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
   };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!resultsBuilding) return;
+    const handler = (e) => { if (e.key === "Escape") setResultsBuilding(null); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [resultsBuilding]);
 
   const typeLabels = t.predictor.building_types;
   const csvHeaders = ["ID", t.database.building, t.database.type, t.database.area, t.common.usage, t.database.year, t.database.district, t.database.floors];
@@ -453,7 +464,10 @@ export default function DatabasePage() {
       const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) ||
         (b.district || "").toLowerCase().includes(search.toLowerCase());
       const matchType   = typeFilter === "all" || b.type === typeFilter;
-      const matchSource = sourceFilter === "all" || b.source === sourceFilter;
+      const isUserRecord = b.source === "user" || b.source === "predictor";
+      const matchSource = sourceFilter === "all"
+        || (sourceFilter === "mock" && b.source === "mock")
+        || (sourceFilter === "mine" && isUserRecord);
       return matchSearch && matchType && matchSource;
     })
     .sort((a, b) => {
@@ -461,9 +475,13 @@ export default function DatabasePage() {
       return sortDir === "asc" ? cmp : -cmp;
     });
 
-  const handleDelete = (id) => {
+  const handleDelete = (id, name) => {
+    const msg = mn
+      ? `"${name}" барилгыг устгах уу?`
+      : `Delete "${name}"?`;
+    if (!window.confirm(msg)) return;
     deleteUserBuilding(id);
-    setUserRecords(getUserBuildings());
+    setUserRecords(getUserBuildings(isAdmin ? null : user?.id));
   };
 
   return (
@@ -496,7 +514,7 @@ export default function DatabasePage() {
                 value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
                 <option value="all">{mn ? "Бүгд" : "All sources"}</option>
                 <option value="mock">{mn ? "Жишээ өгөгдөл" : "Sample data"}</option>
-                <option value="user">{mn ? "Миний оруулсан" : "My submissions"}</option>
+                <option value="mine">{isAdmin ? (mn ? "Хэрэглэгчийн бүгд" : "All user records") : (mn ? "Миний оруулсан" : "My submissions")}</option>
               </select>
             </div>
           </div>
@@ -522,7 +540,12 @@ export default function DatabasePage() {
           {userRecords.length > 0 && (
             <span className="db-stat-badge user-badge">
               <UserCheck size={13} />
-              {mn ? "Миний оруулсан" : "My records"}: <strong>{userRecords.length}</strong>
+              {isAdmin ? (mn ? "Хэрэглэгчийн" : "User records") : (mn ? "Миний оруулсан" : "My records")}: <strong>{userRecords.length} {mn ? "барилга" : "bldg"}</strong>
+              {userRecords.filter(b => b.source === "predictor").length > 0 && (
+                <span style={{ opacity: 0.7, fontWeight: 400, fontSize: "0.75rem" }}>
+                  {" "}({userRecords.filter(b => b.source === "predictor").length} {mn ? "таамаглал" : "predicted"})
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -558,15 +581,18 @@ export default function DatabasePage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b, idx) => (
-                <tr key={b.id} className={b.source === "user" ? "user-row" : ""}>
+              {filtered.map((b, idx) => {
+                const isMine = b.source === "user" || b.source === "predictor";
+                return (
+                <tr key={b.id} className={isMine ? "user-row" : ""}>
                   <td className="text-muted">{idx + 1}</td>
                   <td>
                     <div className="building-name-cell">
-                      {b.source === "user" && (
-                        <span className="user-dot" title={mn ? "Таны оруулсан мэдээлэл" : "Your submission"} />
-                      )}
+                      {isMine && <span className="user-dot" />}
                       <span>{b.name}</span>
+                      {b.source === "predictor" && (
+                        <span className="src-tag pred-tag">{mn ? "Таамаглал" : "Predicted"}</span>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -581,17 +607,17 @@ export default function DatabasePage() {
                   <td>{(b.area || 0).toLocaleString()} {t.common.units_sqm}</td>
                   <td>
                     {b.monthly_usage != null
-                      ? <span className="usage-val mid">{Number(b.monthly_usage).toLocaleString()}</span>
+                      ? <span className="usage-val mid">{Number(b.monthly_usage).toLocaleString()} {t.common.units_kwh}</span>
                       : <span className="text-muted">—</span>}
                   </td>
                   <td>
                     <span className={`usage-val ${(b.usage || 0) > 80000 ? "high" : (b.usage || 0) > 40000 ? "mid" : "low"}`}>
-                      {(b.usage || 0).toLocaleString()}
+                      {(b.usage || 0).toLocaleString()} {t.common.units_kwh}
                     </span>
                   </td>
                   <td>{b.year}</td>
                   <td>{b.district}</td>
-                  <td>{b.floors ?? "—"}</td>
+                  <td>{b.floors != null ? `${b.floors} ${mn ? "давхар" : "fl."}` : "—"}</td>
                   <td>
                     <div className="table-actions">
                       <button
@@ -601,16 +627,17 @@ export default function DatabasePage() {
                       >
                         <BarChart2 size={14} />
                       </button>
-                      {b.source === "user" && (
+                      {isMine && (
                         <button className="action-btn delete" title={t.database.delete}
-                          onClick={() => handleDelete(b.id)}>
+                          onClick={() => handleDelete(b.id, b.name)}>
                           <Trash2 size={14} />
                         </button>
                       )}
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
 

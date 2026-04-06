@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight,
@@ -11,19 +12,23 @@ import "./DataInputPage.css";
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 const STORAGE_KEY = "ub_buildings_user";
 
-export function getUserBuildings() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+export function getUserBuildings(userId = null) {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!userId) return all;
+    return all.filter(b => !b.userId || b.userId === userId);
+  }
   catch { return []; }
 }
 
 function saveUserBuilding(record) {
-  const existing = getUserBuildings();
+  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
 }
 
 export function deleteUserBuilding(id) {
-  const updated = getUserBuildings().filter(b => b.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all.filter(b => b.id !== id)));
 }
 
 // ─── Supported file types ─────────────────────────────────────────────────────
@@ -89,6 +94,7 @@ function FormSection({ emoji, title, color, children }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
   const mn = lang === "mn";
   const fileRef = useRef(null);
   const navigate = useNavigate();
@@ -100,6 +106,14 @@ export default function DataInputPage() {
   const [links, setLinks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+
+  // Close file preview on Escape
+  useEffect(() => {
+    if (!previewFile) return;
+    const handler = (e) => { if (e.key === "Escape") setPreviewFile(null); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [previewFile]);
 
   const [form, setForm] = useState({
     // 🏢 Location & structure
@@ -199,10 +213,12 @@ export default function DataInputPage() {
       latitude:        parseFloat(form.latitude),
       longitude:       parseFloat(form.longitude),
       source: "user",
+      userId: user?.id || null,
       submittedAt: new Date().toISOString(),
     };
     saveUserBuilding(record);
     setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 5000);
     setForm(f => ({
       ...f,
       building_name: "", address: "", year: "", total_floors: "",
@@ -590,7 +606,7 @@ export default function DataInputPage() {
                   disabled={files.length === 0 && links.length === 0}
                 >
                   <Upload size={18} />
-                  {t.dataInput.upload_btn} ({files.length} {t.dataInput.tab_file.toLowerCase()})
+                  {t.dataInput.upload_btn} ({files.length} {mn ? "файл" : "file"})
                 </button>
               </div>
 
@@ -670,7 +686,7 @@ export default function DataInputPage() {
                   ))}
                   <button className="btn btn-primary submit-btn mt-2" onClick={handleFileSubmit}>
                     <Upload size={18} />
-                    {t.dataInput.link_upload_btn} ({links.length})
+                    {t.dataInput.link_upload_btn} ({links.length} {mn ? "холбоос" : "link"})
                   </button>
                 </div>
               )}

@@ -4,6 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { useLang } from "../contexts/LanguageContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
   Database, Calculator, Leaf, BarChart2, Award,
@@ -163,6 +164,28 @@ const MOCK_FALLBACK = buildingsData.map(b => ({
   tags:     {},
   source:   "mock",
 }));
+
+function loadUserMapBuildings(userId = null) {
+  try {
+    const all = JSON.parse(localStorage.getItem("ub_buildings_user") || "[]");
+    const stored = userId ? all.filter(b => !b.userId || b.userId === userId) : all;
+    return stored.map(b => ({
+      id:       b.id,
+      name:     b.name,
+      type:     b.type || "apartment",
+      area:     b.area || 100,
+      floors:   b.floors || 1,
+      year:     b.year || 2000,
+      district: b.district || "Улаанбаатар",
+      osmGeom:  mockGeom(b.latitude || 47.9184, b.longitude || 106.9177, b.area || 100),
+      tags:     {},
+      source:   b.source || "user",
+      insulation_quality: b.insulation_quality,
+      window_type:        b.window_type,
+      monthly_usage:      b.monthly_usage,
+    }));
+  } catch { return []; }
+}
 
 // Fetch with 14-second abort timeout
 async function tryOverpass(endpoint, query) {
@@ -599,12 +622,15 @@ function HowItWorks({ t, lang }) {
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MapPage() {
   const { t, lang } = useLang();
+  const { user } = useAuth();
 
-  // Building cache: Map<id, building> — pre-seeded with mock fallback
-  const buildingCache = useRef(new Map(MOCK_FALLBACK.map(b => [b.id, b])));
+  // Building cache: Map<id, building> — pre-seeded with mock + user buildings
+  const buildingCache = useRef(new Map([
+    ...MOCK_FALLBACK.map(b => [b.id, b]),
+    ...loadUserMapBuildings(user?.id).map(b => [b.id, b]),
+  ]));
   const [buildings,  setBuildings]  = useState([...buildingCache.current.values()]);
   const [loading,    setLoading]    = useState(true);
-  const [haOSM,      setHasOSM]     = useState(false); // true once any OSM data arrives
   const [selected,   setSelected]   = useState(null);
   const [typeFilter, setTypeFilter] = useState("all");
   const [layer,      setLayer]      = useState("dark");
@@ -620,7 +646,6 @@ export default function MapPage() {
     });
     if (added > 0) {
       setBuildings([...buildingCache.current.values()]);
-      setHasOSM(true);
     }
   }, []);
 
@@ -632,9 +657,10 @@ export default function MapPage() {
 
   const tile = TILES[layer];
 
-  // Count of OSM vs mock buildings for the badge
+  // Count of OSM vs mock vs user buildings for the badge
   const osmCount  = buildings.filter(b => b.source === "osm").length;
   const mockCount = buildings.filter(b => b.source === "mock").length;
+  const userCount = buildings.filter(b => b.source === "user" || b.source === "predictor").length;
 
   return (
     <div className="map-outer">
@@ -654,18 +680,20 @@ export default function MapPage() {
             <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} />
 
             {filtered.map(b => {
-              const active  = selected?.id === b.id;
-              const color   = TYPE_COLOR[b.type] || "#3a8fd4";
-              const coords  = b.osmGeom.map(n => [n.lat, n.lon]);
+              const active   = selected?.id === b.id;
+              const isMine   = b.source === "user" || b.source === "predictor";
+              const color    = TYPE_COLOR[b.type] || "#3a8fd4";
+              const coords   = b.osmGeom.map(n => [n.lat, n.lon]);
               return (
                 <Polygon
                   key={b.id}
                   positions={coords}
                   pathOptions={{
-                    color:       active ? "#ffffff" : color,
-                    weight:      active ? 3 : 1,
+                    color:       active ? "#ffffff" : isMine ? "#f4c842" : color,
+                    weight:      active ? 3 : isMine ? 2 : 1,
                     fillColor:   color,
-                    fillOpacity: active ? 0.88 : 0.45,
+                    fillOpacity: active ? 0.88 : 0.55,
+                    dashArray:   isMine && !active ? "5 3" : undefined,
                   }}
                   eventHandlers={{ click: () => setSelected(b) }}
                 />
@@ -689,6 +717,11 @@ export default function MapPage() {
               {filtered.length} / {buildings.length} {t.map.buildings_unit}
               {mockCount > 0 && osmCount === 0 && (
                 <span className="bldg-mock-note"> · demo</span>
+              )}
+              {userCount > 0 && (
+                <span className="bldg-mock-note" style={{ color: "#f4c842" }}>
+                  {" "}· {userCount} {lang === "mn" ? "миний" : "mine"}
+                </span>
               )}
             </div>
           )}

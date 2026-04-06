@@ -62,7 +62,7 @@ const SLOTS_NUM = [0, 3, 6, 9, 12, 15, 18, 21];
 function getCached() {
   try {
     const c = JSON.parse(localStorage.getItem(CACHE_KEY));
-    if (c && Date.now() - c.ts < CACHE_TTL) return c.data;
+    if (c && Date.now() - c.ts < CACHE_TTL) return { data: c.data, ts: c.ts };
   } catch { /* */ }
   return null;
 }
@@ -246,9 +246,9 @@ function DayCard({ day, active, onClick, t }) {
       <span className="day-name">{t.weather[day.weekday_key] || day.weekday_key}</span>
       <WeatherIcon code={day.code} size={36} />
       <span className="day-cond">{t.weather[condKey] || day.code}</span>
-      <span className="day-max">{day.temp_max > 0 ? "+" : ""}{day.temp_max}°</span>
-      <span className="day-min">{day.temp_min}°</span>
-      <div className="day-hdd">HDD: {day.hdd}</div>
+      <span className="day-max">{day.temp_max > 0 ? "+" : ""}{day.temp_max}°C</span>
+      <span className="day-min">{day.temp_min}°C</span>
+      <div className="day-hdd">{day.hdd} HDD</div>
     </button>
   );
 }
@@ -274,7 +274,7 @@ export default function WeatherPage() {
   const fetchWeather = useCallback(async (force = false) => {
     if (!force) {
       const cached = getCached();
-      if (cached) { setWeather(cached); setLoading(false); setFetchedAt(new Date(JSON.parse(localStorage.getItem(CACHE_KEY)).ts)); return; }
+      if (cached) { setWeather(cached.data); setLoading(false); setFetchedAt(new Date(cached.ts)); return; }
     }
     setLoading(true);
     setError(null);
@@ -390,9 +390,9 @@ export default function WeatherPage() {
               <div className="mwc-feels">{t.weather.feels_like}: {data.feels_like}°C</div>
               <div className="mwc-range">
                 <TrendingUp size={14} style={{ color: "#e63946" }} />
-                <span style={{ color: "#e63946" }}>{data.temp_max > 0 ? "+" : ""}{data.temp_max}°</span>
+                <span style={{ color: "#e63946" }}>{data.temp_max > 0 ? "+" : ""}{data.temp_max}°C</span>
                 <TrendingDown size={14} style={{ color: "#3a8fd4", marginLeft: 8 }} />
-                <span style={{ color: "#3a8fd4" }}>{data.temp_min}°</span>
+                <span style={{ color: "#3a8fd4" }}>{data.temp_min}°C</span>
               </div>
             </div>
 
@@ -446,9 +446,9 @@ export default function WeatherPage() {
               <Thermometer size={20} style={{ color: "#3a8fd4" }} />
               <span>{t.weather.hdd_title}</span>
             </div>
-            <div className="hdd-value">{data.hdd}</div>
+            <div className="hdd-value">{data.hdd} HDD</div>
             <div className="hdd-base">{t.weather.hdd_base}: {data.temp}°C</div>
-            <div className="hdd-formula">HDD = 18 − ({data.temp}) = <strong>{18 - data.temp}</strong></div>
+            <div className="hdd-formula">HDD = max(0, 18 − ({data.temp})) = <strong>{Math.max(0, 18 - data.temp)} HDD</strong></div>
             <div className="hdd-bar-wrap">
               <div className="hdd-bar" style={{ width: `${Math.min(100, (data.hdd / 40) * 100)}%` }} />
             </div>
@@ -487,8 +487,8 @@ export default function WeatherPage() {
                 <div key={h.hour} className={`hourly-item ${h.hour === nowSlot ? "now" : ""}`}>
                   <span className="h-time">{h.hour}</span>
                   <WeatherIcon code={h.code} size={32} />
-                  <span className="h-temp">{h.temp > 0 ? "+" : ""}{h.temp}°</span>
-                  <span className="h-feels">{h.feels}°</span>
+                  <span className="h-temp">{h.temp > 0 ? "+" : ""}{h.temp}°C</span>
+                  <span className="h-feels">{h.feels}°C</span>
                   {h.precip > 0 && (
                     <span className="h-precip"><Snowflake size={10} />{h.precip}%</span>
                   )}
@@ -527,7 +527,7 @@ export default function WeatherPage() {
               <XAxis dataKey="date" tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} />
               <YAxis yAxisId="energy" tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis yAxisId="temp" orientation="right" tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} labelStyle={{ color: "var(--accent)" }} />
+              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} labelStyle={{ color: "var(--accent)" }} formatter={(v, name) => name === t.weather.temp_c ? [`${v}°C`, name] : [`${v.toLocaleString()} kWh`, name]} />
               <Legend wrapperStyle={{ color: "var(--text2)", fontSize: 12 }} />
               <Bar yAxisId="energy" dataKey="energy" name={t.weather.energy_kwh}
                 fill="url(#energyGrad)" radius={[4, 4, 0, 0]}
@@ -604,7 +604,11 @@ export default function WeatherPage() {
             </div>
             <div className="ws-badges">
               <span className="ws-badge">🕐 {timeStr}</span>
-              <span className="ws-badge">🔄 {fetchedAt ? (mn ? `${fetchedAt.getHours()}:${String(fetchedAt.getMinutes()).padStart(2,"0")} шинэчлэгдсэн` : `Updated ${fetchedAt.getHours()}:${String(fetchedAt.getMinutes()).padStart(2,"0")}`) : "—"}</span>
+              <span className="ws-badge">🔄 {fetchedAt ? (() => {
+                const hh = String(fetchedAt.getHours()).padStart(2,"0");
+                const mm = String(fetchedAt.getMinutes()).padStart(2,"0");
+                return mn ? `${hh}:${mm} шинэчлэгдсэн` : `Updated ${hh}:${mm}`;
+              })() : "—"}</span>
               <span className="ws-badge">🌡️ {t.weather.city_name}</span>
             </div>
           </div>

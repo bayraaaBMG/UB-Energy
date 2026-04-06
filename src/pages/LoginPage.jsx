@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { LogIn, UserPlus, Building2, User, Eye, EyeOff, Zap } from "lucide-react";
@@ -8,14 +8,20 @@ import "./LoginPage.css";
 
 export default function LoginPage() {
   const { t } = useLang();
-  const { login, register } = useAuth();
+  const { login, register, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [mode, setMode] = useState("login"); // login | register
   const [userType, setUserType] = useState("personal");
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "", org: "" });
   const [error, setError] = useState("");
+
+  // Already logged in — send them where they came from or dashboard
+  if (user) {
+    return <Navigate to={location.state?.from || "/dashboard"} replace />;
+  }
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -24,15 +30,19 @@ export default function LoginPage() {
     setError("");
 
     if (mode === "login") {
-      const ok = login(form.email, form.password, userType);
-      if (ok) navigate("/dashboard");
+      const ok = login(form.email, form.password);
+      if (ok) navigate(location.state?.from || "/dashboard", { replace: true });
       else setError(t.login.error_invalid);
     } else {
       if (form.password !== form.confirm) {
         setError(t.login.error_password_mismatch); return;
       }
-      register({ name: form.name, email: form.email, type: userType, org: form.org });
-      navigate("/dashboard");
+      const result = register({ name: form.name, email: form.email, password: form.password, type: userType, org: form.org });
+      if (!result.ok) {
+        setError(result.error === "email_taken" ? t.login.error_email_taken : t.login.error_invalid);
+        return;
+      }
+      navigate(location.state?.from || "/dashboard", { replace: true });
     }
   };
 
@@ -48,23 +58,25 @@ export default function LoginPage() {
           {mode === "login" ? t.login.title : t.login.register_title}
         </h1>
 
-        {/* User type tabs */}
-        <div className="type-tabs">
-          <button
-            className={`type-tab ${userType === "personal" ? "active" : ""}`}
-            onClick={() => setUserType("personal")}
-          >
-            <User size={16} />
-            {t.login.personal}
-          </button>
-          <button
-            className={`type-tab ${userType === "official" ? "active" : ""}`}
-            onClick={() => setUserType("official")}
-          >
-            <Building2 size={16} />
-            {t.login.official}
-          </button>
-        </div>
+        {/* User type tabs — only during registration */}
+        {mode === "register" && (
+          <div className="type-tabs">
+            <button
+              className={`type-tab ${userType === "personal" ? "active" : ""}`}
+              onClick={() => setUserType("personal")}
+            >
+              <User size={16} />
+              {t.login.personal}
+            </button>
+            <button
+              className={`type-tab ${userType === "official" ? "active" : ""}`}
+              onClick={() => setUserType("official")}
+            >
+              <Building2 size={16} />
+              {t.login.official}
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="login-form">
           {mode === "register" && (
@@ -121,14 +133,14 @@ export default function LoginPage() {
           {mode === "login" ? (
             <>
               <span>{t.login.no_account}</span>
-              <button className="switch-btn" onClick={() => { setMode("register"); setError(""); }}>
+              <button className="switch-btn" onClick={() => { setMode("register"); setError(""); setForm({ name:"", email:"", password:"", confirm:"", org:"" }); }}>
                 {t.login.register_btn}
               </button>
             </>
           ) : (
             <>
               <span>{t.login.has_account}</span>
-              <button className="switch-btn" onClick={() => { setMode("login"); setError(""); }}>
+              <button className="switch-btn" onClick={() => { setMode("login"); setError(""); setForm({ name:"", email:"", password:"", confirm:"", org:"" }); }}>
                 {t.login.login_btn}
               </button>
             </>

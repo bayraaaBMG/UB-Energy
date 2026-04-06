@@ -5,13 +5,17 @@ import en from "../i18n/en";
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState("mn");
+  const [lang, setLang] = useState(() => localStorage.getItem("ub_lang") || "mn");
   const t = lang === "mn" ? mn : en;
 
-  const toggleLang = () => setLang((prev) => (prev === "mn" ? "en" : "mn"));
+  const toggleLang = () => setLang((prev) => {
+    const next = prev === "mn" ? "en" : "mn";
+    localStorage.setItem("ub_lang", next);
+    return next;
+  });
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t }}>
+    <LanguageContext.Provider value={{ lang, toggleLang, t }}>
       {children}
     </LanguageContext.Provider>
   );

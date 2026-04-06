@@ -2,7 +2,7 @@ const en = {
   nav: {
     home: "Home",
     login: "Login",
-    predictor: " Predictor",
+    predictor: "Predictor",
     dashboard: "Dashboard",
     dataInput: "Data Input",
     database: "Database",
@@ -11,7 +11,6 @@ const en = {
     recommendations: "Recommendations",
     map: "Map",
     weather: "Weather",
-    smartHome: "Smart Home",
     owid: "World Stats",
     logout: "Logout",
     badge_new: "New",
@@ -83,7 +82,8 @@ const en = {
     has_account: "Already have an account?",
     error_invalid: "Invalid login credentials.",
     error_password_mismatch: "Passwords do not match.",
-    demo_hint: "Demo: admin@test.mn / any password",
+    error_email_taken: "This email address is already registered.",
+    demo_hint: "Demo: admin@test.mn / admin123",
   },
   predictor: {
     title: "AI Energy Predictor",
@@ -194,8 +194,6 @@ const en = {
     tab_link: "Link",
     section_general: "Building General Info",
     section_location: "Location",
-    annual_usage: "Annual Energy Consumption (kWh)",
-    annual_usage_placeholder: "If known",
     name_placeholder: "Example: Main Building A",
     address_placeholder: "Street, number",
     guide_title: "Guide",
@@ -302,7 +300,6 @@ const en = {
     api_limit_label: "API Rate Limit/min",
     save: "Save",
     other: "Other",
-    login_btn: "Login",
   },
   smarthome: {
     title: "Smart Home System",
@@ -378,7 +375,6 @@ const en = {
     kb_arrows: "Move through list",
     wcag_title: "Accessibility Standard",
     wcag_desc: "This system was developed in accordance with WCAG 2.1 AA standard to provide an accessible experience for users with disabilities. Contact us if you need further assistance.",
-    apply: "Apply",
   },
   recommendations: {
     title: "Energy Saving Recommendations",
@@ -479,9 +475,6 @@ const en = {
     formula_pm25:    "CO₂ × 1.35 (kg/yr)",
     note_eui:    "EUI = Energy Use Intensity (kWh/m²/yr) varies by building type",
     note_em:     "Emission factors: district heating 0.28 kg/kWh · grid electricity 0.73 kg/kWh (Mongolia coal-heavy grid)",
-    em_high: "High",
-    em_medium: "Medium",
-    em_low: "Low",
   },
   weather: {
     title: "Weather",

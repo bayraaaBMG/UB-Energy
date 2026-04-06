@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
-import { BarChart2, Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
 import "./OWIDPage.css";
 
 const CHARTS = [
@@ -105,7 +105,7 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
             <p className="owid-chart-sub">{subtitle}</p>
           </div>
         </div>
-        <button className="owid-expand-btn" aria-label={expanded ? t.common.close : t.common.usage}>
+        <button className="owid-expand-btn" aria-label={expanded ? t.common.close : (lang === "mn" ? "Нээх" : "Expand")}>
           {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
       </div>
@@ -172,7 +172,7 @@ export default function OWIDPage() {
     { icon: "☁️", label: lang === "mn" ? "CO₂ (нэг хүнд)"      : "CO₂ per capita",        value: "~7.5 t/yr",   note: lang === "mn" ? "Дэлхийн дундажаас 2x" : "2× global avg" },
     { icon: "☀️", label: lang === "mn" ? "Нарны эрчим хүч"      : "Solar Energy",          value: lang === "mn" ? "Өсөлттэй" : "Growing",  note: lang === "mn" ? "2018-оос 10x нэмэгдлээ" : "10× since 2018" },
     { icon: "📈", label: lang === "mn" ? "Хэрэглээний өсөлт"    : "Consumption Growth",    value: "+3.8%/yr",    note: "2010–2022" },
-    { icon: "🌡️", label: lang === "mn" ? "Улаанбаатарын HDD"   : "Ulaanbaatar HDD",       value: "4,500+",      note: lang === "mn" ? "Дэлхийн хамгийн өндөр" : "World's highest" },
+    { icon: "🌡️", label: lang === "mn" ? "Улаанбаатарын HDD"   : "Ulaanbaatar HDD",       value: "4,500+ HDD",  note: lang === "mn" ? "Дэлхийн хамгийн өндөр" : "World's highest" },
   ];
 
   const visible = activeSection === "all" ? CHARTS : CHARTS.filter(c => c.section === activeSection);

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import {
   Wifi, Thermometer, Lightbulb, Camera, Lock, Speaker,
-  Smartphone, Home, Zap, Shield, RefreshCw, Power,
-  TrendingDown, CheckCircle, AlertCircle, Sun, Moon,
+  Home, Zap, Shield, RefreshCw, Power,
+  TrendingDown, CheckCircle, Sun, Moon,
   Layers, Settings, BarChart2
 } from "lucide-react";
 import {
@@ -240,7 +240,7 @@ export default function SmartHomePage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" />
                     <XAxis dataKey="time" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
                     <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} formatter={(v) => [`${v} kWh`]} />
                     <Area type="monotone" dataKey="before" stroke="#e63946" fill="url(#before)" strokeWidth={2} name={t.smarthome.regular_home} />
                     <Area type="monotone" dataKey="after"  stroke="#2a9d8f" fill="url(#after)"  strokeWidth={2} name="Smart Home" />
                   </AreaChart>

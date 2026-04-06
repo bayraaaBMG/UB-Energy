@@ -2,7 +2,7 @@ const mn = {
   nav: {
     home: "Нүүр хуудас",
     login: "Нэвтрэх",
-    predictor: " Таамаглагч",
+    predictor: "Таамаглагч",
     dashboard: "Хяналтын самбар",
     dataInput: "Өгөгдөл оруулах",
     database: "Дата сан",
@@ -11,7 +11,6 @@ const mn = {
     recommendations: "Зөвлөмж",
     map: "Газрын зураг",
     weather: "Цаг уур",
-    smartHome: "Smart Home",
     owid: "Дэлхийн статистик",
     logout: "Гарах",
     badge_new: "Шинэ",
@@ -83,7 +82,8 @@ const mn = {
     has_account: "Бүртгэлтэй юу?",
     error_invalid: "Нэвтрэх мэдээлэл буруу байна.",
     error_password_mismatch: "Нууц үг таарахгүй байна.",
-    demo_hint: "Demo: admin@test.mn / дурын нууц үг",
+    error_email_taken: "Энэ и-мэйл хаяг аль хэдийн бүртгэгдсэн байна.",
+    demo_hint: "Demo: admin@test.mn / admin123",
   },
   predictor: {
     title: "Эрчим Хүчний Хэрэглээг Таамаглагч",
@@ -194,8 +194,6 @@ const mn = {
     tab_link: "Холбоос",
     section_general: "Барилгын ерөнхий мэдээлэл",
     section_location: "Байршил",
-    annual_usage: "Жилийн эрчим хүчний хэрэглээ (кВт·цаг)",
-    annual_usage_placeholder: "Хэрэв мэдэгдэж байвал",
     name_placeholder: "Жишээ: Сансар 15-р байр",
     address_placeholder: "Гудамж, тоот",
     guide_title: "Гарын авлага",
@@ -302,7 +300,6 @@ const mn = {
     api_limit_label: "API хүсэлтийн хязгаар/мин",
     save: "Хадгалах",
     other: "Бусад",
-    login_btn: "Нэвтрэх",
   },
   smarthome: {
     title: "Ухаалаг Гэрийн Систем",
@@ -378,7 +375,6 @@ const mn = {
     kb_arrows: "Жагсаалтад зөөх",
     wcag_title: "Хүртээмжийн стандарт",
     wcag_desc: "Энэ систем нь WCAG 2.1 AA стандартын дагуу боловсруулагдсан бөгөөд хөгжилын бэрхшээлтэй хэрэглэгчдэд тааламжтай ашиглах боломжийг бүрдүүлэхийг зорьдог. Хэрэв танд дэлгэрэнгүй тусламж хэрэгтэй бол мантай холбоо барина уу.",
-    apply: "Хэрэглэх",
   },
   recommendations: {
     title: "Эрчим Хүч Хэмнэх Зөвлөмж",
@@ -479,9 +475,6 @@ const mn = {
     formula_pm25:    "CO₂ × 1.35 (кг/жил)",
     note_eui:    "EUI = Эрчим хүчний хэрэглээний эрчмэлт (кВт·ц/м²/жил) барилгын төрлөөс хамаарна",
     note_em:     "Ялгарлын коэффициент: дулааны систем 0.28 кг/кВт·ц · цахилгааны сүлжээ 0.73 кг/кВт·ц (Монголын нүүрс давамгайлсан)",
-    em_high: "Өндөр",
-    em_medium: "Дунд",
-    em_low: "Бага",
   },
   weather: {
     title: "Цаг Уур",
