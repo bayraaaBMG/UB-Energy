@@ -522,16 +522,16 @@ function HowItWorks({ t, lang }) {
     {
       Icon: Database,
       color: "#3a8fd4",
-      title: mn ? "1. Overpass API — бодит барилгын өгөгдөл" : "1. Overpass API — real building data",
+      title: t.map.how_step1_title,
       desc: mn
         ? "OpenStreetMap-ийн Overpass API ашиглан таны харж буй газрын зургийн хэсгийн бүх барилгын полигоны татаж авна. Хэрэглэгч газрын зургийг хөдөлгөх бүрт шинэ хэсгийн барилгуудыг автоматаар нэмнэ. Нийтдээ 1000 барилга хүртэл нэг хүсэлтэд багтана."
         : "Overpass API fetches all building polygons from OpenStreetMap for the visible viewport. Every time you pan the map, buildings for the new area are automatically loaded. Up to 1,000 buildings are fetched per request.",
-      formula: mn ? "GET /api/interpreter?data=way[\"building\"](bbox);out geom;" : 'GET /api/interpreter?data=way["building"](bbox);out geom;',
+      formula: 'GET /api/interpreter?data=way["building"](bbox);out geom;',
     },
     {
       Icon: Calculator,
       color: "#9b72cf",
-      title: mn ? "2. Shoelace томьёо — полигоны талбай" : "2. Shoelace formula — polygon area",
+      title: t.map.how_step2_title,
       desc: mn
         ? "OSM-ийн полигонын оройн цэгүүдийг (lat, lon) метрийн координатад хөрвүүлж, Shoelace (Gauss) томьёогоор талбайг тооцдог. Энэ нь дурын олон өнцөгтийн талбайг нарийвчлалтай тооцоолдог стандарт геометрийн арга."
         : "The polygon vertices (lat, lon) are projected to metric coordinates, then the Shoelace (Gauss) formula computes the exact area of any irregular polygon — no bounding-box approximation needed.",
@@ -540,7 +540,7 @@ function HowItWorks({ t, lang }) {
     {
       Icon: Zap,
       color: "#f4a261",
-      title: mn ? "3. EUI — эрчим хүчний хэрэглээ" : "3. EUI — energy use intensity",
+      title: t.map.how_step3_title,
       desc: mn
         ? "Барилгын төрөл тус бүрд тогтоосон EUI (Energy Use Intensity, kWh/m²/жил) коэффициентийг ашиглан жилийн халаалт болон цахилгааны хэрэглээг тооцдог. Эдгээр утгыг Монголын нөхцөлд тохируулан тогтоосон."
         : "Each building type has calibrated EUI (Energy Use Intensity, kWh/m²/yr) coefficients for heating and electricity. Multiplied by floor area, this gives annual energy use without requiring meter data.",
@@ -549,7 +549,7 @@ function HowItWorks({ t, lang }) {
     {
       Icon: Leaf,
       color: "#2a9d8f",
-      title: mn ? "4. CO₂ ялгарал — ялгарлын коэффициент" : "4. CO₂ emissions — emission factors",
+      title: t.map.how_step4_title,
       desc: mn
         ? "Монголын эрчим хүчний сүлжээний нүүрсний хүнд байдлыг харгалзан цахилгаанд 0.73 kg CO₂/kWh, дүүргийн халаалтанд 0.28 kg CO₂/kWh коэффициентийг хэрэглэнэ. PM2.5 тоосонцрын тооцоо CO₂ × 1350 байна."
         : "Mongolia's coal-heavy grid uses 0.73 kg CO₂/kWh for electricity and 0.28 kg CO₂/kWh for district heating. PM2.5 particulate estimate is derived as CO₂ × 1350 based on Ulaanbaatar combustion data.",
@@ -558,7 +558,7 @@ function HowItWorks({ t, lang }) {
     {
       Icon: Award,
       color: "#57cc99",
-      title: mn ? "5. Үр ашгийн зэрэглэл A–G" : "5. Efficiency grade A–G",
+      title: t.map.how_step5_title,
       desc: mn
         ? "Нийт эрчим хүчний хэрэглээг талбайд хуваан эрчим хүчний эрч (intensity, kWh/m²/жил) гаргаж, абсолют утгаар A–G зэрэглэлд хуваарилна. A зэрэглэл нь 50 kWh/m² дор, G зэрэглэл нь 300 kWh/m²-ээс дээш гэсэн утгатай."
         : "Total energy divided by area gives energy intensity (kWh/m²/yr). This maps to an A–G label: A < 50, B < 100, C < 150, D < 200, E < 250, F < 300, G ≥ 300 kWh/m²/yr — allowing direct comparison between any two buildings.",
@@ -567,7 +567,7 @@ function HowItWorks({ t, lang }) {
     {
       Icon: BarChart2,
       color: "#e76f51",
-      title: mn ? "6. Сарын хэв маяг — цаг агаарын жигнэлт" : "6. Monthly profile — climate weighting",
+      title: t.map.how_step6_title,
       desc: mn
         ? "Улаанбаатарын бодит сарын хэрэглэний хэв маягт тулгуурлан жилийн нийт хэрэглээг 12 сард хуваарилна. Хамгийн хүйтэн сарууд (1, 2, 12-р сар) нийт хэрэглээний 30%+ эзэлдэг."
         : "Annual total is distributed across 12 months using Ulaanbaatar's real consumption pattern (fractions from our monthly dataset). Winter months (Dec–Feb) account for 30%+ of annual consumption alone.",
@@ -578,14 +578,8 @@ function HowItWorks({ t, lang }) {
   return (
     <section className="how-section">
       <div className="how-inner">
-        <h2 className="how-title">
-          {mn ? "Яаж ажилладаг вэ?" : "How it works"}
-        </h2>
-        <p className="how-subtitle">
-          {mn
-            ? "Газрын зургийн систем OpenStreetMap-ийн бодит өгөгдөл дээр тулгуурлан барилга бүрийн эрчим хүч, CO₂ ялгарлыг тооцдог."
-            : "The map system fetches real OpenStreetMap data and computes per-building energy and CO₂ estimates using the pipeline below."}
-        </p>
+        <h2 className="how-title">{t.map.how_title}</h2>
+        <p className="how-subtitle">{t.map.how_subtitle}</p>
         <div className="how-steps">
           {steps.map((step, i) => (
             <div key={i} className="how-step">
@@ -605,12 +599,12 @@ function HowItWorks({ t, lang }) {
 
         {/* Data sources */}
         <div className="how-sources">
-          <span className="how-src-label">{mn ? "Өгөгдлийн эх сурвалж:" : "Data sources:"}</span>
+          <span className="how-src-label">{t.map.how_src_label}</span>
           {[
-            { name: "OpenStreetMap", desc: mn ? "барилгын полигон" : "building polygons" },
-            { name: "Overpass API",  desc: mn ? "хайлтын интерфэйс" : "query interface" },
-            { name: "IEA / НҮЭХ",   desc: mn ? "EUI коэффициент" : "EUI coefficients" },
-            { name: "НАМЕМ",         desc: mn ? "Монголын цаг агаарын мэдээ" : "Mongolia climate data" },
+            { name: "OpenStreetMap", desc: t.map.how_src_osm },
+            { name: "Overpass API",  desc: t.map.how_src_overpass },
+            { name: "IEA / НҮЭХ",   desc: t.map.how_src_iea },
+            { name: "НАМЕМ",         desc: t.map.how_src_namem },
           ].map(s => (
             <span key={s.name} className="how-src-chip">
               <strong>{s.name}</strong> — {s.desc}
