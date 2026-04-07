@@ -201,7 +201,7 @@ export default function Chatbot() {
             </div>
           </div>
 
-          <div className="chatbot-messages">
+          <div className="chatbot-messages" aria-live="polite" aria-atomic="false" aria-label={t.chatbot.title}>
             {messages.map((msg, i) => (
               <div key={i} className={`chat-msg ${msg.from}`}>
                 <div className="chat-avatar">

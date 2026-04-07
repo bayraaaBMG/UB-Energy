@@ -305,7 +305,7 @@ export default function WeatherPage() {
   if (loading && !weather)
     return (
       <div className="weather-page">
-        <div className="weather-loading">
+        <div className="weather-loading" aria-live="polite" aria-busy="true">
           <div className="wl-spinner" />
           <p>{mn ? "Цаг уурын мэдээлэл ачааллаж байна..." : "Loading weather data..."}</p>
           <p className="wl-sub">{mn ? "Open-Meteo API · Улаанбаатар" : "Open-Meteo API · Ulaanbaatar"}</p>
@@ -316,7 +316,7 @@ export default function WeatherPage() {
   if (error && !weather)
     return (
       <div className="weather-page">
-        <div className="weather-loading">
+        <div className="weather-loading" role="alert">
           <AlertTriangle size={40} style={{ color: "#e63946" }} />
           <p style={{ color: "#e63946" }}>{mn ? "Цаг уурын мэдээлэл авахад алдаа гарлаа" : "Failed to load weather data"}</p>
           <p className="wl-sub">{error}</p>

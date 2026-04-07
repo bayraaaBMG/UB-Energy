@@ -249,7 +249,7 @@ export default function DataInputPage() {
         </div>
 
         {submitted && (
-          <div className="success-banner animate-fade">
+          <div className="success-banner animate-fade" role="status" aria-live="polite">
             <CheckCircle size={20} />
             <span>{t.dataInput.success_msg}</span>
             <button

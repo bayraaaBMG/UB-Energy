@@ -122,7 +122,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="login-error" role="alert">{error}</div>}
 
           <button type="submit" className="btn btn-primary login-btn">
             {mode === "login" ? <LogIn size={18} /> : <UserPlus size={18} />}

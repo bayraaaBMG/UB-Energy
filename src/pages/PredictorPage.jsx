@@ -404,6 +404,7 @@ export default function PredictorPage() {
               className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
               onClick={predict}
               disabled={loading}
+              aria-busy={loading}
             >
               {loading ? (
                 <><span className="spinner" />{ t.predictor.calculating }</>
@@ -440,7 +441,7 @@ export default function PredictorPage() {
             </div>
 
             {result && (
-              <div className="result-card card animate-fade">
+              <div className="result-card card animate-fade" aria-live="polite" aria-atomic="true">
                 <h3 className="section-title" style={{ fontSize: "1rem" }}>
                   <Zap size={16} style={{ marginLeft: 8 }} />
                   {t.predictor.result_title}

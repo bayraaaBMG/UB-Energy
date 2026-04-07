@@ -121,7 +121,7 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
             </div>
           )}
           {error && (
-            <div className="owid-error">
+            <div className="owid-error" role="alert">
               <Info size={20} />
               <div>
                 <p>{t.owid.load_error}</p>
