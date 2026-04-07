@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { storageGetJSON, storageSetJSON, storageRemove } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 
 const AuthContext = createContext();
 
 // ─── localStorage keys ────────────────────────────────────────────────────────
-const USERS_KEY   = "ub_users";
-const SESSION_KEY = "ub_session";
+const USERS_KEY   = STORAGE_KEYS.users;
+const SESSION_KEY = STORAGE_KEYS.session;
 
 // ─── Pre-seeded admin (always available) ─────────────────────────────────────
 const ADMIN = {

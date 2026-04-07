@@ -2,11 +2,12 @@ import { createContext, useContext, useState, useEffect } from "react";
 import mn from "../i18n/mn";
 import en from "../i18n/en";
 import { storageGet, storageSet } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => storageGet("ub_lang") || "mn");
+  const [lang, setLang] = useState(() => storageGet(STORAGE_KEYS.lang) || "mn");
   const t = lang === "mn" ? mn : en;
 
   useEffect(() => {
@@ -15,7 +16,7 @@ export function LanguageProvider({ children }) {
 
   const toggleLang = () => setLang((prev) => {
     const next = prev === "mn" ? "en" : "mn";
-    storageSet("ub_lang", next);
+    storageSet(STORAGE_KEYS.lang, next);
     return next;
   });
 

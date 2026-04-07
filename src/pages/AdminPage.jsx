@@ -10,6 +10,7 @@ import {
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
 import { adminStats } from "../data/mockData";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 import "./AdminPage.css";
 
 const ADMIN_USER = {
@@ -19,7 +20,7 @@ const ADMIN_USER = {
 };
 
 function loadAllUsers() {
-  const stored = storageGetJSON("ub_users", []);
+  const stored = storageGetJSON(STORAGE_KEYS.users, []);
   return [ADMIN_USER, ...stored.filter(u => u.email !== ADMIN_USER.email)];
 }
 
@@ -210,8 +211,8 @@ export default function AdminPage() {
                                   ? `"${u.name}" хэрэглэгчийг устгах уу?`
                                   : `Delete user "${u.name}"?`;
                                 if (!window.confirm(msg)) return;
-                                const stored = storageGetJSON("ub_users", []);
-                                storageSetJSON("ub_users", stored.filter(s => s.id !== u.id));
+                                const stored = storageGetJSON(STORAGE_KEYS.users, []);
+                                storageSetJSON(STORAGE_KEYS.users, stored.filter(s => s.id !== u.id));
                                 setAllUsers(loadAllUsers());
                               }}>
                               <Trash2 size={13} />

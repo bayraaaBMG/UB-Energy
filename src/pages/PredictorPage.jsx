@@ -15,9 +15,10 @@ import {
 } from "recharts";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 import "./PredictorPage.css";
 
-const STORAGE_KEY = "ub_buildings_user";
+const STORAGE_KEY = STORAGE_KEYS.buildings;
 function savePredictedBuilding(record) {
   const existing = storageGetJSON(STORAGE_KEY, []);
   storageSetJSON(STORAGE_KEY, [...existing, record]);

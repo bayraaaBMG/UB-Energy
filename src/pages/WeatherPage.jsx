@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, Line, Legend,
 } from "recharts";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 import "./WeatherPage.css";
 
 // ─── Ulaanbaatar coordinates ──────────────────────────────────────────────────
@@ -31,7 +32,7 @@ const AQI_URL =
   `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}` +
   `&current=us_aqi,pm2_5&timezone=Asia%2FUlaanbaatar`;
 
-const CACHE_KEY = "ub_weather_v2";
+const CACHE_KEY = STORAGE_KEYS.weatherCache;
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

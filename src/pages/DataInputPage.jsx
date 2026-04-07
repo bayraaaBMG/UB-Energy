@@ -10,10 +10,11 @@ import {
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
+import { STORAGE_KEYS } from "../config/constants";
 import "./DataInputPage.css";
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
-const STORAGE_KEY = "ub_buildings_user";
+const STORAGE_KEY = STORAGE_KEYS.buildings;
 
 export function getUserBuildings(userId = null) {
   const all = storageGetJSON(STORAGE_KEY, []);
