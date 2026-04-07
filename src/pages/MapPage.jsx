@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
-
+import { storageGetJSON } from "../utils/storage";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
@@ -169,7 +169,7 @@ const MOCK_FALLBACK = buildingsData.map(b => ({
 
 function loadUserMapBuildings(userId = null) {
   try {
-    const all = JSON.parse(localStorage.getItem("ub_buildings_user") || "[]");
+    const all = storageGetJSON("ub_buildings_user", []);
     const stored = userId ? all.filter(b => !b.userId || b.userId === userId) : all;
     return stored.map(b => ({
       id:       b.id,

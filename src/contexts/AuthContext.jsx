@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { storageGetJSON, storageSetJSON, storageRemove } from "../utils/storage";
 
 const AuthContext = createContext();
 
@@ -22,12 +23,11 @@ const ADMIN = {
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 function loadUsers() {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
-  catch { return []; }
+  return storageGetJSON(USERS_KEY, []);
 }
 
 function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  storageSetJSON(USERS_KEY, users);
 }
 
 // Merge admin into stored users (always first, always present)
@@ -38,17 +38,17 @@ function getAllUsers() {
 
 function loadSession() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SESSION_KEY));
+    const raw = storageGetJSON(SESSION_KEY, null);
     if (!raw) return null;
     // Expired?
     if (raw.expiresAt && raw.expiresAt < Date.now()) {
-      localStorage.removeItem(SESSION_KEY);
+      storageRemove(SESSION_KEY);
       return null;
     }
     // User still exists?
     const exists = getAllUsers().find(u => u.id === raw.id);
     if (!exists) {
-      localStorage.removeItem(SESSION_KEY);
+      storageRemove(SESSION_KEY);
       return null;
     }
     return raw;
@@ -62,8 +62,8 @@ export function AuthProvider({ children }) {
 
   // Persist session changes (with expiry stamp)
   useEffect(() => {
-    if (user) localStorage.setItem(SESSION_KEY, JSON.stringify({ ...user, expiresAt: Date.now() + SESSION_TTL }));
-    else localStorage.removeItem(SESSION_KEY);
+    if (user) storageSetJSON(SESSION_KEY, { ...user, expiresAt: Date.now() + SESSION_TTL });
+    else storageRemove(SESSION_KEY);
   }, [user]);
 
   // ── login ──

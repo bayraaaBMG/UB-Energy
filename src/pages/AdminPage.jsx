@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from "recharts";
 import { adminStats } from "../data/mockData";
+import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import "./AdminPage.css";
 
 const ADMIN_USER = {
@@ -18,10 +19,8 @@ const ADMIN_USER = {
 };
 
 function loadAllUsers() {
-  try {
-    const stored = JSON.parse(localStorage.getItem("ub_users") || "[]");
-    return [ADMIN_USER, ...stored.filter(u => u.email !== ADMIN_USER.email)];
-  } catch { return [ADMIN_USER]; }
+  const stored = storageGetJSON("ub_users", []);
+  return [ADMIN_USER, ...stored.filter(u => u.email !== ADMIN_USER.email)];
 }
 
 const COLORS = ["#1a6eb5", "#2a9d8f", "#e9c46a", "#e63946", "#f4a261"];
@@ -211,9 +210,8 @@ export default function AdminPage() {
                                   ? `"${u.name}" хэрэглэгчийг устгах уу?`
                                   : `Delete user "${u.name}"?`;
                                 if (!window.confirm(msg)) return;
-                                const stored = JSON.parse(localStorage.getItem("ub_users") || "[]");
-                                const updated = stored.filter(s => s.id !== u.id);
-                                localStorage.setItem("ub_users", JSON.stringify(updated));
+                                const stored = storageGetJSON("ub_users", []);
+                                storageSetJSON("ub_users", stored.filter(s => s.id !== u.id));
                                 setAllUsers(loadAllUsers());
                               }}>
                               <Trash2 size={13} />

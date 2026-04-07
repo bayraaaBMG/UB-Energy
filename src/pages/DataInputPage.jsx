@@ -9,28 +9,26 @@ import {
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
+import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import "./DataInputPage.css";
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 const STORAGE_KEY = "ub_buildings_user";
 
 export function getUserBuildings(userId = null) {
-  try {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!userId) return all;
-    return all.filter(b => !b.userId || b.userId === userId);
-  }
-  catch { return []; }
+  const all = storageGetJSON(STORAGE_KEY, []);
+  if (!userId) return all;
+  return all.filter(b => !b.userId || b.userId === userId);
 }
 
 function saveUserBuilding(record) {
-  const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
+  const existing = storageGetJSON(STORAGE_KEY, []);
+  storageSetJSON(STORAGE_KEY, [...existing, record]);
 }
 
 export function deleteUserBuilding(id) {
-  const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all.filter(b => b.id !== id)));
+  const all = storageGetJSON(STORAGE_KEY, []);
+  storageSetJSON(STORAGE_KEY, all.filter(b => b.id !== id));
 }
 
 // ─── Supported file types ─────────────────────────────────────────────────────

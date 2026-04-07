@@ -14,14 +14,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ulaanbaatarDistricts } from "../data/mockData";
+import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import "./PredictorPage.css";
 
 const STORAGE_KEY = "ub_buildings_user";
 function savePredictedBuilding(record) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
-  } catch { /* ignore */ }
+  const existing = storageGetJSON(STORAGE_KEY, []);
+  storageSetJSON(STORAGE_KEY, [...existing, record]);
 }
 
 const BUILDING_COLORS = {

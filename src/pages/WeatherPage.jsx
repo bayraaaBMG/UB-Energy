@@ -11,6 +11,7 @@ import {
   ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Line, Legend,
 } from "recharts";
+import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import "./WeatherPage.css";
 
 // ─── Ulaanbaatar coordinates ──────────────────────────────────────────────────
@@ -62,14 +63,12 @@ const nearestSlot = () => {
 const SLOTS_NUM = [0, 3, 6, 9, 12, 15, 18, 21];
 
 function getCached() {
-  try {
-    const c = JSON.parse(localStorage.getItem(CACHE_KEY));
-    if (c && Date.now() - c.ts < CACHE_TTL) return { data: c.data, ts: c.ts };
-  } catch { /* */ }
+  const c = storageGetJSON(CACHE_KEY, null);
+  if (c && Date.now() - c.ts < CACHE_TTL) return { data: c.data, ts: c.ts };
   return null;
 }
 function setCached(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* */ }
+  storageSetJSON(CACHE_KEY, { ts: Date.now(), data });
 }
 
 function parseResponse(meteo, aq) {
