@@ -94,10 +94,9 @@ function FormSection({ emoji, title, color, children }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
-  const { t, lang } = useLang();
+  const { t } = useLang();
   usePageTitle(t.nav.dataInput);
   const { user } = useAuth();
-  const mn = lang === "mn";
   const fileRef = useRef(null);
   const navigate = useNavigate();
 
@@ -190,7 +189,7 @@ export default function DataInputPage() {
     const monthly = parseFloat(form.monthly_usage) || 0;
     const record = {
       id: `user_${Date.now()}`,
-      name:     form.building_name || (mn ? "Нэргүй барилга" : "Unnamed Building"),
+      name:     form.building_name || t.dataInput.unnamed_building,
       type:     form.building_type,
       area:     parseFloat(form.area) || 0,
       floors:   parseInt(form.total_floors) || parseInt(form.floor_number) || 1,
@@ -258,7 +257,7 @@ export default function DataInputPage() {
               className="success-db-btn"
               onClick={() => navigate("/database")}
             >
-              {mn ? "Мэдээлэл харах" : "View in Database"}
+              {t.dataInput.view_in_database}
               <ArrowRight size={15} />
             </button>
           </div>
@@ -281,7 +280,7 @@ export default function DataInputPage() {
               {/* 🏢 Байршил ба бүтэц */}
               <FormSection
                 emoji="🏢"
-                title={mn ? "Байршил ба бүтэц" : "Location & Structure"}
+                title={t.dataInput.section_loc_struct}
                 color="#3a8fd4"
               >
                 <div className="form-group" style={{ gridColumn: "1 / -1" }}>
@@ -297,32 +296,32 @@ export default function DataInputPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-district">{mn ? "Байршил (дүүрэг)" : "District"}</label>
+                  <label className="form-label" htmlFor="di-district">{t.dataInput.district}</label>
                   <select id="di-district" name="district" value={form.district} onChange={handleChange} className="form-select">
                     {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-year">{mn ? "Барилгын ашиглалтанд орсон он" : "Year Built"}</label>
+                  <label className="form-label" htmlFor="di-year">{t.predictor.year}</label>
                   <input id="di-year" name="year" type="number" value={form.year} onChange={handleChange}
                     className="form-input" placeholder="1950–2026" min={1950} max={2026} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-total_floors">{mn ? "Нийт давхар (ж: 18)" : "Total Floors (e.g. 18)"}</label>
+                  <label className="form-label" htmlFor="di-total_floors">{t.dataInput.total_floors}</label>
                   <input id="di-total_floors" name="total_floors" type="number" value={form.total_floors} onChange={handleChange}
                     className="form-input" placeholder="18" min={1} max={60} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-floor_number">{mn ? "Хэдэн давхарт (ж: 10)" : "Your Floor (e.g. 10)"}</label>
+                  <label className="form-label" htmlFor="di-floor_number">{t.dataInput.your_floor}</label>
                   <input id="di-floor_number" name="floor_number" type="number" value={form.floor_number} onChange={handleChange}
                     className="form-input" placeholder="10" min={1} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-units_per_floor">{mn ? "Давхартаа хэдэн айлтай" : "Units per Floor"}</label>
+                  <label className="form-label" htmlFor="di-units_per_floor">{t.dataInput.units_per_floor}</label>
                   <input id="di-units_per_floor" name="units_per_floor" type="number" value={form.units_per_floor} onChange={handleChange}
                     className="form-input" placeholder="4" min={1} />
                 </div>
@@ -331,24 +330,24 @@ export default function DataInputPage() {
               {/* 📐 Айлын мэдээлэл */}
               <FormSection
                 emoji="📐"
-                title={mn ? "Айлын мэдээлэл" : "Apartment Info"}
+                title={t.dataInput.section_apartment}
                 color="#9b72cf"
               >
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-building_type">{mn ? "Барилгын төрөл" : "Building Type"}</label>
+                  <label className="form-label" htmlFor="di-building_type">{t.predictor.building_type}</label>
                   <select id="di-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
                     {Object.entries(t.predictor.building_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-area">{mn ? "Талбай (м²)" : "Area (m²)"} *</label>
+                  <label className="form-label" htmlFor="di-area">{t.predictor.area} *</label>
                   <input id="di-area" name="area" type="number" value={form.area} onChange={handleChange}
                     className="form-input" placeholder="m²" min={10} required />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-rooms">{mn ? "Өрөөний тоо" : "Number of Rooms"}</label>
+                  <label className="form-label" htmlFor="di-rooms">{t.predictor.rooms}</label>
                   <input id="di-rooms" name="rooms" type="number" value={form.rooms} onChange={handleChange}
                     className="form-input" placeholder="3" min={1} max={20} />
                 </div>
@@ -360,7 +359,7 @@ export default function DataInputPage() {
                     style={{ width: 18, height: 18, accentColor: "#9b72cf", cursor: "pointer" }}
                   />
                   <label htmlFor="balcony" className="form-label" style={{ margin: 0, cursor: "pointer" }}>
-                    {mn ? "Тагт байгаа" : "Has Balcony"}
+                    {t.dataInput.has_balcony}
                   </label>
                 </div>
               </FormSection>
@@ -368,41 +367,41 @@ export default function DataInputPage() {
               {/* 🪟 Дулаан алдагдал */}
               <FormSection
                 emoji="🪟"
-                title={mn ? "Дулаан алдагдал" : "Heat Loss Factors"}
+                title={t.dataInput.section_heat_loss}
                 color="#e9c46a"
               >
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-window_count">{mn ? "Цонхны тоо" : "Number of Windows"}</label>
+                  <label className="form-label" htmlFor="di-window_count">{t.dataInput.window_count}</label>
                   <input id="di-window_count" name="window_count" type="number" value={form.window_count} onChange={handleChange}
                     className="form-input" placeholder="6" min={0} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-window_direction">{mn ? "Цонхны чиглэл" : "Window Orientation"}</label>
+                  <label className="form-label" htmlFor="di-window_direction">{t.dataInput.window_orientation}</label>
                   <select id="di-window_direction" name="window_direction" value={form.window_direction} onChange={handleChange} className="form-select">
-                    <option value="south">{mn ? "Урд" : "South"}</option>
-                    <option value="north">{mn ? "Хойд" : "North"}</option>
-                    <option value="east">{mn ? "Зүүн" : "East"}</option>
-                    <option value="west">{mn ? "Баруун" : "West"}</option>
-                    <option value="mixed">{mn ? "Холимог" : "Mixed"}</option>
+                    <option value="south">{t.dataInput.dir_south}</option>
+                    <option value="north">{t.dataInput.dir_north}</option>
+                    <option value="east">{t.dataInput.dir_east}</option>
+                    <option value="west">{t.dataInput.dir_west}</option>
+                    <option value="mixed">{t.dataInput.dir_mixed}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-window_type">{mn ? "Цонхны төрөл" : "Window Type"}</label>
+                  <label className="form-label" htmlFor="di-window_type">{t.predictor.window_type}</label>
                   <select id="di-window_type" name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
-                    <option value="single">{mn ? "1 давхар шил" : "Single glazed"}</option>
-                    <option value="double">{mn ? "2 давхар шил" : "Double glazed"}</option>
-                    <option value="triple">{mn ? "3 давхар шил" : "Triple glazed"}</option>
+                    <option value="single">{t.dataInput.glazing_single}</option>
+                    <option value="double">{t.dataInput.glazing_double}</option>
+                    <option value="triple">{t.dataInput.glazing_triple}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-door_type">{mn ? "Хаалганы төрөл" : "Door Type"}</label>
+                  <label className="form-label" htmlFor="di-door_type">{t.dataInput.door_type}</label>
                   <select id="di-door_type" name="door_type" value={form.door_type} onChange={handleChange} className="form-select">
-                    <option value="metal">{mn ? "Металл хаалга" : "Metal door"}</option>
-                    <option value="wood">{mn ? "Мод хаалга" : "Wooden door"}</option>
-                    <option value="insulated">{mn ? "Дулаалгатай хаалга" : "Insulated door"}</option>
+                    <option value="metal">{t.dataInput.door_metal}</option>
+                    <option value="wood">{t.dataInput.door_wood}</option>
+                    <option value="insulated">{t.dataInput.door_insulated}</option>
                   </select>
                 </div>
               </FormSection>
@@ -410,22 +409,22 @@ export default function DataInputPage() {
               {/* 🔥 Халаалт */}
               <FormSection
                 emoji="🔥"
-                title={mn ? "Халаалт" : "Heating"}
+                title={t.dataInput.section_heating}
                 color="#f4a261"
               >
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-heating_type">{mn ? "Халаалтын төрөл" : "Heating Type"}</label>
+                  <label className="form-label" htmlFor="di-heating_type">{t.predictor.heating_type}</label>
                   <select id="di-heating_type" name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
                     {Object.entries(t.predictor.heating_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-insulation_quality">{mn ? "Дулаалгын түвшин" : "Insulation Quality"}</label>
+                  <label className="form-label" htmlFor="di-insulation_quality">{t.predictor.insulation_quality}</label>
                   <select id="di-insulation_quality" name="insulation_quality" value={form.insulation_quality} onChange={handleChange} className="form-select">
-                    <option value="good">{mn ? "Сайн" : "Good"}</option>
-                    <option value="medium">{mn ? "Дунд" : "Medium"}</option>
-                    <option value="poor">{mn ? "Муу" : "Poor"}</option>
+                    <option value="good">{t.dataInput.insul_good}</option>
+                    <option value="medium">{t.dataInput.insul_medium}</option>
+                    <option value="poor">{t.dataInput.insul_poor}</option>
                   </select>
                 </div>
 
@@ -440,11 +439,11 @@ export default function DataInputPage() {
               {/* 👨‍👩‍👧‍👦 Хэрэглээ */}
               <FormSection
                 emoji="👨‍👩‍👧‍👦"
-                title={mn ? "Хэрэглээ" : "Occupancy"}
+                title={t.predictor.section_occupancy}
                 color="#2a9d8f"
               >
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-occupancy">{mn ? "Амьдарч буй хүний тоо" : "Number of Residents"}</label>
+                  <label className="form-label" htmlFor="di-occupancy">{t.predictor.residents}</label>
                   <input id="di-occupancy" name="occupancy" type="number" value={form.occupancy} onChange={handleChange}
                     className="form-input" placeholder="4" min={1} />
                 </div>
@@ -453,22 +452,22 @@ export default function DataInputPage() {
               {/* 🌡️ Орчны өгөгдөл */}
               <FormSection
                 emoji="🌡️"
-                title={mn ? "Орчны өгөгдөл" : "Environmental Data"}
+                title={t.dataInput.section_env}
                 color="#6a9bbf"
               >
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-outdoor_temp">{mn ? "Гадаад температур (°C, сарын дундаж)" : "Outdoor Temp (°C, monthly avg)"}</label>
+                  <label className="form-label" htmlFor="di-outdoor_temp">{t.dataInput.outdoor_temp}</label>
                   <input id="di-outdoor_temp" name="outdoor_temp" type="number" value={form.outdoor_temp} onChange={handleChange}
                     className="form-input" placeholder="-15" min={-50} max={40} />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-season">{mn ? "Улирал" : "Season"}</label>
+                  <label className="form-label" htmlFor="di-season">{t.dataInput.season}</label>
                   <select id="di-season" name="season" value={form.season} onChange={handleChange} className="form-select">
-                    <option value="winter">{mn ? "Өвөл" : "Winter"}</option>
-                    <option value="spring">{mn ? "Хавар" : "Spring"}</option>
-                    <option value="summer">{mn ? "Зун" : "Summer"}</option>
-                    <option value="autumn">{mn ? "Намар" : "Autumn"}</option>
+                    <option value="winter">{t.dataInput.season_winter}</option>
+                    <option value="spring">{t.dataInput.season_spring}</option>
+                    <option value="summer">{t.dataInput.season_summer}</option>
+                    <option value="autumn">{t.dataInput.season_autumn}</option>
                   </select>
                 </div>
               </FormSection>
@@ -478,27 +477,23 @@ export default function DataInputPage() {
                 <div className="form-section-header" style={{ borderColor: "#2a9d8f" }}>
                   <span className="form-section-emoji">🎯</span>
                   <span className="form-section-title" style={{ color: "#2a9d8f" }}>
-                    {mn ? "Гаралт — хамгийн чухал" : "Output — Target Variable"}
+                    {t.dataInput.output_label}
                   </span>
                   <span className="form-section-badge">✅</span>
                 </div>
                 <div className="output-field-wrap">
                   <label className="form-label output-label" htmlFor="di-monthly_usage">
-                    {mn ? "Сарын цахилгаан хэрэглээ (kWh)" : "Monthly Electricity Consumption (kWh)"}
+                    {t.dataInput.monthly_elec_label}
                   </label>
                   <div className="output-input-row">
                     <input
                       id="di-monthly_usage" name="monthly_usage" type="number" value={form.monthly_usage} onChange={handleChange}
                       className="form-input output-input"
-                      placeholder={mn ? "ж: 320" : "e.g. 320"} min={0}
+                      placeholder="320" min={0}
                     />
-                    <span className="output-unit">kWh / {mn ? "сар" : "month"}</span>
+                    <span className="output-unit">kWh / {t.dataInput.month_unit}</span>
                   </div>
-                  <p className="output-hint">
-                    {mn
-                      ? "Цахилгааны тооцооны дэвтэр эсвэл нийлүүлэгчийн мэдээллээс авна уу."
-                      : "Take this from your electricity bill or supplier data."}
-                  </p>
+                  <p className="output-hint">{t.dataInput.elec_hint}</p>
                 </div>
               </div>
 
@@ -608,7 +603,7 @@ export default function DataInputPage() {
                   disabled={files.length === 0 && links.length === 0}
                 >
                   <Upload size={18} />
-                  {t.dataInput.upload_btn} ({files.length} {mn ? "файл" : "file"})
+                  {t.dataInput.upload_btn} ({files.length} {t.dataInput.file_unit})
                 </button>
               </div>
 
@@ -688,7 +683,7 @@ export default function DataInputPage() {
                   ))}
                   <button className="btn btn-primary submit-btn mt-2" onClick={handleFileSubmit}>
                     <Upload size={18} />
-                    {t.dataInput.link_upload_btn} ({links.length} {mn ? "холбоос" : "link"})
+                    {t.dataInput.link_upload_btn} ({links.length} {t.dataInput.link_unit})
                   </button>
                 </div>
               )}
