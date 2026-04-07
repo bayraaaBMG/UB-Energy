@@ -3,6 +3,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./contexts/AuthContext";
+import { useLang } from "./contexts/LanguageContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import Chatbot from "./components/layout/Chatbot";
@@ -27,10 +28,14 @@ function ProtectedRoute({ children }) {
 }
 
 function AppLayout({ children }) {
+  const { lang } = useLang();
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <a href="#main-content" className="skip-link">
+        {lang === "mn" ? "Үндсэн агуулга руу орох" : "Skip to main content"}
+      </a>
       <Navbar />
-      <main style={{ flex: 1, paddingTop: "1rem" }}>
+      <main id="main-content" style={{ flex: 1, paddingTop: "1rem" }}>
         {children}
       </main>
       <Footer />

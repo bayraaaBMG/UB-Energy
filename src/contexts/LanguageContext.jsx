@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import mn from "../i18n/mn";
 import en from "../i18n/en";
 
@@ -7,6 +7,10 @@ const LanguageContext = createContext();
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem("ub_lang") || "mn");
   const t = lang === "mn" ? mn : en;
+
+  useEffect(() => {
+    document.documentElement.lang = lang === "mn" ? "mn" : "en";
+  }, [lang]);
 
   const toggleLang = () => setLang((prev) => {
     const next = prev === "mn" ? "en" : "mn";
