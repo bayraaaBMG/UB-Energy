@@ -66,11 +66,11 @@ function FileItem({ file, t, onRemove, onPreview }) {
       </div>
       <div className="fi-actions">
         {(file.type === "application/pdf" || file.type === "text/csv" || file.type === "application/json") && (
-          <button className="fi-btn" onClick={() => onPreview(file)} title={t.dataInput.preview}>
+          <button className="fi-btn" onClick={() => onPreview(file)} title={t.dataInput.preview} aria-label={t.dataInput.preview}>
             <Eye size={14} />
           </button>
         )}
-        <button className="fi-btn danger" onClick={() => onRemove(file.name)} title={t.dataInput.delete_file}>
+        <button className="fi-btn danger" onClick={() => onRemove(file.name)} title={t.dataInput.delete_file} aria-label={t.dataInput.delete_file}>
           <Trash2 size={14} />
         </button>
       </div>

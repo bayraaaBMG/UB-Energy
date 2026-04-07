@@ -202,7 +202,7 @@ export default function AdminPage() {
                       <td>
                         <div style={{ display: "flex", gap: "0.4rem" }}>
                           {u.role !== "admin" && (
-                            <button className="action-btn-sm danger" title={t.database.delete}
+                            <button className="action-btn-sm danger" title={t.database.delete} aria-label={t.database.delete}
                               onClick={() => {
                                 const msg = lang === "mn"
                                   ? `"${u.name}" хэрэглэгчийг устгах уу?`

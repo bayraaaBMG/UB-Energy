@@ -192,10 +192,10 @@ export default function Chatbot() {
               </div>
             </div>
             <div className="chatbot-header-actions">
-              <button onClick={clearChat} className="chatbot-close" title={t.chatbot.clear}>
+              <button onClick={clearChat} className="chatbot-close" title={t.chatbot.clear} aria-label={t.chatbot.clear}>
                 <Trash2 size={15} />
               </button>
-              <button onClick={() => setOpen(false)} className="chatbot-close">
+              <button onClick={() => setOpen(false)} className="chatbot-close" aria-label={t.common.close}>
                 <X size={18} />
               </button>
             </div>
@@ -258,6 +258,7 @@ export default function Chatbot() {
         onClick={() => setOpen(!open)}
         title={t.chatbot.title}
         aria-label={t.chatbot.title}
+        aria-expanded={open}
       >
         {open ? <X size={24} /> : <MessageCircle size={24} />}
         {!open && <span className="chatbot-pulse" />}

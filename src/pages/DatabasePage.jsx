@@ -623,12 +623,13 @@ export default function DatabasePage() {
                       <button
                         className="action-btn view results-btn"
                         title={mn ? "Үр дүн харах" : "View results"}
+                        aria-label={mn ? "Үр дүн харах" : "View results"}
                         onClick={() => setResultsBuilding(b)}
                       >
                         <BarChart2 size={14} />
                       </button>
                       {isMine && (
-                        <button className="action-btn delete" title={t.database.delete}
+                        <button className="action-btn delete" title={t.database.delete} aria-label={t.database.delete}
                           onClick={() => handleDelete(b.id, b.name)}>
                           <Trash2 size={14} />
                         </button>
