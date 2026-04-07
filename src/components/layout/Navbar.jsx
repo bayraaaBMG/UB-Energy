@@ -83,10 +83,10 @@ export default function Navbar() {
 
           {user ? (
             <div className="user-menu">
-              <div className="user-info">
+              <Link to="/profile" className="user-info" title={t.nav.profile}>
                 <div className="user-avatar">{user.name.charAt(0)}</div>
                 <span className="user-name">{user.name}</span>
-              </div>
+              </Link>
               <button className="btn btn-secondary" onClick={logout} style={{ padding: "0.4rem 0.8rem" }}>
                 <LogOut size={15} />
                 <span className="hide-mobile">{t.nav.logout}</span>

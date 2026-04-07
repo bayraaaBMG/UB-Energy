@@ -105,8 +105,38 @@ export function AuthProvider({ children }) {
   // ── logout ──
   const logout = () => setUser(null);
 
+  // ── updateUser ──
+  const updateUser = ({ name, currentPassword, newPassword }) => {
+    const allUsers = getAllUsers();
+    const full = allUsers.find(u => u.id === user.id);
+    if (!full) return { ok: false, error: "not_found" };
+
+    // Password change requested
+    if (newPassword !== undefined) {
+      if (full.password !== currentPassword) return { ok: false, error: "wrong_password" };
+      if (newPassword.length < 6) return { ok: false, error: "too_short" };
+    }
+
+    const updated = {
+      ...full,
+      name: name ?? full.name,
+      password: newPassword ?? full.password,
+    };
+
+    if (full.id === ADMIN.id) {
+      // Admin lives in memory only — just update session
+    } else {
+      const stored = loadUsers();
+      saveUsers(stored.map(u => u.id === user.id ? updated : u));
+    }
+
+    const { password: _pw, ...session } = updated;
+    setUser(session);
+    return { ok: true };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, login, logout, register, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

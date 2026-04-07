@@ -22,6 +22,7 @@ const RecommendationsPage = lazy(() => import("./pages/RecommendationsPage"));
 const MapPage            = lazy(() => import("./pages/MapPage"));
 const WeatherPage        = lazy(() => import("./pages/WeatherPage"));
 const OWIDPage           = lazy(() => import("./pages/OWIDPage"));
+const ProfilePage        = lazy(() => import("./pages/ProfilePage"));
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -78,6 +79,7 @@ export default function App() {
                 <Route path="/recommendations" element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>} />
                 <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
                 <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
                 <Route path="/owid" element={<ProtectedRoute><OWIDPage /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
