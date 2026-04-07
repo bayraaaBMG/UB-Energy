@@ -698,10 +698,10 @@ export default function DataInputPage() {
                   "https://docs.google.com/spreadsheets/d/.../gviz/tq?tqx=out:csv",
                   "https://api.example.mn/buildings?format=json",
                 ].map(ex => (
-                  <div key={ex} className="link-example" onClick={() => setLink(ex)}>
+                  <button key={ex} className="link-example" onClick={() => setLink(ex)}>
                     <Link2 size={12} />
                     <code style={{ fontSize: "0.75rem" }}>{ex}</code>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -711,10 +711,10 @@ export default function DataInputPage() {
         {/* File preview modal */}
         {previewFile && (
           <div className="preview-overlay" onClick={() => setPreviewFile(null)}>
-            <div className="preview-modal card" onClick={e => e.stopPropagation()}>
+            <div className="preview-modal card" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={previewFile.name}>
               <div className="preview-header">
                 <span>{previewFile.name}</span>
-                <button className="chatbot-close" onClick={() => setPreviewFile(null)}><X size={18} /></button>
+                <button className="chatbot-close" onClick={() => setPreviewFile(null)} aria-label={t.common.close}><X size={18} /></button>
               </div>
               <div className="preview-body">
                 <p style={{ color: "var(--text3)", fontSize: "0.85rem", textAlign: "center", padding: "2rem" }}>

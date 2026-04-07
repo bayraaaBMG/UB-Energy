@@ -52,6 +52,12 @@
   padding: 1.25rem 1.5rem;
   cursor: pointer;
   transition: var(--transition);
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
 .rec-header:hover { background: var(--bg3); }
 

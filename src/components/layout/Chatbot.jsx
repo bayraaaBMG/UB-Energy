@@ -177,6 +177,7 @@ export default function Chatbot() {
 
   const handleKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    if (e.key === "Escape") { setOpen(false); }
   };
 
   const clearChat = () => setMessages([
@@ -193,7 +194,7 @@ export default function Chatbot() {
   return (
     <div className="chatbot-wrapper">
       {open && (
-        <div className="chatbot-box animate-fade">
+        <div className="chatbot-box animate-fade" onKeyDown={e => e.key === "Escape" && setOpen(false)}>
           <div className="chatbot-header">
             <div className="chatbot-header-left">
               <div className="chatbot-bot-avatar">

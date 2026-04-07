@@ -136,7 +136,7 @@ function RecSection({ rec, lang, t }) {
 
   return (
     <div className="rec-section card">
-      <div className="rec-header" onClick={() => setOpen(!open)}>
+      <button className="rec-header" onClick={() => setOpen(!open)} aria-expanded={open}>
         <div className="rec-header-left">
           <div className="rec-icon" style={{ background: `${rec.color}22`, color: rec.color }}>
             <Icon size={22} />
@@ -151,10 +151,10 @@ function RecSection({ rec, lang, t }) {
             </div>
           </div>
         </div>
-        <div className="rec-toggle">
+        <div className="rec-toggle" aria-hidden="true">
           {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </div>
-      </div>
+      </button>
 
       {open && (
         <div className="rec-items animate-fade">

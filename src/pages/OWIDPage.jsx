@@ -95,7 +95,11 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
 
   return (
     <div className={`owid-chart-card card ${expanded ? "expanded" : ""}`}>
-      <div className="owid-chart-header" onClick={onToggle}>
+      <button
+        className="owid-chart-header"
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
         <div className="owid-chart-left">
           <span className="owid-chart-icon" style={{ background: `${chart.color}22`, color: chart.color }}>
             {chart.icon}
@@ -105,10 +109,10 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
             <p className="owid-chart-sub">{subtitle}</p>
           </div>
         </div>
-        <button className="owid-expand-btn" aria-label={expanded ? t.common.close : (lang === "mn" ? "Нээх" : "Expand")}>
+        <span className="owid-expand-btn" aria-hidden="true">
           {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-      </div>
+        </span>
+      </button>
 
       <p className="owid-chart-desc">{desc}</p>
 

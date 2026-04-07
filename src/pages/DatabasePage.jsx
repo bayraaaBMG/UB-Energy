@@ -158,7 +158,7 @@ function ResultsModal({ building, lang, t, onClose }) {
 
   return (
     <div className="preview-overlay" onClick={onClose}>
-      <div className="results-modal card" onClick={e => e.stopPropagation()}>
+      <div className="results-modal card" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
 
         {/* Header */}
         <div className="res-header">
@@ -173,7 +173,7 @@ function ResultsModal({ building, lang, t, onClose }) {
             <div className="res-grade-badge" style={{ background: GRADE_COLORS[calc.grade] }}>
               {calc.grade}
             </div>
-            <button className="chatbot-close" onClick={onClose}>✕</button>
+            <button className="chatbot-close" onClick={onClose} aria-label={t.common.close}>✕</button>
           </div>
         </div>
 
@@ -556,7 +556,7 @@ export default function DatabasePage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th scope="col">#</th>
                 {[
                   { key: "name",          label: t.database.building },
                   { key: "type",          label: t.database.type },
@@ -567,7 +567,15 @@ export default function DatabasePage() {
                   { key: "district",      label: t.database.district },
                   { key: "floors",        label: t.database.floors },
                 ].map(({ key, label }) => (
-                  <th key={key} className="sortable-th" onClick={() => toggleSort(key)}>
+                  <th
+                    key={key}
+                    scope="col"
+                    className="sortable-th"
+                    onClick={() => toggleSort(key)}
+                    onKeyDown={e => (e.key === "Enter" || e.key === " ") && toggleSort(key)}
+                    tabIndex={0}
+                    aria-sort={sortKey === key ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                  >
                     <span className="th-inner">
                       {label}
                       <span className="sort-icon" style={{ opacity: sortKey === key ? 1 : 0.4, color: sortKey === key ? "var(--primary-light)" : "inherit" }}>
@@ -578,7 +586,7 @@ export default function DatabasePage() {
                     </span>
                   </th>
                 ))}
-                <th>{t.database.actions}</th>
+                <th scope="col">{t.database.actions}</th>
               </tr>
             </thead>
             <tbody>

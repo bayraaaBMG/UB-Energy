@@ -170,14 +170,14 @@ export default function AdminPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>{t.admin.user_name}</th>
-                    <th>{t.admin.user_email}</th>
-                    <th>{t.admin.user_type}</th>
-                    <th>{t.admin.user_org}</th>
-                    <th>{t.admin.user_status}</th>
-                    <th>{t.admin.user_registered}</th>
-                    <th>{t.database.actions}</th>
+                    <th scope="col">#</th>
+                    <th scope="col">{t.admin.user_name}</th>
+                    <th scope="col">{t.admin.user_email}</th>
+                    <th scope="col">{t.admin.user_type}</th>
+                    <th scope="col">{t.admin.user_org}</th>
+                    <th scope="col">{t.admin.user_status}</th>
+                    <th scope="col">{t.admin.user_registered}</th>
+                    <th scope="col">{t.database.actions}</th>
                   </tr>
                 </thead>
                 <tbody>

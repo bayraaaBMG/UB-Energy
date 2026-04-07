@@ -95,6 +95,12 @@
   padding: 1.25rem 1.5rem;
   cursor: pointer;
   transition: background var(--transition);
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
 
 .owid-chart-header:hover { background: var(--bg3); }

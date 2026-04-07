@@ -420,6 +420,11 @@
   color: var(--text2);
   transition: background 0.15s;
   margin-bottom: 0.3rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
 }
 
 .link-example:hover {
