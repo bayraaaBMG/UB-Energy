@@ -50,9 +50,7 @@ export default function AdminPage() {
           <h2>{t.admin.restricted_title}</h2>
           <p>{t.admin.restricted_msg}</p>
           <p className="text-muted" style={{ fontSize: "0.85rem" }}>
-            {lang === "mn"
-              ? `Таны бүртгэл (${user?.email}) admin эрхгүй байна.`
-              : `Your account (${user?.email}) does not have admin privileges.`}
+            {t.admin.restricted_detail.replace("{email}", user?.email)}
           </p>
         </div>
       </div>
@@ -69,9 +67,9 @@ export default function AdminPage() {
   const sysInfoRows = [
     { label: t.admin.last_backup,   value: adminStats.lastBackup    },
     { label: t.admin.uptime,        value: adminStats.systemUptime  },
-    { label: t.admin.total_buildings, value: `${adminStats.totalBuildings} ${mn ? "барилга" : "bldg"}` },
+    { label: t.admin.total_buildings, value: `${adminStats.totalBuildings} ${t.admin.buildings_unit}` },
     { label: t.admin.ml_version,    value: "v2.3.1"                 },
-    { label: t.admin.api_today,     value: `1,842 ${mn ? "хүсэлт" : "req"}` },
+    { label: t.admin.api_today,     value: `1,842 ${t.admin.req_unit}` },
     { label: t.admin.avg_response,  value: "124ms"                  },
   ];
 
@@ -123,9 +121,9 @@ export default function AdminPage() {
           <div className="animate-fade">
             <div className="grid grid-4 mb-3">
               {[
-                { label: t.admin.total_users,  value: `${allUsers.length} ${mn ? "хэрэглэгч" : "users"}`,                          icon: Users,        color: "#3a8fd4" },
-                { label: t.admin.active_users, value: `${adminStats.activeUsers} ${mn ? "хэрэглэгч" : "users"}`,                   icon: CheckCircle,  color: "#2a9d8f" },
-                { label: t.admin.predictions,  value: `${adminStats.totalPredictions.toLocaleString()} ${mn ? "таамаглал" : "predictions"}`, icon: TrendingUp, color: "#e9c46a" },
+                { label: t.admin.total_users,  value: `${allUsers.length} ${t.admin.users_unit}`,                          icon: Users,        color: "#3a8fd4" },
+                { label: t.admin.active_users, value: `${adminStats.activeUsers} ${t.admin.users_unit}`,                   icon: CheckCircle,  color: "#2a9d8f" },
+                { label: t.admin.predictions,  value: `${adminStats.totalPredictions.toLocaleString()} ${t.admin.pred_unit}`, icon: TrendingUp, color: "#e9c46a" },
                 { label: t.admin.uptime,       value: adminStats.systemUptime,                  icon: Shield,       color: "#f4a261" },
               ].map(({ label, value, icon: Icon, color }) => (
                 <div className="card admin-stat-card" key={label}>
@@ -147,7 +145,7 @@ export default function AdminPage() {
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false} fontSize={11}
                     />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} formatter={(v) => [`${v} ${mn ? "барилга" : "bldg"}`]} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }} formatter={(v) => [`${v} ${t.admin.buildings_unit}`]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -207,16 +205,16 @@ export default function AdminPage() {
                         <div style={{ display: "flex", gap: "0.4rem" }}>
                           {u.role !== "admin" && deleteUserId === u.id ? (
                             <>
-                              <button className="action-btn-sm danger" aria-label={mn ? "Тийм, устга" : "Yes, delete"}
+                              <button className="action-btn-sm danger" aria-label={t.admin.confirm_delete}
                                 onClick={() => confirmDelete((id) => {
                                   const stored = storageGetJSON(STORAGE_KEYS.users, []);
                                   storageSetJSON(STORAGE_KEYS.users, stored.filter(s => s.id !== id));
                                   setAllUsers(loadAllUsers());
                                 })}>
-                                {lang === "mn" ? "Тийм" : "Yes"}
+                                {t.admin.confirm_yes}
                               </button>
                               <button className="action-btn-sm" aria-label={t.common.close} onClick={cancelDelete}>
-                                {lang === "mn" ? "Үгүй" : "No"}
+                                {t.admin.confirm_no}
                               </button>
                             </>
                           ) : u.role !== "admin" && (

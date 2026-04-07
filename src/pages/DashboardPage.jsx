@@ -57,7 +57,6 @@ export default function DashboardPage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.dashboard);
   const { user } = useAuth();
-  const mn = lang === "mn";
   const [period, setPeriod] = useState("monthly");
   const [showAlert, setShowAlert] = useState(true);
 
@@ -106,8 +105,8 @@ export default function DashboardPage() {
                 <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{user.name}</div>
                 <div style={{ color: "var(--text3)", fontSize: "0.75rem" }}>
                   {userBuildingCount > 0
-                    ? (mn ? `${userBuildingCount} барилга оруулсан` : `${userBuildingCount} building${userBuildingCount > 1 ? "s" : ""} added`)
-                    : (mn ? "Барилга оруулаагүй" : "No buildings added yet")}
+                    ? `${userBuildingCount} ${t.dashboard.buildings_added}`
+                    : t.dashboard.no_buildings}
                 </div>
               </div>
             </div>
@@ -128,42 +127,42 @@ export default function DashboardPage() {
             <div className="usb-header">
               <div className="usb-title">
                 <Building2 size={16} />
-                {mn ? "Миний барилгуудын хураангуй" : "My Buildings Summary"}
-                <span className="usb-count">{userBuildingCount} {mn ? "барилга" : "buildings"}</span>
+                {t.dashboard.my_buildings_summary}
+                <span className="usb-count">{userBuildingCount} {t.database.buildings_unit}</span>
               </div>
               <Link to="/database" className="usb-link">
                 <Database size={13} />
-                {mn ? "Бүгдийг харах" : "View all"}
+                {t.dashboard.view_all}
                 <ArrowRight size={12} />
               </Link>
             </div>
             <div className="usb-stats">
               <div className="usb-stat">
                 <div className="usb-val">{userStats.totalAnnual.toLocaleString()} {t.common.units_kwh}</div>
-                <div className="usb-lbl">{mn ? "Нийт жилийн хэрэглээ" : "Total annual usage"}</div>
+                <div className="usb-lbl">{t.dashboard.total_annual_usage}</div>
               </div>
               <div className="usb-stat">
                 <div className="usb-val">{userStats.avgMonthly.toLocaleString()} {t.common.units_kwh}</div>
-                <div className="usb-lbl">{mn ? "Дундаж сарын хэрэглээ" : "Avg monthly usage"}</div>
+                <div className="usb-lbl">{t.dashboard.avg_monthly_usage}</div>
               </div>
               <div className="usb-stat">
-                <div className="usb-val">{userStats.totalArea.toLocaleString()} {mn ? "м²" : "m²"}</div>
-                <div className="usb-lbl">{mn ? "Нийт талбай" : "Total area"}</div>
+                <div className="usb-val">{userStats.totalArea.toLocaleString()} {t.common.units_sqm}</div>
+                <div className="usb-lbl">{t.dashboard.total_area}</div>
               </div>
               <div className="usb-stat">
                 <div className="usb-val" style={{ color: GRADE_COLORS[userStats.grade] }}>
                   {userStats.grade}
                 </div>
-                <div className="usb-lbl">{mn ? "Дундаж зэрэглэл" : "Avg grade"}</div>
+                <div className="usb-lbl">{t.dashboard.avg_grade}</div>
               </div>
             </div>
           </div>
         ) : userBuildingCount === 0 && (
           <div className="card user-summary-empty mb-3">
             <Building2 size={20} opacity={0.3} />
-            <span>{mn ? "Барилга оруулаагүй байна." : "No buildings added yet."}</span>
+            <span>{t.dashboard.no_buildings_msg}</span>
             <Link to="/data-input" className="btn btn-primary" style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }}>
-              {mn ? "Барилга нэмэх" : "Add Building"}
+              {t.dashboard.add_building}
             </Link>
           </div>
         )}
