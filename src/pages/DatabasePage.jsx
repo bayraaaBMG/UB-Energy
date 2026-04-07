@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
-
+import { useConfirm } from "../hooks/useConfirm";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
@@ -425,6 +425,7 @@ export default function DatabasePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [resultsBuilding, setResultsBuilding] = useState(null);
+  const { confirmId, ask, confirm, cancel } = useConfirm();
   const isAdmin = user?.role === "admin";
   const [userRecords, setUserRecords] = useState(() => getUserBuildings(isAdmin ? null : user?.id));
   const [sortKey, setSortKey] = useState("name");
@@ -478,11 +479,7 @@ export default function DatabasePage() {
       return sortDir === "asc" ? cmp : -cmp;
     });
 
-  const handleDelete = (id, name) => {
-    const msg = mn
-      ? `"${name}" барилгыг устгах уу?`
-      : `Delete "${name}"?`;
-    if (!window.confirm(msg)) return;
+  const handleDelete = (id) => {
     deleteUserBuilding(id);
     setUserRecords(getUserBuildings(isAdmin ? null : user?.id));
   };
@@ -640,9 +637,18 @@ export default function DatabasePage() {
                       >
                         <BarChart2 size={14} />
                       </button>
-                      {isMine && (
+                      {isMine && confirmId === b.id ? (
+                        <>
+                          <button className="action-btn delete" onClick={() => confirm(handleDelete)} aria-label={mn ? "Тийм, устга" : "Yes, delete"}>
+                            {mn ? "Тийм" : "Yes"}
+                          </button>
+                          <button className="action-btn" onClick={cancel} aria-label={t.common.close}>
+                            {mn ? "Үгүй" : "No"}
+                          </button>
+                        </>
+                      ) : isMine && (
                         <button className="action-btn delete" title={t.database.delete} aria-label={t.database.delete}
-                          onClick={() => handleDelete(b.id, b.name)}>
+                          onClick={() => ask(b.id)}>
                           <Trash2 size={14} />
                         </button>
                       )}

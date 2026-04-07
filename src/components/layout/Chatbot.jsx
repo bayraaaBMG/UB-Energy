@@ -135,11 +135,10 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([{ from: "bot", text: greeting }]);
   const [input, setInput] = useState("");
 
-  // Reset greeting when language switches
+  // Reset greeting when language or logged-in user changes
   useEffect(() => {
     setMessages([{ from: "bot", text: greeting }]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, [greeting]);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);

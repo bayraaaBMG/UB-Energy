@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
-
+import { useConfirm } from "../hooks/useConfirm";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Settings, Users, BarChart2, Database, Shield,
@@ -31,6 +31,7 @@ export default function AdminPage() {
   usePageTitle(t.nav.admin);
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const { confirmId: deleteUserId, ask: askDelete, confirm: confirmDelete, cancel: cancelDelete } = useConfirm();
   const [allUsers, setAllUsers] = useState(() => loadAllUsers());
 
   const buildingTypeData = [
@@ -204,20 +205,26 @@ export default function AdminPage() {
                       <td className="text-muted">{u.createdAt ? u.createdAt.slice(0, 10) : "—"}</td>
                       <td>
                         <div style={{ display: "flex", gap: "0.4rem" }}>
-                          {u.role !== "admin" && (
+                          {u.role !== "admin" && deleteUserId === u.id ? (
+                            <>
+                              <button className="action-btn-sm danger" aria-label={mn ? "Тийм, устга" : "Yes, delete"}
+                                onClick={() => confirmDelete((id) => {
+                                  const stored = storageGetJSON(STORAGE_KEYS.users, []);
+                                  storageSetJSON(STORAGE_KEYS.users, stored.filter(s => s.id !== id));
+                                  setAllUsers(loadAllUsers());
+                                })}>
+                                {lang === "mn" ? "Тийм" : "Yes"}
+                              </button>
+                              <button className="action-btn-sm" aria-label={t.common.close} onClick={cancelDelete}>
+                                {lang === "mn" ? "Үгүй" : "No"}
+                              </button>
+                            </>
+                          ) : u.role !== "admin" && (
                             <button className="action-btn-sm danger" title={t.database.delete} aria-label={t.database.delete}
-                              onClick={() => {
-                                const msg = lang === "mn"
-                                  ? `"${u.name}" хэрэглэгчийг устгах уу?`
-                                  : `Delete user "${u.name}"?`;
-                                if (!window.confirm(msg)) return;
-                                const stored = storageGetJSON(STORAGE_KEYS.users, []);
-                                storageSetJSON(STORAGE_KEYS.users, stored.filter(s => s.id !== u.id));
-                                setAllUsers(loadAllUsers());
-                              }}>
+                              onClick={() => askDelete(u.id)}>
                               <Trash2 size={13} />
                             </button>
-                          )}
+                          ) }
                         </div>
                       </td>
                     </tr>
