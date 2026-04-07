@@ -82,6 +82,8 @@ const en = {
     error_password_mismatch: "Passwords do not match.",
     error_email_taken: "This email address is already registered.",
     demo_hint: "Demo: admin@test.mn / admin123",
+    show_password: "Show password",
+    hide_password: "Hide password",
   },
   predictor: {
     title: "AI Energy Predictor",

@@ -281,51 +281,51 @@ export default function PredictorPage() {
             <Section icon={Building2} title={t.predictor.section_building}>
               <div className="grid grid-2">
                 <div className="form-group">
-                  <label className="form-label">{mn ? "Барилгын нэр" : "Building Name"}</label>
-                  <input type="text" name="building_name" value={form.building_name} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-building_name">{mn ? "Барилгын нэр" : "Building Name"}</label>
+                  <input id="pred-building_name" type="text" name="building_name" value={form.building_name} onChange={handleChange}
                     className="form-input" placeholder={mn ? "ж: Цогцолбор 1" : "e.g. Building A"} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{mn ? "Дүүрэг" : "District"}</label>
-                  <select name="district" value={form.district} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-district">{mn ? "Дүүрэг" : "District"}</label>
+                  <select id="pred-district" name="district" value={form.district} onChange={handleChange} className="form-select">
                     {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.area}</label>
-                  <input type="number" name="area" value={form.area} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-area">{t.predictor.area}</label>
+                  <input id="pred-area" type="number" name="area" value={form.area} onChange={handleChange}
                     className="form-input" min={50} max={50000} step={10} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.building_type}</label>
-                  <select name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-building_type">{t.predictor.building_type}</label>
+                  <select id="pred-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
                     {Object.entries(bTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.year}</label>
-                  <input type="number" name="year" value={form.year} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-year">{t.predictor.year}</label>
+                  <input id="pred-year" type="number" name="year" value={form.year} onChange={handleChange}
                     className="form-input" min={1950} max={2026} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.floors}</label>
-                  <input type="number" name="floors" value={form.floors} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-floors">{t.predictor.floors}</label>
+                  <input id="pred-floors" type="number" name="floors" value={form.floors} onChange={handleChange}
                     className="form-input" min={1} max={40} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.rooms}</label>
-                  <input type="number" name="rooms" value={form.rooms} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-rooms">{t.predictor.rooms}</label>
+                  <input id="pred-rooms" type="number" name="rooms" value={form.rooms} onChange={handleChange}
                     className="form-input" min={1} max={20} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.wall_material}</label>
-                  <select name="wall_material" value={form.wall_material} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-wall_material">{t.predictor.wall_material}</label>
+                  <select id="pred-wall_material" name="wall_material" value={form.wall_material} onChange={handleChange} className="form-select">
                     {Object.entries(wMaterials).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.heating_type}</label>
-                  <select name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-heating_type">{t.predictor.heating_type}</label>
+                  <select id="pred-heating_type" name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
                     {Object.entries(hTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
@@ -335,24 +335,24 @@ export default function PredictorPage() {
             <Section icon={Snowflake} title={t.predictor.section_envelope} defaultOpen={true}>
               <div className="grid grid-2">
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.insulation_quality}</label>
-                  <select name="insulation_quality" value={form.insulation_quality} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-insulation_quality">{t.predictor.insulation_quality}</label>
+                  <select id="pred-insulation_quality" name="insulation_quality" value={form.insulation_quality} onChange={handleChange} className="form-select">
                     <option value="good">{t.predictor.insulation_good}</option>
                     <option value="medium">{t.predictor.insulation_medium}</option>
                     <option value="poor">{t.predictor.insulation_poor}</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.window_type}</label>
-                  <select name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
+                  <label className="form-label" htmlFor="pred-window_type">{t.predictor.window_type}</label>
+                  <select id="pred-window_type" name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
                     <option value="vacuum">{t.predictor.window_vacuum}</option>
                     <option value="double">{t.predictor.window_double}</option>
                     <option value="single">{t.predictor.window_single}</option>
                   </select>
                 </div>
                 <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-                  <label className="form-label">{t.predictor.window_ratio} ({form.window_ratio}%)</label>
-                  <input type="range" name="window_ratio" value={form.window_ratio} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-window_ratio">{t.predictor.window_ratio} ({form.window_ratio}%)</label>
+                  <input id="pred-window_ratio" type="range" name="window_ratio" value={form.window_ratio} onChange={handleChange}
                     className="range-input" min={5} max={70} />
                   <div className="range-labels">
                     <span>5%</span><span>70%</span>
@@ -364,13 +364,13 @@ export default function PredictorPage() {
             <Section icon={Users} title={t.predictor.section_occupancy} defaultOpen={true}>
               <div className="grid grid-2">
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.residents}</label>
-                  <input type="number" name="residents" value={form.residents} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-residents">{t.predictor.residents}</label>
+                  <input id="pred-residents" type="number" name="residents" value={form.residents} onChange={handleChange}
                     className="form-input" min={1} max={2000} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.appliances}</label>
-                  <input type="number" name="appliances" value={form.appliances} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-appliances">{t.predictor.appliances}</label>
+                  <input id="pred-appliances" type="number" name="appliances" value={form.appliances} onChange={handleChange}
                     className="form-input" min={0} max={50} />
                 </div>
               </div>
@@ -383,14 +383,14 @@ export default function PredictorPage() {
             <Section icon={Thermometer} title={t.predictor.section_weather} defaultOpen={false}>
               <div className="grid grid-2">
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.temperature} ({form.temperature}°C)</label>
-                  <input type="range" name="temperature" value={form.temperature} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-temperature">{t.predictor.temperature} ({form.temperature}°C)</label>
+                  <input id="pred-temperature" type="range" name="temperature" value={form.temperature} onChange={handleChange}
                     className="range-input" min={-40} max={30} />
                   <div className="range-labels"><span>-40°C</span><span>30°C</span></div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t.predictor.hdd}</label>
-                  <input type="number" name="hdd" value={form.hdd} onChange={handleChange}
+                  <label className="form-label" htmlFor="pred-hdd">{t.predictor.hdd}</label>
+                  <input id="pred-hdd" type="number" name="hdd" value={form.hdd} onChange={handleChange}
                     className="form-input" min={0} max={8000} />
                 </div>
               </div>

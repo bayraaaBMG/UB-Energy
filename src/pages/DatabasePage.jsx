@@ -498,6 +498,7 @@ export default function DatabasePage() {
             <div className="search-box">
               <Search size={16} className="search-icon" />
               <input className="search-input" placeholder={t.database.search}
+                aria-label={t.database.search}
                 value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <div className="type-filter">

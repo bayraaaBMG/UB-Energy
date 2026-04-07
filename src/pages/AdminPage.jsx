@@ -260,8 +260,8 @@ export default function AdminPage() {
               <div className="settings-list">
                 {settingsFields.map(({ label, value, type }) => (
                   <div key={label} className="setting-row">
-                    <label className="form-label">{label}</label>
-                    <input defaultValue={value} type={type} className="form-input" />
+                    <label className="form-label" htmlFor={`admin-setting-${label}`}>{label}</label>
+                    <input id={`admin-setting-${label}`} defaultValue={value} type={type} className="form-input" />
                   </div>
                 ))}
                 <button className="btn btn-primary">{t.admin.save}</button>

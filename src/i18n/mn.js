@@ -82,6 +82,8 @@ const mn = {
     error_password_mismatch: "Нууц үг таарахгүй байна.",
     error_email_taken: "Энэ и-мэйл хаяг аль хэдийн бүртгэгдсэн байна.",
     demo_hint: "Demo: admin@test.mn / admin123",
+    show_password: "Нууц үг харуулах",
+    hide_password: "Нууц үг нуух",
   },
   predictor: {
     title: "Эрчим Хүчний Хэрэглээг Таамаглагч",

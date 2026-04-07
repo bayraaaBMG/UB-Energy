@@ -81,33 +81,34 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="login-form">
           {mode === "register" && (
             <div className="form-group">
-              <label className="form-label">{t.login.name}</label>
-              <input name="name" value={form.name} onChange={handleChange}
+              <label className="form-label" htmlFor="login-name">{t.login.name}</label>
+              <input id="login-name" name="name" value={form.name} onChange={handleChange}
                 className="form-input" required placeholder={t.login.name} />
             </div>
           )}
 
           {mode === "register" && userType === "official" && (
             <div className="form-group">
-              <label className="form-label">{t.login.org}</label>
-              <input name="org" value={form.org} onChange={handleChange}
+              <label className="form-label" htmlFor="login-org">{t.login.org}</label>
+              <input id="login-org" name="org" value={form.org} onChange={handleChange}
                 className="form-input" placeholder={t.login.org} />
             </div>
           )}
 
           <div className="form-group">
-            <label className="form-label">{t.login.email}</label>
-            <input name="email" type="email" value={form.email} onChange={handleChange}
+            <label className="form-label" htmlFor="login-email">{t.login.email}</label>
+            <input id="login-email" name="email" type="email" value={form.email} onChange={handleChange}
               className="form-input" required placeholder="example@email.com" />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{t.login.password}</label>
+            <label className="form-label" htmlFor="login-password">{t.login.password}</label>
             <div className="pw-row">
-              <input name="password" type={showPw ? "text" : "password"}
+              <input id="login-password" name="password" type={showPw ? "text" : "password"}
                 value={form.password} onChange={handleChange}
                 className="form-input" required placeholder="••••••••" />
-              <button type="button" className="pw-toggle" onClick={() => setShowPw(!showPw)}>
+              <button type="button" className="pw-toggle" onClick={() => setShowPw(!showPw)}
+                aria-label={showPw ? t.login.hide_password : t.login.show_password}>
                 {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -115,8 +116,8 @@ export default function LoginPage() {
 
           {mode === "register" && (
             <div className="form-group">
-              <label className="form-label">{t.login.confirm_password}</label>
-              <input name="confirm" type="password" value={form.confirm} onChange={handleChange}
+              <label className="form-label" htmlFor="login-confirm">{t.login.confirm_password}</label>
+              <input id="login-confirm" name="confirm" type="password" value={form.confirm} onChange={handleChange}
                 className="form-input" required placeholder="••••••••" />
             </div>
           )}
