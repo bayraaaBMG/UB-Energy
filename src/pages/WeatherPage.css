@@ -20,7 +20,7 @@
 
 /* Snowflake particles */
 .weather-hero::before {
-  content: '❄ ❅ ❆ ❄ ❅ ❆ ❄';
+  content: '* * * * * * *';
   position: absolute;
   top: 1rem;
   left: 5%;

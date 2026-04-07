@@ -4,7 +4,9 @@ import {
   Wifi, Thermometer, Lightbulb, Camera, Lock, Speaker,
   Home, Zap, Shield, RefreshCw, Power,
   TrendingDown, CheckCircle, Sun, Moon,
-  Layers, Settings, BarChart2
+  Layers, Settings, BarChart2,
+  Tv, Coffee, Droplet, Briefcase, DoorOpen,
+  LogOut, Globe, Mic, Radio, Smartphone,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -14,12 +16,12 @@ import "./SmartHomePage.css";
 
 // ─── Mock home state ───────────────────────────────────────────────────────────
 const initialRooms = [
-  { id: "living",   name: { mn: "Зочны өрөө",    en: "Living Room"  }, icon: "🛋️", temp: 21, target: 22, light: true,  lightPct: 80  },
-  { id: "bedroom",  name: { mn: "Унтлагын өрөө", en: "Bedroom"      }, icon: "🛏️", temp: 19, target: 20, light: false, lightPct: 0   },
-  { id: "kitchen",  name: { mn: "Гал тогоо",     en: "Kitchen"      }, icon: "🍳", temp: 22, target: 22, light: true,  lightPct: 100 },
-  { id: "bathroom", name: { mn: "Угаалгын өрөө", en: "Bathroom"     }, icon: "🚿", temp: 23, target: 24, light: false, lightPct: 0   },
-  { id: "office",   name: { mn: "Кабинет",       en: "Office"       }, icon: "💼", temp: 20, target: 21, light: true,  lightPct: 60  },
-  { id: "hall",     name: { mn: "Коридор",       en: "Hallway"      }, icon: "🚪", temp: 18, target: 18, light: false, lightPct: 0   },
+  { id: "living",   name: { mn: "Зочны өрөө",    en: "Living Room"  }, Icon: Tv,        temp: 21, target: 22, light: true,  lightPct: 80  },
+  { id: "bedroom",  name: { mn: "Унтлагын өрөө", en: "Bedroom"      }, Icon: Moon,      temp: 19, target: 20, light: false, lightPct: 0   },
+  { id: "kitchen",  name: { mn: "Гал тогоо",     en: "Kitchen"      }, Icon: Coffee,    temp: 22, target: 22, light: true,  lightPct: 100 },
+  { id: "bathroom", name: { mn: "Угаалгын өрөө", en: "Bathroom"     }, Icon: Droplet,   temp: 23, target: 24, light: false, lightPct: 0   },
+  { id: "office",   name: { mn: "Кабинет",       en: "Office"       }, Icon: Briefcase, temp: 20, target: 21, light: true,  lightPct: 60  },
+  { id: "hall",     name: { mn: "Коридор",       en: "Hallway"      }, Icon: DoorOpen,  temp: 18, target: 18, light: false, lightPct: 0   },
 ];
 
 const energySavings = [
@@ -45,28 +47,28 @@ const devices = [
 ];
 
 const scenarios = [
-  { id: "away",   icon: "🏃", name: { mn: "Гэрт хүн байхгүй",  en: "Nobody Home"     }, desc: { mn: "Халаалт бага, гэрэл унтарсан, хамгаалалт идэвхтэй",                                              en: "Low heating, lights off, security active"                                }, savings: "35%" },
-  { id: "night",  icon: "🌙", name: { mn: "Шөнийн горим",       en: "Night Mode"       }, desc: { mn: "Гэрэл унтарсан, термостат 17°C, хаалга цоожлогдсон",                                             en: "Lights off, thermostat 17°C, door locked"                               }, savings: "28%" },
-  { id: "home",   icon: "🏠", name: { mn: "Гэртээ ирсэн",       en: "Coming Home"      }, desc: { mn: "Таны дуртай температур, гэрлийн тохиргоо автоматаар идэвхждэг",                                  en: "Your preferred temperature, lighting settings activate automatically"    }, savings: "15%" },
-  { id: "energy", icon: "⚡", name: { mn: "Эрчим хүч хэмнэх",  en: "Energy Saving"    }, desc: { mn: "Бүх тоног төхөөрөмжийг хамгийн бага хэрэглээнд тохируулна",                                     en: "All devices set to minimum consumption mode"                            }, savings: "40%" },
+  { id: "away",   Icon: LogOut, name: { mn: "Гэрт хүн байхгүй",  en: "Nobody Home"     }, desc: { mn: "Халаалт бага, гэрэл унтарсан, хамгаалалт идэвхтэй",                                              en: "Low heating, lights off, security active"                                }, savings: "35%" },
+  { id: "night",  Icon: Moon,   name: { mn: "Шөнийн горим",       en: "Night Mode"       }, desc: { mn: "Гэрэл унтарсан, термостат 17°C, хаалга цоожлогдсон",                                             en: "Lights off, thermostat 17°C, door locked"                               }, savings: "28%" },
+  { id: "home",   Icon: Home,   name: { mn: "Гэртээ ирсэн",       en: "Coming Home"      }, desc: { mn: "Таны дуртай температур, гэрлийн тохиргоо автоматаар идэвхждэг",                                  en: "Your preferred temperature, lighting settings activate automatically"    }, savings: "15%" },
+  { id: "energy", Icon: Zap,    name: { mn: "Эрчим хүч хэмнэх",  en: "Energy Saving"    }, desc: { mn: "Бүх тоног төхөөрөмжийг хамгийн бага хэрэглээнд тохируулна",                                     en: "All devices set to minimum consumption mode"                            }, savings: "40%" },
 ];
 
 const integrations = [
-  { name: "Home Assistant",      logo: "🏠", desc: { mn: "Дотоодоос хянах, нууцлал хамгаалалт бүхий систем",  en: "Local control system with privacy protection"         } },
-  { name: "Apple HomeKit",       logo: "🍎", desc: { mn: "iOS төхөөрөмжтэй гүн нэгдэл",                       en: "Deep integration with iOS devices"                    } },
-  { name: "Google Home",         logo: "🔵", desc: { mn: "Google туслагч болон Android нэгдэл",                en: "Google Assistant and Android integration"             } },
-  { name: "Amazon Alexa",        logo: "🔶", desc: { mn: "Дуут тушаалаар удирдах",                             en: "Voice command control"                                } },
-  { name: "Samsung SmartThings", logo: "🌐", desc: { mn: "Samsung бүтээгдэхүүнтэй нэгдэл",                    en: "Integration with Samsung products"                    } },
-  { name: "MQTT / Zigbee",       logo: "📡", desc: { mn: "Нээлттэй протоколоор бие даан тохируулах",           en: "Self-configure with open protocols"                   } },
+  { name: "Home Assistant",      Logo: Home,       desc: { mn: "Дотоодоос хянах, нууцлал хамгаалалт бүхий систем",  en: "Local control system with privacy protection"         } },
+  { name: "Apple HomeKit",       Logo: Smartphone, desc: { mn: "iOS төхөөрөмжтэй гүн нэгдэл",                       en: "Deep integration with iOS devices"                    } },
+  { name: "Google Home",         Logo: Globe,      desc: { mn: "Google туслагч болон Android нэгдэл",                en: "Google Assistant and Android integration"             } },
+  { name: "Amazon Alexa",        Logo: Mic,        desc: { mn: "Дуут тушаалаар удирдах",                             en: "Voice command control"                                } },
+  { name: "Samsung SmartThings", Logo: Layers,     desc: { mn: "Samsung бүтээгдэхүүнтэй нэгдэл",                    en: "Integration with Samsung products"                    } },
+  { name: "MQTT / Zigbee",       Logo: Radio,      desc: { mn: "Нээлттэй протоколоор бие даан тохируулах",           en: "Self-configure with open protocols"                   } },
 ];
 
 const benefits = [
-  { icon: "💡", title: { mn: "Автомат гэрэл",       en: "Auto Lighting"       }, desc: { mn: "Хүн орлоо гарлаа мэдрэн гэрэл автоматаар асаж унтардаг",                                         en: "Lights turn on/off automatically based on occupancy detection"       }, saving: "15-20%" },
-  { icon: "🌡️", title: { mn: "Ухаалаг термостат",   en: "Smart Thermostat"    }, desc: { mn: "Танай хуваарь болон гадна цаг уурт тохируулан халаалтыг оновчтой удирдана",                    en: "Optimizes heating based on your schedule and outdoor weather"        }, saving: "20-30%" },
-  { icon: "🔒", title: { mn: "Алсын хяналт",        en: "Remote Control"      }, desc: { mn: "Гэрийг гар утасаараа дурын газраас хянах, камер харах боломжтой",                              en: "Monitor your home from anywhere via smartphone, view cameras"        }, saving: "—"      },
-  { icon: "⚡", title: { mn: "Оргил цагийн хяналт", en: "Peak Hour Control"   }, desc: { mn: "Цахилгааны оргил цагийг зайлсхийн угаалтуур, халаалтыг тохируулна",                          en: "Avoid electricity peak hours by scheduling washer and heating"       }, saving: "10-15%" },
-  { icon: "☀️", title: { mn: "Нарны эрчим хүч",     en: "Solar Energy"        }, desc: { mn: "Нарны хавтан болон Smart Home-ийн интеграц — хэрэглээний оновчлол",                           en: "Solar panel and Smart Home integration — consumption optimization"   }, saving: "30-40%" },
-  { icon: "📊", title: { mn: "Бодит цагийн мэдээлэл",en: "Real-time Data"     }, desc: { mn: "Өрөө бүрийн эрчим хүчний хэрэглээг дэлгэрэнгүй хянана",                                      en: "Monitor energy consumption in detail for each room"                 }, saving: "5-10%"  },
+  { Icon: Lightbulb,   title: { mn: "Автомат гэрэл",       en: "Auto Lighting"       }, desc: { mn: "Хүн орлоо гарлаа мэдрэн гэрэл автоматаар асаж унтардаг",                                         en: "Lights turn on/off automatically based on occupancy detection"       }, saving: "15-20%" },
+  { Icon: Thermometer, title: { mn: "Ухаалаг термостат",   en: "Smart Thermostat"    }, desc: { mn: "Танай хуваарь болон гадна цаг уурт тохируулан халаалтыг оновчтой удирдана",                    en: "Optimizes heating based on your schedule and outdoor weather"        }, saving: "20-30%" },
+  { Icon: Lock,        title: { mn: "Алсын хяналт",        en: "Remote Control"      }, desc: { mn: "Гэрийг гар утасаараа дурын газраас хянах, камер харах боломжтой",                              en: "Monitor your home from anywhere via smartphone, view cameras"        }, saving: "—"      },
+  { Icon: Zap,         title: { mn: "Оргил цагийн хяналт", en: "Peak Hour Control"   }, desc: { mn: "Цахилгааны оргил цагийг зайлсхийн угаалтуур, халаалтыг тохируулна",                          en: "Avoid electricity peak hours by scheduling washer and heating"       }, saving: "10-15%" },
+  { Icon: Sun,         title: { mn: "Нарны эрчим хүч",     en: "Solar Energy"        }, desc: { mn: "Нарны хавтан болон Smart Home-ийн интеграц — хэрэглээний оновчлол",                           en: "Solar panel and Smart Home integration — consumption optimization"   }, saving: "30-40%" },
+  { Icon: BarChart2,   title: { mn: "Бодит цагийн мэдээлэл",en: "Real-time Data"     }, desc: { mn: "Өрөө бүрийн эрчим хүчний хэрэглээг дэлгэрэнгүй хянана",                                      en: "Monitor energy consumption in detail for each room"                 }, saving: "5-10%"  },
 ];
 
 const haSteps = [
@@ -85,9 +87,10 @@ function ToggleSwitch({ on, onChange }) {
 }
 
 function RoomCard({ room, lang, lightOffLabel, onToggleLight }) {
+  const RoomIcon = room.Icon;
   return (
     <div className={`room-card ${room.light ? "lit" : ""}`}>
-      <div className="room-icon">{room.icon}</div>
+      <div className="room-icon">{RoomIcon && <RoomIcon size={24} />}</div>
       <div className="room-name">{room.name[lang]}</div>
 
       <div className="room-controls">
@@ -253,16 +256,19 @@ export default function SmartHomePage() {
                   {t.smarthome.benefits_title}
                 </h3>
                 <div className="benefits-list">
-                  {benefits.map(b => (
+                  {benefits.map(b => {
+                    const BIcon = b.Icon;
+                    return (
                     <div key={b.title.en} className="benefit-row">
-                      <span className="benefit-icon">{b.icon}</span>
+                      <span className="benefit-icon">{BIcon && <BIcon size={18} />}</span>
                       <div className="benefit-info">
                         <span className="benefit-title">{b.title[lang]}</span>
                         <span className="benefit-desc">{b.desc[lang]}</span>
                       </div>
                       {b.saving !== "—" && <span className="benefit-saving">{b.saving}</span>}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -271,15 +277,18 @@ export default function SmartHomePage() {
             <div className="card mb-3">
               <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.smarthome.integrations_title}</h3>
               <div className="grid grid-3">
-                {integrations.map(int => (
-                  <div key={int.name} className="integration-card">
-                    <span className="int-logo">{int.logo}</span>
-                    <div>
-                      <div className="int-name">{int.name}</div>
-                      <div className="int-desc">{int.desc[lang]}</div>
+                {integrations.map(int => {
+                  const IntLogo = int.Logo;
+                  return (
+                    <div key={int.name} className="integration-card">
+                      <span className="int-logo">{IntLogo && <IntLogo size={20} />}</span>
+                      <div>
+                        <div className="int-name">{int.name}</div>
+                        <div className="int-desc">{int.desc[lang]}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -339,13 +348,15 @@ export default function SmartHomePage() {
           <div className="animate-fade">
             <p className="sh-chart-note mb-2">{t.smarthome.scenarios_hint}</p>
             <div className="grid grid-2">
-              {scenarios.map(sc => (
+              {scenarios.map(sc => {
+                const ScIcon = sc.Icon;
+                return (
                 <button
                   key={sc.id}
                   className={`scenario-card ${activeScenario === sc.id ? "active" : ""}`}
                   onClick={() => setActiveScenario(sc.id)}
                 >
-                  <div className="sc-emoji">{sc.icon}</div>
+                  <div className="sc-emoji">{ScIcon && <ScIcon size={22} />}</div>
                   <div className="sc-info">
                     <div className="sc-name">{sc.name[lang]}</div>
                     <div className="sc-desc">{sc.desc[lang]}</div>
@@ -360,7 +371,8 @@ export default function SmartHomePage() {
                     </div>
                   )}
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             <div className="card mt-3">

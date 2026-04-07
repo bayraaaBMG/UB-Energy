@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 
-import { Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp,
+  Zap, User, Plug, Building2, Cloud, Leaf, Sun, TrendingUp, Thermometer, BarChart2,
+} from "lucide-react";
 import "./OWIDPage.css";
 
 const CHARTS = [
@@ -14,7 +17,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын жилийн анхдагч эрчим хүчний хэрэглээг эх сурвалжаар нь (нүүрс, газрийн тос, хий, сэргэн засагдах эрчим хүч) харуулна.",
     desc_en: "Mongolia's annual primary energy consumption broken down by source — coal, oil, gas, and renewables.",
     url: "https://ourworldindata.org/grapher/primary-energy-consumption-by-source?tab=chart&country=MNG",
-    icon: "⚡", color: "#1a6eb5",
+    Icon: Zap, color: "#1a6eb5",
   },
   {
     id: "energy_per_capita",
@@ -24,7 +27,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын нэг хүнд ногдох жилийн анхдагч эрчим хүчний хэрэглээ (кВт·цаг/хүн).",
     desc_en: "Mongolia's annual primary energy consumption per person (kWh/person).",
     url: "https://ourworldindata.org/grapher/per-capita-energy-use?tab=chart&country=MNG",
-    icon: "👤", color: "#2a9d8f",
+    Icon: User, color: "#2a9d8f",
   },
   {
     id: "electricity_mix",
@@ -34,7 +37,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын цахилгаан эрчим хүчний үйлдвэрлэлийн эх сурвалжийн хуваарилалт — нүүрс, нарны, салхины болон бусад.",
     desc_en: "Mongolia's electricity production breakdown by source — coal, solar, wind, and others.",
     url: "https://ourworldindata.org/grapher/electricity-mix?tab=chart&country=MNG",
-    icon: "🔌", color: "#e9c46a",
+    Icon: Plug, color: "#e9c46a",
   },
   {
     id: "elec_production",
@@ -44,7 +47,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын нийт цахилгаан эрчим хүчний үйлдвэрлэл — өсөлтийн хандлага.",
     desc_en: "Mongolia's total electricity generation — growth trend over time.",
     url: "https://ourworldindata.org/grapher/electricity-prod-source-stacked?tab=chart&country=MNG",
-    icon: "🏭", color: "#f4a261",
+    Icon: Building2, color: "#f4a261",
   },
   {
     id: "co2_total",
@@ -54,7 +57,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсаас жил бүр ялгарах нийт нүүрсхүчлийн хийн хэмжээ (шаталтын эх сурвалжаас).",
     desc_en: "Mongolia's total annual CO₂ emissions from combustion sources.",
     url: "https://ourworldindata.org/grapher/annual-co2-emissions-per-country?tab=chart&country=MNG",
-    icon: "☁️", color: "#e63946",
+    Icon: Cloud, color: "#e63946",
   },
   {
     id: "co2_per_capita",
@@ -64,7 +67,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын нэг хүнд ногдох CO₂ ялгаруулалт — дэлхийн дундажтай харьцуулан.",
     desc_en: "Mongolia's per capita CO₂ emissions compared to the global average.",
     url: "https://ourworldindata.org/grapher/co-emissions-per-capita?tab=chart&country=MNG",
-    icon: "🌍", color: "#a8c5e0",
+    Icon: Globe, color: "#a8c5e0",
   },
   {
     id: "renewable",
@@ -74,7 +77,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын нийт цахилгааны дотор сэргэн засагдах (нарны, салхины, усан) эрчим хүчний эзлэх хувь.",
     desc_en: "Share of solar, wind, and hydro in Mongolia's total electricity generation.",
     url: "https://ourworldindata.org/grapher/renewable-share-energy?tab=chart&country=MNG",
-    icon: "♻️", color: "#2a9d8f",
+    Icon: Leaf, color: "#2a9d8f",
   },
   {
     id: "solar_capacity",
@@ -84,7 +87,7 @@ const CHARTS = [
     desc_mn: "Монгол Улсын суурилуулсан нарны хавтангийн нийт хүчин чадал (мегаватт).",
     desc_en: "Mongolia's total installed solar panel capacity in megawatts.",
     url: "https://ourworldindata.org/grapher/installed-solar-pv-capacity?tab=chart&country=MNG",
-    icon: "☀️", color: "#e9c46a",
+    Icon: Sun, color: "#e9c46a",
   },
 ];
 
@@ -94,6 +97,7 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
   const title = lang === "mn" ? chart.title_mn : chart.title_en;
   const desc  = lang === "mn" ? chart.desc_mn  : chart.desc_en;
   const subtitle = lang === "mn" ? chart.title_en : chart.title_mn;
+  const ChartIcon = chart.Icon;
 
   return (
     <div className={`owid-chart-card card ${expanded ? "expanded" : ""}`}>
@@ -104,7 +108,7 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
       >
         <div className="owid-chart-left">
           <span className="owid-chart-icon" style={{ background: `${chart.color}22`, color: chart.color }}>
-            {chart.icon}
+            {ChartIcon && <ChartIcon size={18} />}
           </span>
           <div>
             <h3 className="owid-chart-title">{title}</h3>
@@ -166,20 +170,20 @@ export default function OWIDPage() {
   const [expandedId, setExpandedId] = useState("primary_energy");
 
   const SECTIONS = [
-    { id: "all",         label: t.owid.section_all,       icon: "🌐" },
-    { id: "energy_mix",  label: t.owid.section_energy,    icon: "⚡" },
-    { id: "electricity", label: t.owid.section_elec,      icon: "🔌" },
-    { id: "co2",         label: t.owid.section_co2,       icon: "☁️" },
-    { id: "renewable",   label: t.owid.section_renewable, icon: "♻️" },
+    { id: "all",         label: t.owid.section_all,       Icon: Globe },
+    { id: "energy_mix",  label: t.owid.section_energy,    Icon: Zap },
+    { id: "electricity", label: t.owid.section_elec,      Icon: Plug },
+    { id: "co2",         label: t.owid.section_co2,       Icon: Cloud },
+    { id: "renewable",   label: t.owid.section_renewable, Icon: Leaf },
   ];
 
   const KEY_FACTS = [
-    { icon: "⚡", label: t.owid.fact_total_label,  value: "~8 GWh/yr",      note: "IEA 2022" },
-    { icon: "🏭", label: t.owid.fact_source_label, value: t.owid.fact_source_val, note: t.owid.fact_source_note },
-    { icon: "☁️", label: t.owid.fact_co2_label,   value: "~7.5 t/yr",      note: t.owid.fact_co2_note },
-    { icon: "☀️", label: t.owid.fact_solar_label,  value: t.owid.fact_solar_val, note: t.owid.fact_solar_note },
-    { icon: "📈", label: t.owid.fact_growth_label, value: "+3.8%/yr",       note: "2010–2022" },
-    { icon: "🌡️", label: t.owid.fact_hdd_label,   value: "4,500+ HDD",     note: t.owid.fact_hdd_note },
+    { Icon: Zap,         label: t.owid.fact_total_label,  value: "~8 GWh/yr",      note: "IEA 2022" },
+    { Icon: Building2,   label: t.owid.fact_source_label, value: t.owid.fact_source_val, note: t.owid.fact_source_note },
+    { Icon: Cloud,       label: t.owid.fact_co2_label,   value: "~7.5 t/yr",      note: t.owid.fact_co2_note },
+    { Icon: Sun,         label: t.owid.fact_solar_label,  value: t.owid.fact_solar_val, note: t.owid.fact_solar_note },
+    { Icon: TrendingUp,  label: t.owid.fact_growth_label, value: "+3.8%/yr",       note: "2010–2022" },
+    { Icon: Thermometer, label: t.owid.fact_hdd_label,   value: "4,500+ HDD",     note: t.owid.fact_hdd_note },
   ];
 
   const visible = activeSection === "all" ? CHARTS : CHARTS.filter(c => c.section === activeSection);
@@ -212,16 +216,19 @@ export default function OWIDPage() {
         </div>
 
         <div className="owid-sections mb-3">
-          {SECTIONS.map(s => (
-            <button key={s.id} className={`owid-sec-btn ${activeSection === s.id ? "active" : ""}`}
-              onClick={() => setActiveSection(s.id)}>
-              <span>{s.icon}</span>
-              {s.label}
-              <span className="sec-count">
-                {s.id === "all" ? CHARTS.length : CHARTS.filter(c => c.section === s.id).length}
-              </span>
-            </button>
-          ))}
+          {SECTIONS.map(s => {
+            const SIcon = s.Icon;
+            return (
+              <button key={s.id} className={`owid-sec-btn ${activeSection === s.id ? "active" : ""}`}
+                onClick={() => setActiveSection(s.id)}>
+                {SIcon && <SIcon size={14} />}
+                {s.label}
+                <span className="sec-count">
+                  {s.id === "all" ? CHARTS.length : CHARTS.filter(c => c.section === s.id).length}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="owid-charts-list">
@@ -240,16 +247,19 @@ export default function OWIDPage() {
         <div className="card owid-facts mt-3">
           <h3 className="section-title">{t.owid.facts_title}</h3>
           <div className="facts-grid">
-            {KEY_FACTS.map(f => (
-              <div key={f.label} className="fact-item">
-                <span className="fact-icon">{f.icon}</span>
-                <div className="fact-text">
-                  <div className="fact-label">{f.label}</div>
-                  <div className="fact-value">{f.value}</div>
-                  <div className="fact-note">{f.note}</div>
+            {KEY_FACTS.map(f => {
+              const FIcon = f.Icon;
+              return (
+                <div key={f.label} className="fact-item">
+                  <span className="fact-icon">{FIcon && <FIcon size={20} />}</span>
+                  <div className="fact-text">
+                    <div className="fact-label">{f.label}</div>
+                    <div className="fact-value">{f.value}</div>
+                    <div className="fact-note">{f.note}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
