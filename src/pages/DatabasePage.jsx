@@ -146,15 +146,15 @@ function ResultsModal({ building, lang, t, onClose }) {
   // Simple recs based on what they entered
   const recs = [];
   if (building.insulation_quality === "poor")
-    recs.push(mn ? "Дулаалгыг сайжруулна уу — хэрэглээг 20–30% бууруулна" : "Improve insulation — can cut usage 20–30%");
+    recs.push(t.database.rec_insulation);
   if (building.window_type === "single")
-    recs.push(mn ? "2–3 давхар шилтэй цонх солино уу" : "Upgrade to double/triple glazing");
+    recs.push(t.database.rec_glazing);
   if (building.heating_type === "electric")
-    recs.push(mn ? "Төвийн халаалтанд шилжих нь эдийн засагтай" : "District heating is more cost-effective");
+    recs.push(t.database.rec_district_heat);
   if ((building.occupancy || 0) > 0 && (building.area || 0) / building.occupancy < 15)
-    recs.push(mn ? "Хэт их хүн нягтшилт — агааржуулалт нэмэгдүүлнэ үү" : "High occupancy density — improve ventilation");
+    recs.push(t.database.rec_ventilation);
   if (recs.length === 0)
-    recs.push(mn ? "Одоогийн горим сайн байна — тогтмол хяналт хангалттай" : "Current setup looks good — regular monitoring is sufficient");
+    recs.push(t.database.rec_ok);
 
   const typeLabel = t.predictor.building_types[building.type] || building.type;
 
@@ -184,26 +184,26 @@ function ResultsModal({ building, lang, t, onClose }) {
           {/* ── Key stats ── */}
           <div className="res-stats-row">
             <StatCard
-              label={mn ? "Жилийн хэрэглээ (тооцоо)" : "Annual energy (calc)"}
+              label={t.database.modal_annual_calc}
               value={calc.total.toLocaleString()}
-              unit={mn ? "kWh/жил" : "kWh/yr"}
+              unit={t.database.modal_kwh_yr}
               color="#3a8fd4"
             />
             <StatCard
-              label={mn ? "Сарын хэрэглээ (тооцоо)" : "Monthly predicted"}
+              label={t.database.modal_monthly_pred}
               value={calc.monthlyPred.toLocaleString()}
-              unit={mn ? "kWh/сар" : "kWh/mo"}
+              unit={t.database.modal_kwh_mo}
               color="#9b72cf"
             />
             <StatCard
-              label={mn ? "CO₂ ялгарал" : "CO₂ emissions"}
+              label={t.database.modal_co2}
               value={calc.co2}
-              unit={mn ? "т CO₂/жил" : "t CO₂/yr"}
+              unit={t.database.modal_co2_yr}
               color={calc.impactColor}
               sub={`≈ ${calc.pm25.toLocaleString()} μg PM2.5`}
             />
             <StatCard
-              label={mn ? "Эрчим хүчний эрч" : "Energy intensity"}
+              label={t.database.modal_intensity}
               value={calc.intensity}
               unit="kWh/m²"
               color={GRADE_COLORS[calc.grade]}
@@ -214,7 +214,7 @@ function ResultsModal({ building, lang, t, onClose }) {
           <div className="res-section">
             <div className="res-section-title">
               <BarChart2 size={14} />
-              {mn ? "Үр ашгийн зэрэглэл" : "Efficiency Grade"}
+              {t.predictor.efficiency_grade}
             </div>
             <GradeBar grade={calc.grade} />
             <div className="res-grade-hint">
@@ -236,13 +236,13 @@ function ResultsModal({ building, lang, t, onClose }) {
             <div className="res-section">
               <div className="res-section-title">
                 <TrendingUp size={14} />
-                {mn ? "Бодит vs Тооцоолсон хэрэглээ" : "Actual vs Predicted"}
+                {t.database.modal_actual_vs_pred}
               </div>
               <div className="res-compare-row">
                 <div className="res-compare-box actual">
-                  <div className="rcb-label">{mn ? "Бодит (таны оруулсан)" : "Actual (submitted)"}</div>
+                  <div className="rcb-label">{t.database.modal_actual}</div>
                   <div className="rcb-value">{actualMonthly.toLocaleString()}</div>
-                  <div className="rcb-unit">{mn ? "kWh/сар" : "kWh/mo"}</div>
+                  <div className="rcb-unit">{t.database.modal_kwh_mo}</div>
                 </div>
                 <div className={`res-compare-arrow ${diff > 0 ? "over" : "under"}`}>
                   {diff > 0
@@ -253,17 +253,17 @@ function ResultsModal({ building, lang, t, onClose }) {
                   <span>{diff > 0 ? `+${diff}%` : diff < 0 ? `${diff}%` : "0%"}</span>
                 </div>
                 <div className="res-compare-box pred">
-                  <div className="rcb-label">{mn ? "Тооцоолсон (EUI загвар)" : "Predicted (EUI model)"}</div>
+                  <div className="rcb-label">{t.database.modal_pred_model}</div>
                   <div className="rcb-value">{calc.monthlyPred.toLocaleString()}</div>
-                  <div className="rcb-unit">{mn ? "kWh/сар" : "kWh/mo"}</div>
+                  <div className="rcb-unit">{t.database.modal_kwh_mo}</div>
                 </div>
               </div>
               <div className={`res-compare-note ${Math.abs(diff) <= 15 ? "ok" : Math.abs(diff) <= 30 ? "warn" : "bad"}`}>
                 {Math.abs(diff) <= 15
-                  ? (mn ? "✅ Загварын тооцоо бодит хэрэглээтэй таарч байна" : "✅ Model prediction matches actual usage well")
+                  ? t.database.modal_match
                   : Math.abs(diff) <= 30
-                    ? (mn ? "⚠️ Зарим ялгаа байна — дулаалга эсвэл хэрэглээний онцлог нөлөөлж байна" : "⚠️ Some deviation — insulation or usage patterns may differ")
-                    : (mn ? "❗ Томоохон ялгаа байна — орчны нөхцөл, тоног төхөөрөмж дахин шалгана уу" : "❗ Large deviation — check environmental conditions and equipment")}
+                    ? t.database.modal_deviation
+                    : t.database.modal_large_dev}
               </div>
             </div>
           )}
@@ -272,7 +272,7 @@ function ResultsModal({ building, lang, t, onClose }) {
           <div className="res-section">
             <div className="res-section-title">
               <Zap size={14} />
-              {mn ? "Сарын эрчим хүчний хуваарилалт" : "Monthly Energy Distribution"}
+              {t.database.modal_monthly_dist}
             </div>
 
             {/* Source legend with explanation */}
@@ -280,7 +280,7 @@ function ResultsModal({ building, lang, t, onClose }) {
               <div className="rsl-item">
                 <span className="rsl-swatch bar" style={{ background: "#3a8fd4" }} />
                 <div>
-                  <span className="rsl-name">{mn ? "Тооцоолсон (баган)" : "Predicted (bars)"}</span>
+                  <span className="rsl-name">{t.database.modal_pred_bars}</span>
                   <span className="rsl-desc">
                     {mn
                       ? "EUI загвар: талбай × тохируулагдсан коэффициент — УБ-ын цаг агаарын хэв маягаар 12 сард хуваарилсан"
@@ -292,7 +292,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <div className="rsl-item">
                   <span className="rsl-swatch line" />
                   <div>
-                    <span className="rsl-name">{mn ? "Бодит (тасархай шугам)" : "Actual (dashed line)"}</span>
+                    <span className="rsl-name">{t.database.modal_actual_dashed}</span>
                     <span className="rsl-desc">
                       {mn
                         ? "Таны оруулсан сарын цахилгааны хэрэглээ — Өгөгдөл оруулах хуудаснаас"
@@ -315,14 +315,14 @@ function ResultsModal({ building, lang, t, onClose }) {
                     formatter={(v, name) => [
                       `${v.toLocaleString()} kWh`,
                       name === "pred"
-                        ? (mn ? "Тооцоолсон (EUI загвар)" : "Predicted (EUI model)")
-                        : (mn ? "Бодит (таны оруулсан)" : "Actual (submitted)"),
+                        ? t.database.modal_pred_model
+                        : t.database.modal_actual,
                     ]}
                   />
                   <Bar dataKey="pred" fill="#3a8fd4" radius={[3,3,0,0]} maxBarSize={22} name="pred" />
                   {actualMonthly != null && (
                     <ReferenceLine y={actualMonthly} stroke="#f4a261" strokeDasharray="5 3"
-                      label={{ value: mn ? "Бодит" : "Actual", fill: "#f4a261", fontSize: 9, position: "insideRight" }} />
+                      label={{ value: t.database.modal_actual_short, fill: "#f4a261", fontSize: 9, position: "insideRight" }} />
                   )}
                 </BarChart>
               </ResponsiveContainer>
@@ -330,7 +330,7 @@ function ResultsModal({ building, lang, t, onClose }) {
 
             {/* Methodology note */}
             <div className="res-method-note">
-              <span className="rmn-label">{mn ? "Аргачлал:" : "Methodology:"}</span>
+              <span className="rmn-label">{t.database.modal_methodology}</span>
               {mn
                 ? `Жилийн нийт тооцоог (${calc.total.toLocaleString()} kWh) УБ-ын сарын хэрэглээний харьцаагаар хуваарилав. Дулаалга: ×${(INSUL_FACTOR[building.insulation_quality]||1).toFixed(2)}, цонх: ×${(WINDOW_FACTOR[building.window_type]||1).toFixed(2)}.`
                 : `Annual total (${calc.total.toLocaleString()} kWh) split by UB monthly consumption ratios. Insulation adj: ×${(INSUL_FACTOR[building.insulation_quality]||1).toFixed(2)}, window adj: ×${(WINDOW_FACTOR[building.window_type]||1).toFixed(2)}.`}
@@ -341,40 +341,40 @@ function ResultsModal({ building, lang, t, onClose }) {
           <div className="res-section">
             <div className="res-section-title">
               <Ruler size={14} />
-              {mn ? "Эрчим хүчний задаргаа" : "Energy Breakdown"}
+              {t.database.modal_energy_breakdown}
             </div>
             <div className="res-breakdown">
               <div className="res-bd-row">
-                <span className="rbd-label">{mn ? "Барилгын өндөр" : "Building height"}</span>
+                <span className="rbd-label">{t.database.modal_height_label}</span>
                 <span className="rbd-formula">
-                  {building.floors ?? parseInt(building.total_floors) ?? "?"} {mn ? "давхар" : "floors"} × {FLOOR_HEIGHT}m
+                  {building.floors ?? parseInt(building.total_floors) ?? "?"} {t.database.modal_floors_unit} × {FLOOR_HEIGHT}m
                 </span>
-                <span className="rbd-val">{calc.height} {mn ? "м" : "m"}</span>
+                <span className="rbd-val">{calc.height} {t.database.modal_height_unit}</span>
               </div>
               <div className="res-bd-row">
-                <span className="rbd-label">{mn ? "Нийт эзэлхүүн" : "Total volume"}</span>
+                <span className="rbd-label">{t.database.modal_volume_label}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} {mn ? "м²" : "m²"} × {calc.height} {mn ? "м" : "m"}
+                  {(building.area||0).toLocaleString()} {t.common.units_sqm} × {calc.height} {t.database.modal_height_unit}
                 </span>
-                <span className="rbd-val">{calc.volume.toLocaleString()} {mn ? "м³" : "m³"}</span>
+                <span className="rbd-val">{calc.volume.toLocaleString()} {t.database.modal_volume_unit}</span>
               </div>
               <div className="res-bd-row">
-                <span className="rbd-label">{mn ? "Халаалтын ачаалал" : "Heating load"}</span>
+                <span className="rbd-label">{t.database.modal_heating_load}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} × {calc.euiH} kWh/{mn ? "м²" : "m²"}
+                  {(building.area||0).toLocaleString()} × {calc.euiH} kWh/{t.common.units_sqm}
                 </span>
                 <span className="rbd-val">{calc.heating.toLocaleString()} kWh</span>
               </div>
               <div className="res-bd-row">
-                <span className="rbd-label">{mn ? "Цахилгаан" : "Electricity"}</span>
+                <span className="rbd-label">{t.database.modal_electricity}</span>
                 <span className="rbd-formula">
-                  {(building.area||0).toLocaleString()} × {calc.euiE} kWh/{mn ? "м²" : "m²"}
+                  {(building.area||0).toLocaleString()} × {calc.euiE} kWh/{t.common.units_sqm}
                 </span>
                 <span className="rbd-val">{calc.electric.toLocaleString()} kWh</span>
               </div>
               <div className="res-bd-row total">
-                <span className="rbd-label">{mn ? "Нийт" : "Total"}</span>
-                <span className="rbd-formula">{mn ? "Халаалт + Цахилгаан" : "Heating + Electricity"}</span>
+                <span className="rbd-label">{t.database.modal_total}</span>
+                <span className="rbd-formula">{t.database.modal_heat_elec}</span>
                 <span className="rbd-val">{calc.total.toLocaleString()} kWh</span>
               </div>
               <div className="res-bd-row">
@@ -382,7 +382,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 <span className="rbd-formula">
                   ({calc.heating.toLocaleString()}×0.28 + {calc.electric.toLocaleString()}×0.73) / 1000
                 </span>
-                <span className="rbd-val" style={{ color: calc.impactColor }}>{calc.co2} {mn ? "т" : "t"}</span>
+                <span className="rbd-val" style={{ color: calc.impactColor }}>{calc.co2} {t.predictor.co2_unit}</span>
               </div>
               {calc.adj !== 1 && (
                 <div className="res-adj-note">
@@ -398,7 +398,7 @@ function ResultsModal({ building, lang, t, onClose }) {
           <div className="res-section">
             <div className="res-section-title">
               <Lightbulb size={14} />
-              {mn ? "Зөвлөмж" : "Recommendations"}
+              {t.database.modal_recommendations}
             </div>
             <ul className="res-recs">
               {recs.map((r, i) => (
@@ -513,9 +513,9 @@ export default function DatabasePage() {
               <UserCheck size={14} />
               <select className="form-select" style={{ width: "auto" }}
                 value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
-                <option value="all">{mn ? "Бүгд" : "All sources"}</option>
-                <option value="mock">{mn ? "Жишээ өгөгдөл" : "Sample data"}</option>
-                <option value="mine">{isAdmin ? (mn ? "Хэрэглэгчийн бүгд" : "All user records") : (mn ? "Миний оруулсан" : "My submissions")}</option>
+                <option value="all">{t.database.filter_all}</option>
+                <option value="mock">{t.database.filter_sample}</option>
+                <option value="mine">{isAdmin ? t.database.filter_user_all : t.database.filter_mine}</option>
               </select>
             </div>
           </div>
@@ -541,10 +541,10 @@ export default function DatabasePage() {
           {userRecords.length > 0 && (
             <span className="db-stat-badge user-badge">
               <UserCheck size={13} />
-              {isAdmin ? (mn ? "Хэрэглэгчийн" : "User records") : (mn ? "Миний оруулсан" : "My records")}: <strong>{userRecords.length} {mn ? "барилга" : "bldg"}</strong>
+              {isAdmin ? t.database.user_records_label : t.database.my_records_label}: <strong>{userRecords.length} {t.admin.buildings_unit}</strong>
               {userRecords.filter(b => b.source === "predictor").length > 0 && (
                 <span style={{ opacity: 0.7, fontWeight: 400, fontSize: "0.75rem" }}>
-                  {" "}({userRecords.filter(b => b.source === "predictor").length} {mn ? "таамаглал" : "predicted"})
+                  {" "}({userRecords.filter(b => b.source === "predictor").length} {t.database.predicted_tag})
                 </span>
               )}
             </span>
@@ -561,7 +561,7 @@ export default function DatabasePage() {
                   { key: "name",          label: t.database.building },
                   { key: "type",          label: t.database.type },
                   { key: "area",          label: t.database.area },
-                  { key: "monthly_usage", label: mn ? "Сарын kWh" : "Monthly kWh" },
+                  { key: "monthly_usage", label: t.database.monthly_kwh_col },
                   { key: "usage",         label: t.database.usage },
                   { key: "year",          label: t.database.year },
                   { key: "district",      label: t.database.district },
@@ -600,7 +600,7 @@ export default function DatabasePage() {
                       {isMine && <span className="user-dot" />}
                       <span>{b.name}</span>
                       {b.source === "predictor" && (
-                        <span className="src-tag pred-tag">{mn ? "Таамаглал" : "Predicted"}</span>
+                        <span className="src-tag pred-tag">{t.database.predicted_tag}</span>
                       )}
                     </div>
                   </td>
@@ -626,24 +626,24 @@ export default function DatabasePage() {
                   </td>
                   <td>{b.year}</td>
                   <td>{b.district}</td>
-                  <td>{b.floors != null ? `${b.floors} ${mn ? "давхар" : "fl."}` : "—"}</td>
+                  <td>{b.floors != null ? `${b.floors} ${t.database.floors_display}` : "—"}</td>
                   <td>
                     <div className="table-actions">
                       <button
                         className="action-btn view results-btn"
-                        title={mn ? "Үр дүн харах" : "View results"}
-                        aria-label={mn ? "Үр дүн харах" : "View results"}
+                        title={t.database.view_results}
+                        aria-label={t.database.view_results}
                         onClick={() => setResultsBuilding(b)}
                       >
                         <BarChart2 size={14} />
                       </button>
                       {isMine && confirmId === b.id ? (
                         <>
-                          <button className="action-btn delete" onClick={() => confirm(handleDelete)} aria-label={mn ? "Тийм, устга" : "Yes, delete"}>
-                            {mn ? "Тийм" : "Yes"}
+                          <button className="action-btn delete" onClick={() => confirm(handleDelete)} aria-label={t.admin.confirm_delete}>
+                            {t.admin.confirm_yes}
                           </button>
                           <button className="action-btn" onClick={cancel} aria-label={t.common.close}>
-                            {mn ? "Үгүй" : "No"}
+                            {t.admin.confirm_no}
                           </button>
                         </>
                       ) : isMine && (
