@@ -1,10 +1,13 @@
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useTheme } from "../contexts/ThemeContext";
 import { Accessibility, Type, Contrast, Eye, Keyboard, Check } from "lucide-react";
 import "./AccessibilityPage.css";
 
 export default function AccessibilityPage() {
   const { t } = useLang();
+  usePageTitle(t.nav.accessibility);
   const { fontSize, setFontSize, highContrast, setHighContrast } = useTheme();
 
   const fontSizes = [

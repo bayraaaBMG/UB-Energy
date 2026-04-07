@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { Lightbulb, Home, Sun, Thermometer, Zap, Users, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import SmartHomePage from "./SmartHomePage";
 import "./RecommendationsPage.css";
@@ -178,6 +180,7 @@ function RecSection({ rec, lang, t }) {
 
 export default function RecommendationsPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.recommendations);
 
   return (
     <div className="recommendations-page">

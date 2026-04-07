@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
@@ -416,6 +418,7 @@ function ResultsModal({ building, lang, t, onClose }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DatabasePage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.database);
   const { user } = useAuth();
   const mn = lang === "mn";
   const [search, setSearch] = useState("");

@@ -4,6 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
@@ -622,6 +624,7 @@ function HowItWorks({ t, lang }) {
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MapPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.map);
   const { user } = useAuth();
 
   // Building cache: Map<id, building> — pre-seeded with mock + user buildings

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import { LogIn, UserPlus, Building2, User, Eye, EyeOff, Zap } from "lucide-react";
 import { APP_NAME } from "../config/constants";
@@ -8,6 +10,7 @@ import "./LoginPage.css";
 
 export default function LoginPage() {
   const { t } = useLang();
+  usePageTitle(t.nav.login);
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

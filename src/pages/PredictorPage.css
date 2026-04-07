@@ -125,8 +125,6 @@
   display: inline-block;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* ── Right panel ────────────────────────────────────────────────────────────── */
 .predictor-right { display: flex; flex-direction: column; gap: 1.5rem; }
 

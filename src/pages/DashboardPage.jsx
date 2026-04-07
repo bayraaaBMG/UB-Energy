@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import {
@@ -53,6 +55,7 @@ function AlertBox({ title, message, onClose }) {
 
 export default function DashboardPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.dashboard);
   const { user } = useAuth();
   const mn = lang === "mn";
   const [period, setPeriod] = useState("monthly");

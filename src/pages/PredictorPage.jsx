@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, Zap, TrendingUp, Thermometer,
@@ -215,6 +217,7 @@ function GradeBar({ grade }) {
 
 export default function PredictorPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.predictor);
   const { user } = useAuth();
   const mn = lang === "mn";
   const navigate = useNavigate();

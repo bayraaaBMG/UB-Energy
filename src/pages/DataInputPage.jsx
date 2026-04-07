@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
@@ -94,6 +96,7 @@ function FormSection({ emoji, title, color, children }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.dataInput);
   const { user } = useAuth();
   const mn = lang === "mn";
   const fileRef = useRef(null);

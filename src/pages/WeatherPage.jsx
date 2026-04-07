@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import {
   Cloud, Wind, Droplets, Thermometer,
   Eye, Gauge, Snowflake, AlertTriangle,
@@ -256,6 +258,7 @@ function DayCard({ day, active, onClick, t }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WeatherPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.weather);
   const mn = lang === "mn";
 
   const [weather, setWeather] = useState(null);

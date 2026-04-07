@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp } from "lucide-react";
 import "./OWIDPage.css";
 
@@ -159,6 +161,7 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
 
 export default function OWIDPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.owid);
   const [activeSection, setActiveSection] = useState("all");
   const [expandedId, setExpandedId] = useState("primary_energy");
 

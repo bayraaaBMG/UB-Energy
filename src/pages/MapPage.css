@@ -46,8 +46,6 @@
   animation: spin 0.85s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* ─── Building count badge ────────────────────────────────────────────────── */
 .bldg-mock-note { color: #f4a261; font-weight: 600; }
 

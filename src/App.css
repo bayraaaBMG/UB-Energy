@@ -1,5 +1,18 @@
 /* App-level styles - component styles are in their own CSS files */
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.wl-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary-light);
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
 .skip-link {
   position: absolute;
   top: -100%;

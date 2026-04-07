@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
@@ -39,6 +41,7 @@ const FEATURES = (t) => [
 
 export default function HomePage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.home);
   const { user } = useAuth();
   const mn = lang === "mn";
   const monthlyData = monthlyEnergyData.map(d => ({

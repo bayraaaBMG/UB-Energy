@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLang } from "../contexts/LanguageContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+
 import { useAuth } from "../contexts/AuthContext";
 import {
   Settings, Users, BarChart2, Database, Shield,
@@ -26,6 +28,7 @@ const COLORS = ["#1a6eb5", "#2a9d8f", "#e9c46a", "#e63946", "#f4a261"];
 
 export default function AdminPage() {
   const { t, lang } = useLang();
+  usePageTitle(t.nav.admin);
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [allUsers, setAllUsers] = useState(() => loadAllUsers());
