@@ -27,7 +27,7 @@ const navItems = (t, user) => [
 ];
 
 export default function Navbar() {
-  const { t, lang, toggleLang } = useLang();
+  const { t, toggleLang } = useLang();
   const { user, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,6 +44,7 @@ export default function Navbar() {
   }, [menuOpen]);
 
   // Close menu on route change
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   const items = navItems(t, user);
@@ -77,7 +78,7 @@ export default function Navbar() {
         <div className="navbar-actions">
           <button className="lang-btn" onClick={toggleLang} title="Switch language">
             <Globe size={16} />
-            <span>{lang === "mn" ? "EN" : "МН"}</span>
+            <span>{t.common.lang_switch}</span>
           </button>
 
           {user ? (

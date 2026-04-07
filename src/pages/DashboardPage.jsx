@@ -17,7 +17,7 @@ import {
   monthlyEnergyData, dailyEnergyData, yearlyEnergyData,
   featureImportanceData, shapData, modelMetrics
 } from "../data/mockData";
-import { getUserBuildings } from "./DataInputPage";
+import { getUserBuildings } from "../utils/buildingStorage";
 import "./DashboardPage.css";
 
 function MetricCard({ icon: Icon, label, value, unit, trend, color = "#3a8fd4" }) {

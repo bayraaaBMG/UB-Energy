@@ -375,13 +375,13 @@ function BuildingPanel({ building, lang, t }) {
           <div className="tab-section">
             <SectionHeader icon={Ruler} color="#3a8fd4" title={t.map.sec_geom} />
             <CalcRow label={t.map.row_area}
-              formula={lang === "mn" ? "дэвсгэрийн хэмжилт" : "from polygon footprint"}
+              formula={t.map.formula_poly}
               value={building.area.toLocaleString()} unit="m²" />
             <CalcRow label={t.map.row_floors}
-              formula={lang === "mn" ? "OSM building:levels" : "OSM building:levels tag"}
-              value={building.floors} unit={lang === "mn" ? "давхар" : "fl."} />
+              formula={t.map.formula_osm_levels}
+              value={building.floors} unit={t.common.floors_unit} />
             <CalcRow label={t.map.row_floorh}
-              formula={lang === "mn" ? "стандарт" : "standard assumption"}
+              formula={t.map.formula_standard}
               value={FLOOR_HEIGHT.toFixed(1)} unit="m" />
             <CalcRow label={t.map.row_height}
               formula={t.map.formula_height}
@@ -412,7 +412,7 @@ function BuildingPanel({ building, lang, t }) {
               value={`${calc.heating.toLocaleString()} + ${calc.electric.toLocaleString()} = ${calc.total.toLocaleString()}`}
               unit="kWh/yr" highlight />
             <CalcRow label={t.map.row_intens}
-              formula={lang === "mn" ? "нийт / талбай" : "total / area"}
+              formula={t.map.formula_total_per_area}
               value={calc.intensity} unit="kWh/m²" />
 
             <div style={{ marginTop: "0.75rem" }}>
@@ -437,7 +437,7 @@ function BuildingPanel({ building, lang, t }) {
               value={`${calc.co2} × 1350 = ${calc.pm25.toLocaleString()}`}
               unit="kg/yr" />
             <CalcRow label={t.map.row_winter}
-              formula={lang === "mn" ? "10-р–3-р сарын хэрэглээ" : "Oct–Mar share"}
+              formula={t.map.formula_oct_mar}
               value="62" unit="%" />
             <CalcRow label={t.map.row_impact}
               value={
@@ -452,9 +452,9 @@ function BuildingPanel({ building, lang, t }) {
               </div>
               <div className="em-bar-lbls">
                 <span><i className="em-dot" style={{ background: "#3a8fd4" }} />
-                  {lang === "mn" ? "Өвөл" : "Winter"} 62%</span>
+                  {t.map.winter} 62%</span>
                 <span><i className="em-dot" style={{ background: "#f4a261" }} />
-                  {lang === "mn" ? "Зун" : "Summer"} 38%</span>
+                  {t.map.summer} 38%</span>
               </div>
             </div>
             <NoteBox>{t.map.note_em}</NoteBox>
@@ -483,11 +483,7 @@ function BuildingPanel({ building, lang, t }) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="chart-note">
-              {lang === "mn"
-                ? "Улаанбаатарын цаг агаарын хэрэглэнний хэв маягт тулгуурлан жилийн нийт эрчим хүчийг сараар хуваарилсан."
-                : "Annual total distributed by month using Ulaanbaatar climate consumption pattern."}
-            </div>
+            <div className="chart-note">{t.map.chart_note_climate}</div>
           </div>
         )}
       </div>
@@ -496,7 +492,7 @@ function BuildingPanel({ building, lang, t }) {
 }
 
 // ─── Empty panel ───────────────────────────────────────────────────────────────
-function NoSelection({ t, lang }) {
+function NoSelection({ t }) {
   return (
     <div className="no-sel">
       <div className="no-sel-icon">
@@ -506,7 +502,7 @@ function NoSelection({ t, lang }) {
       <p className="no-sel-sub">{t.map.select_sub}</p>
       <div className="no-sel-steps">
         {[
-          lang === "mn" ? "Геометр · Өндөр · Эзэлхүүн" : "Geometry · Height · Volume",
+          t.map.geom_hint,
           "Energy = area × EUI",
           "CO₂ = energy × factor",
         ].map((s, i) => <div key={i} className="nss">{s}</div>)}
@@ -705,7 +701,7 @@ export default function MapPage() {
           {loading && (
             <div className="map-overlay-state">
               <div className="map-spinner" />
-              <span>{lang === "mn" ? "Барилгуудыг ачаалж байна…" : "Loading buildings…"}</span>
+              <span>{t.map.loading_buildings}</span>
             </div>
           )}
 
@@ -718,7 +714,7 @@ export default function MapPage() {
               )}
               {userCount > 0 && (
                 <span className="bldg-mock-note" style={{ color: "#f4c842" }}>
-                  {" "}· {userCount} {lang === "mn" ? "миний" : "mine"}
+                  {" "}· {userCount} {t.map.mine_label}
                 </span>
               )}
             </div>
@@ -761,7 +757,7 @@ export default function MapPage() {
         <div className="map-panel">
           {selected
             ? <BuildingPanel building={selected} lang={lang} t={t} />
-            : <NoSelection t={t} lang={lang} />
+            : <NoSelection t={t} />
           }
         </div>
       </div>

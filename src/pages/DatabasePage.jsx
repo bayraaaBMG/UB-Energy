@@ -13,7 +13,7 @@ import {
   CartesianGrid, ReferenceLine,
 } from "recharts";
 import { buildingsData, monthlyEnergyData } from "../data/mockData";
-import { getUserBuildings, deleteUserBuilding } from "./DataInputPage";
+import { getUserBuildings, deleteUserBuilding } from "../utils/buildingStorage";
 import "./DatabasePage.css";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -420,7 +420,6 @@ export default function DatabasePage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.database);
   const { user } = useAuth();
-  const mn = lang === "mn";
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");

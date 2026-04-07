@@ -9,28 +9,8 @@ import {
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
-import { storageGetJSON, storageSetJSON } from "../utils/storage";
-import { STORAGE_KEYS } from "../config/constants";
 import "./DataInputPage.css";
-
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-const STORAGE_KEY = STORAGE_KEYS.buildings;
-
-export function getUserBuildings(userId = null) {
-  const all = storageGetJSON(STORAGE_KEY, []);
-  if (!userId) return all;
-  return all.filter(b => !b.userId || b.userId === userId);
-}
-
-function saveUserBuilding(record) {
-  const existing = storageGetJSON(STORAGE_KEY, []);
-  storageSetJSON(STORAGE_KEY, [...existing, record]);
-}
-
-export function deleteUserBuilding(id) {
-  const all = storageGetJSON(STORAGE_KEY, []);
-  storageSetJSON(STORAGE_KEY, all.filter(b => b.id !== id));
-}
+import { saveUserBuilding } from "../utils/buildingStorage";
 
 // ─── Supported file types ─────────────────────────────────────────────────────
 const ACCEPTED_TYPES = {

@@ -174,12 +174,12 @@ export default function OWIDPage() {
   ];
 
   const KEY_FACTS = [
-    { icon: "⚡", label: lang === "mn" ? "Нийт эрчим хүч"       : "Total Energy",          value: "~8 GWh/yr",   note: "IEA 2022" },
-    { icon: "🏭", label: lang === "mn" ? "Эх сурвалж"           : "Source",                value: lang === "mn" ? "92% Нүүрс" : "92% Coal", note: lang === "mn" ? "Цахилгаан үйлдвэрлэл" : "Electricity gen." },
-    { icon: "☁️", label: lang === "mn" ? "CO₂ (нэг хүнд)"      : "CO₂ per capita",        value: "~7.5 t/yr",   note: lang === "mn" ? "Дэлхийн дундажаас 2x" : "2× global avg" },
-    { icon: "☀️", label: lang === "mn" ? "Нарны эрчим хүч"      : "Solar Energy",          value: lang === "mn" ? "Өсөлттэй" : "Growing",  note: lang === "mn" ? "2018-оос 10x нэмэгдлээ" : "10× since 2018" },
-    { icon: "📈", label: lang === "mn" ? "Хэрэглээний өсөлт"    : "Consumption Growth",    value: "+3.8%/yr",    note: "2010–2022" },
-    { icon: "🌡️", label: lang === "mn" ? "Улаанбаатарын HDD"   : "Ulaanbaatar HDD",       value: "4,500+ HDD",  note: lang === "mn" ? "Дэлхийн хамгийн өндөр" : "World's highest" },
+    { icon: "⚡", label: t.owid.fact_total_label,  value: "~8 GWh/yr",      note: "IEA 2022" },
+    { icon: "🏭", label: t.owid.fact_source_label, value: t.owid.fact_source_val, note: t.owid.fact_source_note },
+    { icon: "☁️", label: t.owid.fact_co2_label,   value: "~7.5 t/yr",      note: t.owid.fact_co2_note },
+    { icon: "☀️", label: t.owid.fact_solar_label,  value: t.owid.fact_solar_val, note: t.owid.fact_solar_note },
+    { icon: "📈", label: t.owid.fact_growth_label, value: "+3.8%/yr",       note: "2010–2022" },
+    { icon: "🌡️", label: t.owid.fact_hdd_label,   value: "4,500+ HDD",     note: t.owid.fact_hdd_note },
   ];
 
   const visible = activeSection === "all" ? CHARTS : CHARTS.filter(c => c.section === activeSection);

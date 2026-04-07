@@ -251,7 +251,7 @@ export default function AdminPage() {
                 {logEntries.map((log, i) => (
                   <div key={i} className={`log-entry ${log.type}`}>
                     <span className="log-time">{log.time}</span>
-                    <span className="log-msg">{lang === "mn" ? log.mn : log.en}</span>
+                    <span className="log-msg">{log[lang]}</span>
                   </div>
                 ))}
               </div>

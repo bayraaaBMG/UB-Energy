@@ -128,15 +128,14 @@ function getBotResponse(input, lang) {
 export default function Chatbot() {
   const { t, lang } = useLang();
   const { user } = useAuth();
-  const greeting = lang === "mn"
-    ? `Сайн байна уу${user ? `, ${user.name}` : ""}! Би ${APP_NAME}-ийн AI туслагч. Эрчим хүч, цаг уур, барилга, Smart Home болон ямар ч сэдвээр асуугаарай! 💬`
-    : `Hello${user ? `, ${user.name}` : ""}! I'm the ${APP_NAME} AI assistant. Ask me anything about energy, weather, buildings, or Smart Home!`;
+  const greeting = t.chatbot.greeting.replace("{name}", user ? `, ${user.name}` : "");
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ from: "bot", text: greeting }]);
   const [input, setInput] = useState("");
 
   // Reset greeting when language or logged-in user changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages([{ from: "bot", text: greeting }]);
   }, [greeting]);
   const [typing, setTyping] = useState(false);
@@ -180,15 +179,11 @@ export default function Chatbot() {
   };
 
   const clearChat = () => setMessages([
-    { from: "bot", text: lang === "mn"
-      ? `Шинэ яриа эхэллээ${user ? `, ${user.name}` : ""}! Юу асуух вэ? 😊`
-      : `New conversation started${user ? `, ${user.name}` : ""}! What would you like to know?` }
+    { from: "bot", text: t.chatbot.new_chat.replace("{name}", user ? `, ${user.name}` : "") }
   ]);
 
   // Quick question chips
-  const chips = lang === "mn"
-    ? ["HDD гэж юу вэ?", "Эрчим хүч хэмнэх арга", "Улаанбаатарын цаг уур", "Smart Home давуу тал"]
-    : ["What is HDD?", "Energy saving tips", "UB weather", "Smart Home benefits"];
+  const chips = [t.chatbot.chip1, t.chatbot.chip2, t.chatbot.chip3, t.chatbot.chip4];
 
   return (
     <div className="chatbot-wrapper">

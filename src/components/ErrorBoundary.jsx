@@ -1,4 +1,6 @@
 import { Component } from "react";
+import mn from "../i18n/mn";
+import en from "../i18n/en";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -17,7 +19,7 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children;
 
-    const { lang = "mn" } = this.props;
+    const t = (this.props.lang === "en" ? en : mn).error;
     return (
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center",
@@ -31,19 +33,12 @@ export default class ErrorBoundary extends Component {
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
-        <h2 style={{ color: "var(--danger, #e63946)", margin: 0 }}>
-          {lang === "mn" ? "Алдаа гарлаа" : "Something went wrong"}
-        </h2>
+        <h2 style={{ color: "var(--danger, #e63946)", margin: 0 }}>{t.title}</h2>
         <p style={{ color: "var(--text2)", maxWidth: 400, margin: 0, fontSize: "0.9rem" }}>
-          {lang === "mn"
-            ? "Энэ хуудсыг ачааллахад алдаа гарлаа. Хуудсыг дахин ачааллана уу."
-            : "This page failed to load. Please refresh the page to try again."}
+          {t.message}
         </p>
-        <button
-          className="btn btn-primary"
-          onClick={() => window.location.reload()}
-        >
-          {lang === "mn" ? "Дахин ачааллах" : "Refresh page"}
+        <button className="btn btn-primary" onClick={() => window.location.reload()}>
+          {t.refresh}
         </button>
       </div>
     );
