@@ -6,7 +6,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
-  File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight,
+  File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight, Info,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
@@ -227,6 +227,22 @@ export default function DataInputPage() {
         <div className="page-header">
           <h1><Upload size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.dataInput.title}</h1>
           <p>{t.dataInput.subtitle}</p>
+        </div>
+
+        {/* Тарифын тайлбар */}
+        <div className="card tariff-note mb-3" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start", background: "var(--card)", border: "1px solid var(--border)", borderLeft: "4px solid #3a8fd4", borderRadius: 10, padding: "1rem 1.2rem" }}>
+          <Info size={18} style={{ color: "#3a8fd4", flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong style={{ display: "block", color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.95rem" }}>
+              {t.dataInput.tariff_note_title}
+            </strong>
+            <p style={{ margin: "0 0 0.55rem", color: "var(--text2)", fontSize: "0.875rem", lineHeight: 1.65 }}>
+              {t.dataInput.tariff_note_p1}
+            </p>
+            <p style={{ margin: 0, color: "var(--text2)", fontSize: "0.875rem", lineHeight: 1.65 }}>
+              {t.dataInput.tariff_note_p2}
+            </p>
+          </div>
         </div>
 
         {submitted && (
