@@ -83,15 +83,21 @@ function FloorPlan({ floors, area, buildingType, rooms, floorsUnit, roomsUnit, s
 // ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ icon: Icon, title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
+  const bodyId = `pred-section-${title.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <div className="pred-section">
-      <button className="pred-section-header" onClick={() => setOpen(!open)}>
+      <button
+        className="pred-section-header"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+      >
         <span className="pred-section-title">
           <Icon size={15} /> {title}
         </span>
         {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
-      {open && <div className="pred-section-body">{children}</div>}
+      {open && <div id={bodyId} className="pred-section-body">{children}</div>}
     </div>
   );
 }

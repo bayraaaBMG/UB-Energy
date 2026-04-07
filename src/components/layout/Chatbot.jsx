@@ -142,10 +142,23 @@ export default function Chatbot() {
   }, [lang]);
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+  const toggleRef = useRef(null);
+  const didMountRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
+
+  // Focus management: input when opened, toggle button when closed (skip initial mount)
+  useEffect(() => {
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      toggleRef.current?.focus();
+    }
+  }, [open]);
 
   const send = () => {
     const text = input.trim();
@@ -240,11 +253,13 @@ export default function Chatbot() {
 
           <div className="chatbot-input-row">
             <input
+              ref={inputRef}
               className="chatbot-input form-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
               placeholder={t.chatbot.placeholder}
+              aria-label={t.chatbot.placeholder}
             />
             <button className="btn btn-primary chatbot-send" onClick={send} disabled={typing}>
               <Send size={16} />
@@ -254,6 +269,7 @@ export default function Chatbot() {
       )}
 
       <button
+        ref={toggleRef}
         className={`chatbot-toggle ${open ? "open" : ""}`}
         onClick={() => setOpen(!open)}
         title={t.chatbot.title}
