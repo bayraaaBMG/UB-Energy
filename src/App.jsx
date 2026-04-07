@@ -8,6 +8,7 @@ import { useLang } from "./contexts/LanguageContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import Chatbot from "./components/layout/Chatbot";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const HomePage           = lazy(() => import("./pages/HomePage"));
 const LoginPage          = lazy(() => import("./pages/LoginPage"));
@@ -46,9 +47,11 @@ function AppLayout({ children }) {
       </a>
       <Navbar />
       <main id="main-content" style={{ flex: 1, paddingTop: "1rem" }}>
-        <Suspense fallback={<PageLoader />}>
-          {children}
-        </Suspense>
+        <ErrorBoundary lang={lang}>
+          <Suspense fallback={<PageLoader />}>
+            {children}
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
       <Chatbot />
