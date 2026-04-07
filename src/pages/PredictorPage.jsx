@@ -216,10 +216,9 @@ function GradeBar({ grade }) {
 }
 
 export default function PredictorPage() {
-  const { t, lang } = useLang();
+  const { t } = useLang();
   usePageTitle(t.nav.predictor);
   const { user } = useAuth();
-  const mn = lang === "mn";
   const navigate = useNavigate();
   const [form, setForm] = useState({
     building_name: "",
@@ -263,7 +262,7 @@ export default function PredictorPage() {
   const hTypes = t.predictor.heating_types;
 
   const FEAT_LABELS = {
-    hdd: mn ? "HDD (цаг уур)" : "HDD (climate)",
+    hdd: t.predictor.hdd_climate,
     insulation: t.predictor.insulation_quality,
     material: t.predictor.wall_material,
     heating: t.predictor.heating_type,
@@ -290,12 +289,12 @@ export default function PredictorPage() {
             <Section icon={Building2} title={t.predictor.section_building}>
               <div className="grid grid-2">
                 <div className="form-group">
-                  <label className="form-label" htmlFor="pred-building_name">{mn ? "Барилгын нэр" : "Building Name"}</label>
+                  <label className="form-label" htmlFor="pred-building_name">{t.dataInput.building_name}</label>
                   <input id="pred-building_name" type="text" name="building_name" value={form.building_name} onChange={handleChange}
-                    className="form-input" placeholder={mn ? "ж: Цогцолбор 1" : "e.g. Building A"} />
+                    className="form-input" placeholder={t.predictor.building_name_placeholder} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="pred-district">{mn ? "Дүүрэг" : "District"}</label>
+                  <label className="form-label" htmlFor="pred-district">{t.dataInput.district}</label>
                   <select id="pred-district" name="district" value={form.district} onChange={handleChange} className="form-select">
                     {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
                   </select>
@@ -468,9 +467,9 @@ export default function PredictorPage() {
                   </div>
                   <div className="result-metric">
                     <div className="metric-value secondary" style={{ color: result.co2 > 60 ? "#e63946" : result.co2 > 30 ? "#f4a261" : "#2a9d8f" }}>
-                      {result.co2} {mn ? "т" : "t"}
+                      {result.co2} {t.predictor.co2_unit}
                     </div>
-                    <div className="metric-label">{mn ? "CO₂ т/жил" : "CO₂ t/yr"}</div>
+                    <div className="metric-label">{t.predictor.co2_yr_label}</div>
                     <div className="metric-sub">≈ {result.pm25.toLocaleString()} μg PM2.5</div>
                   </div>
                   <div className="result-metric">
@@ -485,12 +484,12 @@ export default function PredictorPage() {
                 <div className="pred-grade-section">
                   <div className="pred-grade-label">
                     <TrendingUp size={13} />
-                    {mn ? "Үр ашгийн зэрэглэл" : "Efficiency Grade"}
+                    {t.predictor.efficiency_grade}
                     <span className="pred-grade-badge" style={{ background: GRADE_COLORS[result.grade] }}>{result.grade}</span>
                   </div>
                   <GradeBar grade={result.grade} />
                   <div className="pred-grade-hint">
-                    {mn ? `Эрч: ${result.intensity} kWh/м²/жил` : `Intensity: ${result.intensity} kWh/m²/yr`}
+                    {t.predictor.intensity_detail.replace("{val}", result.intensity)}
                   </div>
                 </div>
 
@@ -506,7 +505,7 @@ export default function PredictorPage() {
                         contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 11 }}
                         formatter={(val) => [`${val.toLocaleString()} ${t.common.units_kwh}`]}
                       />
-                      <Bar dataKey="usage" fill="#1a6eb5" name={mn ? "Тооцоолсон хэрэглээ" : "Predicted usage"} radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="usage" fill="#1a6eb5" name={t.predictor.predicted_usage} radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -536,7 +535,7 @@ export default function PredictorPage() {
                       const record = {
                         id: `pred_${Date.now()}`,
                         name: form.building_name.trim() ||
-                          `${form.area}${mn ? "м²" : "m²"} ${t.predictor.building_types[form.building_type] || form.building_type}`,
+                          `${form.area}${t.common.units_sqm} ${t.predictor.building_types[form.building_type] || form.building_type}`,
                         type: form.building_type,
                         area: form.area,
                         floors: form.floors,
@@ -561,10 +560,10 @@ export default function PredictorPage() {
                       setSaved(true);
                       setTimeout(() => navigate("/database"), 900);
                     }}
-                    title={mn ? "Дата санд хадгалах" : "Save to database"}
+                    title={t.predictor.save_to_db}
                   >
                     <Save size={14} />
-                    {saved ? (mn ? "Хадгалагдлаа ✓" : "Saved ✓") : (mn ? "Хадгалах" : "Save")}
+                    {saved ? t.predictor.saved : t.common.save}
                   </button>
                 </div>
               </div>

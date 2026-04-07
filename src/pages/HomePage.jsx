@@ -13,9 +13,9 @@ import {
 import { monthlyEnergyData } from "../data/mockData";
 import "./HomePage.css";
 
-const STATS = (t, mn) => [
+const STATS = (t) => [
   {
-    icon: Building2, value: `1,247 ${mn ? "барилга" : "bldg"}`, label: t.home.stat1_label,
+    icon: Building2, value: `1,247 ${t.home.stat1_unit}`, label: t.home.stat1_label,
     color: "#3a8fd4", src: t.home.stat1_src,
   },
   {
@@ -27,7 +27,7 @@ const STATS = (t, mn) => [
     color: "#2a9d8f", src: t.home.stat3_src,
   },
   {
-    icon: Users, value: `389 ${mn ? "хэрэглэгч" : "users"}`, label: t.home.stat4_label,
+    icon: Users, value: `389 ${t.home.stat4_unit}`, label: t.home.stat4_label,
     color: "#f4a261", src: t.home.stat4_src,
   },
 ];
@@ -43,10 +43,9 @@ export default function HomePage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.home);
   const { user } = useAuth();
-  const mn = lang === "mn";
   const monthlyData = monthlyEnergyData.map(d => ({
     ...d,
-    month: mn ? d.month : d.month_en,
+    month: lang === "mn" ? d.month : d.month_en,
   }));
 
   return (
@@ -63,7 +62,7 @@ export default function HomePage() {
           {user && (
             <div className="hero-welcome">
               <div className="hw-avatar">{user.name.charAt(0)}</div>
-              <span>{mn ? `Тавтай морил, ${user.name}!` : `Welcome back, ${user.name}!`}</span>
+              <span>{t.home.welcome.replace("{name}", user.name)}</span>
             </div>
           )}
           <h1 className="hero-title">{t.home.hero_title}</h1>
@@ -81,11 +80,9 @@ export default function HomePage() {
           {!user && (
             <p className="hero-login-hint">
               <LogIn size={13} />
-              {mn
-                ? "Бүх боломжийг ашиглахын тулд эхлээд нэвтэрнэ үү."
-                : "Sign in to access all features."}
+              {t.home.login_hint}
               {" "}<Link to="/login" style={{ color: "var(--accent)", fontWeight: 600 }}>
-                {mn ? "Нэвтрэх →" : "Login →"}
+                {t.home.login_link}
               </Link>
             </p>
           )}
@@ -96,7 +93,7 @@ export default function HomePage() {
       <section className="stats-section">
         <div className="container">
           <div className="grid grid-4">
-            {STATS(t, mn).map(({ icon: Icon, value, label, color }) => (
+            {STATS(t).map(({ icon: Icon, value, label, color }) => (
               <div className="stat-card card animate-fade" key={label}>
                 <div className="stat-icon" style={{ background: `${color}22`, color }}>
                   <Icon size={24} />
@@ -111,10 +108,10 @@ export default function HomePage() {
           <div className="stats-source-box">
             <div className="ssb-head">
               <Info size={14} />
-              {mn ? "Дээрх тоонууд хаанаас авсан бэ?" : "Where do these numbers come from?"}
+              {t.home.stats_source_title}
             </div>
             <div className="ssb-rows">
-              {STATS(t, mn).map(({ icon: Icon, value, label, color, src }) => (
+              {STATS(t).map(({ icon: Icon, value, label, color, src }) => (
                 <div className="ssb-row" key={label}>
                   <span className="ssb-val" style={{ color }}>
                     <Icon size={12} /> {value}
