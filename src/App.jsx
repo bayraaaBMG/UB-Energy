@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -7,24 +8,33 @@ import { useLang } from "./contexts/LanguageContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import Chatbot from "./components/layout/Chatbot";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import PredictorPage from "./pages/PredictorPage";
-import DashboardPage from "./pages/DashboardPage";
-import DataInputPage from "./pages/DataInputPage";
-import DatabasePage from "./pages/DatabasePage";
-import AdminPage from "./pages/AdminPage";
-import AccessibilityPage from "./pages/AccessibilityPage";
-import RecommendationsPage from "./pages/RecommendationsPage";
-import MapPage from "./pages/MapPage";
-import WeatherPage from "./pages/WeatherPage";
-import OWIDPage from "./pages/OWIDPage";
+
+const HomePage           = lazy(() => import("./pages/HomePage"));
+const LoginPage          = lazy(() => import("./pages/LoginPage"));
+const PredictorPage      = lazy(() => import("./pages/PredictorPage"));
+const DashboardPage      = lazy(() => import("./pages/DashboardPage"));
+const DataInputPage      = lazy(() => import("./pages/DataInputPage"));
+const DatabasePage       = lazy(() => import("./pages/DatabasePage"));
+const AdminPage          = lazy(() => import("./pages/AdminPage"));
+const AccessibilityPage  = lazy(() => import("./pages/AccessibilityPage"));
+const RecommendationsPage = lazy(() => import("./pages/RecommendationsPage"));
+const MapPage            = lazy(() => import("./pages/MapPage"));
+const WeatherPage        = lazy(() => import("./pages/WeatherPage"));
+const OWIDPage           = lazy(() => import("./pages/OWIDPage"));
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
   const location = useLocation();
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return children;
+}
+
+function PageLoader() {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "40vh" }}>
+      <div className="wl-spinner" />
+    </div>
+  );
 }
 
 function AppLayout({ children }) {
@@ -36,7 +46,9 @@ function AppLayout({ children }) {
       </a>
       <Navbar />
       <main id="main-content" style={{ flex: 1, paddingTop: "1rem" }}>
-        {children}
+        <Suspense fallback={<PageLoader />}>
+          {children}
+        </Suspense>
       </main>
       <Footer />
       <Chatbot />
