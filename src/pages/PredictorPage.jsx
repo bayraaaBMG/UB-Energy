@@ -19,8 +19,8 @@ import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
 import {
   predict, METRICS, GRADE_COLORS,
-  convertElecMoneyToKwh, predictHeating,
-  generateRecommendations, CASE_STUDIES,
+  convertElecMoneyToKwh, convertHeatBillToEstimates,
+  predictHeating, generateRecommendations, CASE_STUDIES,
   TARIFF_TIERS,
 } from "../ml/model";
 import "./PredictorPage.css";
@@ -144,7 +144,7 @@ function GradeBar({ grade }) {
 }
 
 export default function PredictorPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   usePageTitle(t.nav.predictor);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -172,9 +172,8 @@ export default function PredictorPage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [resultTab, setResultTab] = useState("elec");
-  // ₮ → kWh conversion state
-  const [moneyInput, setMoneyInput] = useState("");
-  const [converted, setConverted] = useState(null);
+  const [elecBill, setElecBill] = useState("");
+  const [heatBill, setHeatBill] = useState("");
 
   const handleChange = (e) => {
     const val = e.target.type === "number" || e.target.type === "range"
@@ -195,12 +194,6 @@ export default function PredictorPage() {
       setRecs(rec);
       setLoading(false);
     }, 900);
-  };
-
-  const handleMoneyConvert = () => {
-    const tugrug = parseFloat(moneyInput);
-    if (!tugrug || tugrug <= 0) return;
-    setConverted(convertElecMoneyToKwh(tugrug));
   };
 
   const bTypes = t.predictor.building_types;
@@ -362,60 +355,77 @@ export default function PredictorPage() {
               </div>
             </Section>
 
-            {/* ── ₮ → kWh Conversion Section ── */}
-            <Section icon={DollarSign} title={lang === "mn" ? "₮ → кВт·цаг хөрвүүлэлт (заавал биш)" : "₮ → kWh Conversion (optional)"} defaultOpen={false}>
+            {/* ── Сарын төлбөрөөс тооцоолох ── */}
+            <Section icon={DollarSign} title={lang === "mn" ? "Сарын төлбөрөөс тооцоолох" : "Estimate from monthly bills"} defaultOpen={true}>
               <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
                 {lang === "mn"
-                  ? "Сарын цахилгааны тооцооны дүнгээ оруулахад шаталсан тарифт үндэслэн кВт·цаг тооцоолж өгнө."
-                  : "Enter your monthly electricity bill amount to estimate consumption using the tiered tariff."}
+                  ? "Сарын нэхэмжлэлийн дүнгээ оруулна уу. Тариф болон норматив дээр үндэслэн автоматаар тооцоолно."
+                  : "Enter your monthly bill amounts. Estimates are calculated automatically based on tariffs and norms."}
               </p>
-              <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
-                  <label className="form-label">{lang === "mn" ? "Сарын цахилгааны төлбөр (₮)" : "Monthly electricity bill (₮)"}</label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    placeholder={lang === "mn" ? "Жишээ: 35000" : "e.g. 35000"}
-                    value={moneyInput}
-                    onChange={e => { setMoneyInput(e.target.value); setConverted(null); }}
-                    min={0}
-                  />
+              <div className="grid grid-2">
+                <div className="form-group">
+                  <label className="form-label">
+                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                    {lang === "mn" ? "Цахилгааны мөнгө (₮/сар)" : "Electricity bill (₮/month)"}
+                  </label>
+                  <input className="form-input" type="number"
+                    placeholder={lang === "mn" ? "Жишээ: 35,000" : "e.g. 35,000"}
+                    value={elecBill} onChange={e => setElecBill(e.target.value)} min={0} />
                 </div>
-                <button className="btn btn-secondary" style={{ marginBottom: 0 }} onClick={handleMoneyConvert}>
-                  {lang === "mn" ? "Хөрвүүлэх" : "Convert"}
-                </button>
+                <div className="form-group">
+                  <label className="form-label">
+                    <Flame size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                    {lang === "mn" ? "Ус + дулааны мөнгө (₮/сар)" : "Water + heating bill (₮/month)"}
+                  </label>
+                  <input className="form-input" type="number"
+                    placeholder={lang === "mn" ? "Жишээ: 80,000" : "e.g. 80,000"}
+                    value={heatBill} onChange={e => setHeatBill(e.target.value)} min={0} />
+                </div>
               </div>
 
-              {converted && (
-                <div className="tariff-result-box" style={{ marginTop: "0.85rem", padding: "0.9rem 1.1rem", background: "rgba(42,157,143,0.08)", border: "1px solid rgba(42,157,143,0.25)", borderRadius: 10 }}>
-                  <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
-                    <div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#2a9d8f" }}>{converted.kwh_monthly.toLocaleString()} кВт·цаг</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text3)" }}>{lang === "mn" ? "Сарын хэрэглээ (тооцоолол)" : "Estimated monthly consumption"}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#3a8fd4" }}>{converted.kwh_annual.toLocaleString()} кВт·цаг</div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text3)" }}>{lang === "mn" ? "Жилийн тооцоолол" : "Estimated annual"}</div>
-                    </div>
+              {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && (() => {
+                const ec = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
+                const hc = parseFloat(heatBill) > 0 ? convertHeatBillToEstimates(parseFloat(heatBill)) : null;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginTop: "0.85rem" }}>
+                    {ec && (<>
+                      <div style={{ background: "rgba(26,110,181,0.09)", border: "1px solid rgba(26,110,181,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                        <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#1a6eb5" }}>{ec.kwh_monthly.toLocaleString()} кВт·цаг</div>
+                        <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын цахилгааны хэрэглээ" : "Monthly electricity use"}</div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: 4, padding: "0.2rem 0.5rem", background: "rgba(26,110,181,0.12)", borderRadius: 6, display: "inline-block" }}>
+                          {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг · шат ${ec.tier}` : `${ec.effective_rate}₮/kWh · tier ${ec.tier}`}
+                        </div>
+                      </div>
+                      <div style={{ background: "rgba(58,143,212,0.09)", border: "1px solid rgba(58,143,212,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                        <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#3a8fd4" }}>{ec.kwh_annual.toLocaleString()} кВт·цаг</div>
+                        <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Жилийн тооцоолол" : "Annual estimate"}</div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: 4 }}>{lang === "mn" ? "× 12 сар" : "× 12 months"}</div>
+                      </div>
+                    </>)}
+                    {hc && (<>
+                      <div style={{ background: "rgba(244,162,97,0.09)", border: "1px solid rgba(244,162,97,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                        <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#f4a261" }}>{hc.heat_gcal_monthly} Гкал</div>
+                        <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын дулаан" : "Monthly heating"}</div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.heat_tugrug_monthly.toLocaleString()}₮ · {hc.heat_gcal_annual} Гкал/{lang === "mn" ? "жил" : "yr"}</div>
+                      </div>
+                      <div style={{ background: "rgba(42,157,143,0.09)", border: "1px solid rgba(42,157,143,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                        <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#2a9d8f" }}>{hc.water_m3_monthly} м³</div>
+                        <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын усны хэрэглээ" : "Monthly water use"}</div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.water_tugrug_monthly.toLocaleString()}₮ · {hc.water_m3_annual} м³/{lang === "mn" ? "жил" : "yr"}</div>
+                      </div>
+                    </>)}
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--text3)", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "0.5rem" }}>
-                    {lang === "mn" ? `Шат ${converted.tier} тариф: ${converted.effective_rate}₮/кВт·цаг` : `Tier ${converted.tier} tariff: ${converted.effective_rate}₮/kWh`}
-                  </div>
-                  <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
-                    {TARIFF_TIERS.map((tier, i) => (
-                      <span key={i} style={{
-                        padding: "0.2rem 0.6rem", borderRadius: 20, fontSize: "0.72rem", fontWeight: 600,
-                        background: converted.tier === i + 1 ? "#2a9d8f" : "var(--bg3)",
-                        color: converted.tier === i + 1 ? "#fff" : "var(--text3)",
-                        border: "1px solid var(--border)",
-                      }}>
-                        {tier.label}: {tier.rate}₮
-                      </span>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem" }}>
-                    {lang === "mn" ? "Эх сурвалж: УБЦТС ТӨХК тарифын журам 2024" : "Source: УБЦТС ТӨХК Tariff Schedule 2024"}
-                  </p>
+                );
+              })()}
+
+              {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && (
+                <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: "0.65rem", lineHeight: 1.6, display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                  {TARIFF_TIERS.map((tier, i) => (
+                    <span key={i} style={{ padding: "0.15rem 0.55rem", borderRadius: 20, fontSize: "0.69rem", fontWeight: 600, background: "var(--bg3)", color: "var(--text3)", border: "1px solid var(--border)" }}>
+                      {tier.label}: {tier.rate}₮
+                    </span>
+                  ))}
+                  <span style={{ marginLeft: "auto" }}>{lang === "mn" ? "Эх сурвалж: УБЦТС, УСУГ, УБ ДС ТӨХК 2024" : "Sources: УБЦТС, УСУГ, UB DHN ТӨХК 2024"}</span>
                 </div>
               )}
             </Section>

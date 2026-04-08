@@ -375,6 +375,26 @@ export function convertElecMoneyToKwh(tugrug_monthly) {
   };
 }
 
+// Water + heating combined bill → estimates
+// Sources: Улаанбаатар Дулааны Сүлжээ ТӨХК 2024, УСУГ 2024
+export function convertHeatBillToEstimates(tugrug_monthly) {
+  const HEAT_RATE  = 160000; // ₮/Gcal (УБ ДС ТӨХК avg 2024)
+  const WATER_RATE = 2100;   // ₮/m³ (УСУГ 2024 cold+hot avg)
+  const HEAT_SHARE = 0.72;   // typical share: 72% heating, 28% water
+  const heat_t  = Math.round(tugrug_monthly * HEAT_SHARE);
+  const water_t = Math.round(tugrug_monthly * (1 - HEAT_SHARE));
+  const heat_gcal_monthly = Math.round(heat_t  / HEAT_RATE  * 100) / 100;
+  const water_m3_monthly  = Math.round(water_t / WATER_RATE * 10)  / 10;
+  return {
+    heat_tugrug_monthly:  heat_t,
+    water_tugrug_monthly: water_t,
+    heat_gcal_monthly,
+    heat_gcal_annual:  Math.round(heat_gcal_monthly * 9  * 100) / 100,
+    water_m3_monthly,
+    water_m3_annual:   Math.round(water_m3_monthly  * 12 * 10)  / 10,
+  };
+}
+
 // ─── 14. Heating model (Gcal/year) ───────────────────────────────────────────
 // Based on: БНТУ 23-02-09, Улаанбаатар Дулааны Сүлжээ ТӨХК тариф
 // District heating in UB billed per m² per month (~4,500₮/m²/month avg 9 months)
