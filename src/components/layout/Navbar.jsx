@@ -11,17 +11,19 @@ import { APP_NAME } from "../../config/constants";
 import "./Navbar.css";
 
 const navItems = (t, user) => [
-  { path: "/", label: t.nav.home, icon: Home, public: true },
+  // ── Public ──
+  { path: "/", label: t.nav.home, icon: Home },
+  { path: "/weather", label: t.nav.weather, icon: CloudSun, badge: t.nav.badge_new },
+  { path: "/predictor", label: t.nav.predictor, icon: Brain },
+  { path: "/map", label: t.nav.map, icon: Map },
+  { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
+  { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
+  { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },
+  // ── Private (login required) ──
   ...(user ? [
-    { path: "/weather", label: t.nav.weather, icon: CloudSun, badge: t.nav.badge_new },
-    { path: "/predictor", label: t.nav.predictor, icon: Brain },
     { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
     { path: "/data-input", label: t.nav.dataInput, icon: Upload },
     { path: "/database", label: t.nav.database, icon: Database },
-    { path: "/map", label: t.nav.map, icon: Map },
-    { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
-    { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
-    { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },
     ...(user.role === "admin" ? [{ path: "/admin", label: t.nav.admin, icon: Settings }] : []),
   ] : []),
 ];

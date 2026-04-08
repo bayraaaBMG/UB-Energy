@@ -68,20 +68,23 @@ export default function App() {
           <AuthProvider>
             <AppLayout>
               <Routes>
+                {/* ── Public routes ── */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/predictor" element={<ProtectedRoute><PredictorPage /></ProtectedRoute>} />
+                <Route path="/weather" element={<WeatherPage />} />
+                <Route path="/predictor" element={<PredictorPage />} />
+                <Route path="/map" element={<MapPage />} />
+                <Route path="/owid" element={<OWIDPage />} />
+                <Route path="/recommendations" element={<RecommendationsPage />} />
+                <Route path="/accessibility" element={<AccessibilityPage />} />
+                <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
+
+                {/* ── Private routes (login required) ── */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                 <Route path="/data-input" element={<ProtectedRoute><DataInputPage /></ProtectedRoute>} />
                 <Route path="/database" element={<ProtectedRoute><DatabasePage /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-                <Route path="/accessibility" element={<ProtectedRoute><AccessibilityPage /></ProtectedRoute>} />
-                <Route path="/recommendations" element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>} />
-                <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
-                <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
-                <Route path="/owid" element={<ProtectedRoute><OWIDPage /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppLayout>
