@@ -483,4 +483,13 @@
 @media (max-width: 600px) {
   .link-input-row { flex-direction: column; align-items: stretch; }
   .di-tab span { display: none; }
+  .form-section { padding: 1rem; }
+  .success-banner { flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+  .di-tabs { gap: 0.2rem; }
+  .di-tab { padding: 0.5rem 0.7rem; font-size: 0.8rem; }
+  .tariff-note { padding: 0.85rem 1rem !important; gap: 0.6rem !important; }
+  .grid.grid-2 { grid-template-columns: 1fr; }
 }

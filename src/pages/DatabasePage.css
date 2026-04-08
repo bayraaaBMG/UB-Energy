@@ -36,7 +36,7 @@
   border-radius: var(--radius-sm);
   color: var(--text);
   outline: none;
-  width: 220px;
+  width: min(220px, 100%);
   font-size: 0.9rem;
   transition: var(--transition);
 }
@@ -320,10 +320,26 @@
 .action-btn.results-btn:hover { background: #9b72cf; color: white; border-color: #9b72cf; }
 
 /* Responsive */
+@media (max-width: 768px) {
+  .db-controls { flex-direction: column; align-items: stretch; }
+  .db-controls-left { flex-wrap: wrap; }
+  .search-box { flex: 1; }
+  .search-input { width: 100%; }
+  .db-download-btns { justify-content: flex-end; }
+}
+
 @media (max-width: 640px) {
   .res-stats-row { grid-template-columns: repeat(2, 1fr); }
   .res-compare-row { flex-direction: column; }
   .results-modal { max-height: 98vh; border-radius: 10px; }
+  .db-stats { gap: 0.4rem; }
+}
+
+@media (max-width: 480px) {
+  .res-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .res-body { padding: 0.9rem; }
+  .res-header { padding: 0.75rem 0.9rem; }
+  .db-controls { padding: 0.75rem 0.9rem; }
 }
 
 /* ── Chart source legend ─────────────────────────────────────────────────────── */

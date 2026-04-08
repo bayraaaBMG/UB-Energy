@@ -199,3 +199,14 @@
     display: none;
   }
 }
+
+@media (max-width: 480px) {
+  .navbar { padding: 0 0.75rem; }
+  .navbar-inner { gap: 0.5rem; height: 54px; }
+  .navbar-actions { gap: 0.4rem; }
+  .lang-btn { padding: 0.35rem 0.55rem; font-size: 0.78rem; }
+  .lang-btn span { display: none; }
+  .user-avatar { width: 28px; height: 28px; font-size: 0.78rem; }
+  .btn { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+  .navbar-links { top: 54px; }
+}

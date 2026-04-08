@@ -182,4 +182,19 @@ input, select, textarea { font-family: inherit; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .container { padding: 0 1rem; }
   .page-header h1 { font-size: 1.5rem; }
+  .card { padding: 1.1rem; }
+}
+@media (max-width: 600px) {
+  .container { padding: 0 0.75rem; }
+  .page-header { padding: 1.25rem 0; margin-bottom: 1.25rem; }
+  .page-header h1 { font-size: 1.3rem; }
+  .section-title { font-size: 1.15rem; }
+  .btn { padding: 0.55rem 1rem; font-size: 0.85rem; }
+}
+@media (max-width: 480px) {
+  .container { padding: 0 0.6rem; }
+  .page-header h1 { font-size: 1.15rem; }
+  .card { padding: 0.9rem; }
+  .grid { gap: 0.9rem; }
+  .section-title { font-size: 1rem; }
 }

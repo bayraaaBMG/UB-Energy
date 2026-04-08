@@ -323,9 +323,34 @@
 }
 
 @media (max-width: 768px) {
+  .hero { padding: 3rem 0 2.5rem; }
   .hero-title { font-size: 1.75rem; }
   .hero-subtitle { font-size: 1rem; }
   .chart-preview .grid { grid-template-columns: 1fr !important; }
   .ssb-row { grid-template-columns: 80px 1fr; }
   .ssb-src { grid-column: 1 / -1; padding-left: 0; }
+  .stat-value { font-size: 1.6rem; }
+}
+
+@media (max-width: 600px) {
+  .hero { padding: 2rem 0 1.75rem; }
+  .hero-title { font-size: 1.45rem; }
+  .hero-subtitle { font-size: 0.9rem; }
+  .hero-actions { gap: 0.6rem; }
+  .hero-actions .btn { padding: 0.65rem 1.2rem; font-size: 0.9rem; }
+  .ssb-row { grid-template-columns: 1fr; gap: 0.2rem; padding: 0.5rem 0; }
+  .ssb-label { font-weight: 700; }
+  .stat-value { font-size: 1.4rem; }
+  .stat-icon { width: 42px; height: 42px; }
+  .feature-icon { width: 44px; height: 44px; }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 1.25rem; }
+  .hero-badge { font-size: 0.75rem; padding: 0.3rem 0.75rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { justify-content: center; }
+  .stat-value { font-size: 1.25rem; }
+  .stats-section { padding: 1.5rem 0; }
+  .features-section { padding: 1.5rem 0 2.5rem; }
 }

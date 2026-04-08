@@ -105,6 +105,23 @@
   .ph-logout { margin-left: 0; }
 }
 
+@media (max-width: 600px) {
+  .profile-header { gap: 1rem; padding: 1.25rem; }
+  .ph-avatar { width: 58px; height: 58px; font-size: 1.6rem; }
+  .ph-name { font-size: 1.2rem; }
+  .stat-big-num { font-size: 2rem; }
+}
+
+@media (max-width: 480px) {
+  .profile-header { flex-direction: column; align-items: flex-start; }
+  .ph-avatar { width: 50px; height: 50px; font-size: 1.4rem; }
+  .ph-name { font-size: 1.1rem; }
+  .stat-big { gap: 0.9rem; }
+  .stat-big-num { font-size: 1.75rem; }
+  .info-row { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+  .info-val { text-align: left; }
+}
+
 /* ── Info rows ── */
 .info-rows {
   display: flex;

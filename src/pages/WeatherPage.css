@@ -497,13 +497,35 @@
   .mwc-left { flex-direction: row; justify-content: center; }
   .mwc-temp { font-size: 4rem; }
   .mwc-stats { grid-template-columns: repeat(4, 1fr); }
+  .hdd-value { font-size: 2.2rem; }
+  .impact-value { font-size: 1.6rem; }
 }
 
 @media (max-width: 600px) {
   .weather-location { flex-direction: column; }
   .live-clock { margin-left: 0; align-items: flex-start; }
-  .main-weather-card { padding: 1.25rem; }
+  .main-weather-card { padding: 1.25rem; gap: 1rem; }
   .mwc-stats { grid-template-columns: repeat(2, 1fr); }
+  .mwc-temp { font-size: 3rem; letter-spacing: -1px; }
+  .deg { font-size: 1.8rem; }
+  .location-name { font-size: 1.5rem; }
+  .hdd-value { font-size: 1.8rem; }
+  .impact-value { font-size: 1.4rem; }
+  .day-selector { flex-wrap: wrap; }
+  .day-sel-btn { padding: 0.45rem 0.9rem; font-size: 0.82rem; }
+  .weather-hero { padding: 1.75rem 0 1.5rem; }
+}
+
+@media (max-width: 480px) {
+  .mwc-temp { font-size: 2.5rem; }
+  .deg { font-size: 1.4rem; }
+  .location-name { font-size: 1.25rem; }
+  .hdd-value { font-size: 1.5rem; }
+  .impact-value { font-size: 1.25rem; }
+  .clock-time { font-size: 1.1rem; }
+  .main-weather-card { padding: 1rem; }
+  .mwc-stats { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .esb-chain { flex-direction: column; }
 }
 
 /* ─── Loading / Error state ─── */
