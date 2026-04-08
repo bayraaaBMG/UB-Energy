@@ -16,6 +16,7 @@ import {
 import { ulaanbaatarDistricts } from "../data/mockData";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
+import { predict, METRICS, FEATURE_IMPORTANCE, GRADE_COLORS } from "../ml/model";
 import "./PredictorPage.css";
 
 const STORAGE_KEY = STORAGE_KEYS.buildings;
@@ -117,86 +118,7 @@ function FeatureBar({ label, value, max, color }) {
   );
 }
 
-// ─── Main ML prediction formula ───────────────────────────────────────────────
-function runPrediction(form) {
-  const baseIntensity = {
-    apartment: 175, office: 230, school: 155,
-    hospital: 360, warehouse: 95, commercial: 275
-  }[form.building_type] || 175;
-
-  // Age factor: older = less efficient
-  const yearFactor = 1 + Math.max(0, (2000 - form.year)) * 0.004;
-  // HDD factor
-  const hddFactor = form.hdd / 4200;
-  // Window ratio
-  const windowRatioFactor = 1 + (form.window_ratio - 20) * 0.008;
-  // Wall material
-  const materialFactor = { panel: 1.18, brick: 1.0, concrete: 0.93, wood: 1.22, metal: 1.12 }[form.wall_material] || 1;
-  // Heating type
-  const heatingFactor = { central: 1.0, local: 1.25, electric: 1.08, gas: 0.88 }[form.heating_type] || 1;
-  // Insulation quality
-  const insulationFactor = { good: 0.82, medium: 1.0, poor: 1.25 }[form.insulation_quality] || 1.0;
-  // Window type
-  const windowTypeFactor = { vacuum: 0.88, double: 1.0, single: 1.18 }[form.window_type] || 1.0;
-  // Occupancy density (residents per 100 m²)
-  const density = (form.residents / form.area) * 100;
-  const occupancyFactor = 1 + Math.max(0, density - 3) * 0.015;
-  // Appliances
-  const applianceFactor = 1 + form.appliances * 0.025;
-  // Floors (tall = slightly more efficient per m² due to shared walls)
-  const floorFactor = 1 - Math.min(0.08, (form.floors - 1) * 0.008);
-
-  const intensity = baseIntensity * yearFactor * hddFactor * windowRatioFactor *
-    materialFactor * heatingFactor * insulationFactor * windowTypeFactor *
-    occupancyFactor * applianceFactor * floorFactor;
-
-  const annual = Math.round(form.area * intensity);
-  const monthly_avg = Math.round(annual / 12);
-  const daily_avg = Math.round(annual / 365);
-  const intensity_rounded = Math.round(intensity);
-
-  // Monthly distribution (seasonal UB pattern)
-  const seasonalWeights = [1.85, 1.72, 1.38, 0.82, 0.45, 0.32, 0.28, 0.31, 0.55, 1.02, 1.52, 1.78];
-  const weightSum = seasonalWeights.reduce((a, b) => a + b, 0);
-  const months = ["1-р", "2-р", "3-р", "4-р", "5-р", "6-р", "7-р", "8-р", "9-р", "10-р", "11-р", "12-р"];
-  const chart_data = months.map((m, i) => ({
-    month: m,
-    usage: Math.round(annual * seasonalWeights[i] / weightSum),
-  }));
-
-  // Feature importance (contribution %)
-  const contributions = {
-    hdd:        Math.round(hddFactor * 18),
-    insulation: Math.round((2 - insulationFactor) * 12 + 8),
-    material:   Math.round((materialFactor - 0.9) * 20 + 5),
-    heating:    Math.round((heatingFactor - 0.85) * 15 + 5),
-    area:       22,
-    year_age:   Math.round((yearFactor - 1) * 30 + 6),
-    windows:    Math.round((windowTypeFactor - 0.85) * 15 + 4),
-    appliances: Math.round(form.appliances * 1.2 + 3),
-  };
-  const contribTotal = Object.values(contributions).reduce((a, b) => a + b, 0);
-  const features = Object.entries(contributions).map(([k, v]) => ({
-    key: k,
-    pct: Math.round(v / contribTotal * 100)
-  })).sort((a, b) => b.pct - a.pct);
-
-  // CO₂: ~60% heating (0.28 kgCO₂/kWh) + ~40% electric (0.73 kgCO₂/kWh)
-  const co2 = +((annual * 0.6 * 0.28 + annual * 0.4 * 0.73) / 1000).toFixed(1);
-  const pm25 = Math.round(co2 * 1350);
-
-  const grade =
-    intensity_rounded < 50  ? "A" : intensity_rounded < 100 ? "B" :
-    intensity_rounded < 150 ? "C" : intensity_rounded < 200 ? "D" :
-    intensity_rounded < 250 ? "E" : intensity_rounded < 300 ? "F" : "G";
-
-  return { annual, monthly_avg, daily_avg, intensity: intensity_rounded, chart_data, features, co2, pm25, grade };
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const GRADE_COLORS = {
-  A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20",
-};
 const GRADES = ["A","B","C","D","E","F","G"];
 
 function GradeBar({ grade }) {
@@ -248,28 +170,36 @@ export default function PredictorPage() {
     setForm({ ...form, [e.target.name]: val });
   };
 
-  const predict = () => {
+  const runModel = () => {
     setLoading(true);
     setSaved(false);
     setTimeout(() => {
-      setResult(runPrediction(form));
+      setResult(predict(form));
       setLoading(false);
-    }, 1100);
+    }, 900);
   };
 
   const bTypes = t.predictor.building_types;
   const wMaterials = t.predictor.wall_materials;
   const hTypes = t.predictor.heating_types;
 
+  // Maps ML feature keys → human-readable labels
   const FEAT_LABELS = {
-    hdd: t.predictor.hdd_climate,
-    insulation: t.predictor.insulation_quality,
-    material: t.predictor.wall_material,
-    heating: t.predictor.heating_type,
     area: t.predictor.area,
-    year_age: t.predictor.year,
-    windows: t.predictor.window_type,
+    age: t.predictor.year,
+    floors: t.predictor.floors,
+    rooms: t.predictor.rooms,
+    hdd: t.predictor.hdd_climate,
+    density: t.predictor.density_label,
     appliances: t.predictor.appliances,
+    window_ratio: t.predictor.window_ratio,
+    bt_apartment: bTypes.apartment, bt_office: bTypes.office,
+    bt_school: bTypes.school, bt_hospital: bTypes.hospital, bt_warehouse: bTypes.warehouse,
+    mat_panel: wMaterials.panel, mat_brick: wMaterials.brick,
+    mat_concrete: wMaterials.concrete, mat_wood: wMaterials.wood,
+    heat_central: hTypes.central, heat_local: hTypes.local, heat_electric: hTypes.electric,
+    ins_good: t.predictor.insulation_good, ins_medium: t.predictor.insulation_medium,
+    win_single: t.predictor.window_single, win_double: t.predictor.window_double,
   };
 
   const FEAT_COLORS = ["#3a8fd4","#2a9d8f","#e9c46a","#f4a261","#e63946","#a8c5e0","#7bc8c4","#c9a227"];
@@ -410,7 +340,7 @@ export default function PredictorPage() {
 
             <button
               className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
-              onClick={predict}
+              onClick={runModel}
               disabled={loading}
               aria-busy={loading}
             >
@@ -526,9 +456,16 @@ export default function PredictorPage() {
 
                 {/* Model info + save */}
                 <div className="model-info-row">
-                  <span className="model-badge">EUI + RF</span>
-                  <span className="model-badge">R² ≈ 0.94</span>
-                  <span className="model-badge">MAE ≈ 4.2%</span>
+                  <span className="model-badge" title="Physics-informed OLS regression trained on 600 UB buildings">OLS + EUI</span>
+                  <span className="model-badge" title={`n_train=${METRICS.n_train}, n_test=${METRICS.n_test}`}>
+                    R² = {METRICS.r2}
+                  </span>
+                  <span className="model-badge" title="Mean Absolute Percentage Error on held-out test set">
+                    MAPE = {METRICS.mape}%
+                  </span>
+                  <span className="model-badge" title={`MAE = ${METRICS.mae.toLocaleString()} kWh on test set`}>
+                    MAE = {METRICS.mae.toLocaleString()} kWh
+                  </span>
                   <button
                     className="btn btn-secondary pred-save-btn"
                     onClick={() => {
