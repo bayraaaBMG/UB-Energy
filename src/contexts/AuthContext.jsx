@@ -106,7 +106,7 @@ export function AuthProvider({ children }) {
   const logout = () => setUser(null);
 
   // ── updateUser ──
-  const updateUser = ({ name, currentPassword, newPassword }) => {
+  const updateUser = ({ name, currentPassword, newPassword, avatar }) => {
     const allUsers = getAllUsers();
     const full = allUsers.find(u => u.id === user.id);
     if (!full) return { ok: false, error: "not_found" };
@@ -121,6 +121,7 @@ export function AuthProvider({ children }) {
       ...full,
       name: name ?? full.name,
       password: newPassword ?? full.password,
+      avatar: avatar !== undefined ? avatar : full.avatar,
     };
 
     if (full.id === ADMIN.id) {

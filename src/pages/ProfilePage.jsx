@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getUserBuildings } from "../utils/buildingStorage";
 import {
   User, Building2, Mail, Shield, Calendar, LogOut,
-  Edit2, Lock, CheckCircle, AlertCircle, BarChart2,
+  Edit2, Lock, CheckCircle, AlertCircle, BarChart2, Camera,
 } from "lucide-react";
 import "./ProfilePage.css";
 
@@ -20,6 +20,23 @@ export default function ProfilePage() {
   const [nameVal, setNameVal] = useState(user?.name || "");
   const [nameSaved, setNameSaved] = useState(false);
   const [nameErr, setNameErr] = useState("");
+
+  // ── avatar upload ──
+  const avatarInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert("Зургийн хэмжээ 2MB-аас бага байна уу."); return; }
+    setAvatarUploading(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      updateUser({ avatar: ev.target.result });
+      setAvatarUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // ── password change ──
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
@@ -67,7 +84,24 @@ export default function ProfilePage() {
 
         {/* ── Header ── */}
         <div className="card profile-header animate-fade">
-          <div className="ph-avatar">{user.name.charAt(0).toUpperCase()}</div>
+          <div
+            className={`ph-avatar ph-avatar-clickable${avatarUploading ? " uploading" : ""}`}
+            onClick={() => avatarInputRef.current?.click()}
+            title="Зураг солих"
+          >
+            {user.avatar
+              ? <img src={user.avatar} alt={user.name} className="ph-avatar-img" />
+              : user.name.charAt(0).toUpperCase()
+            }
+            <div className="ph-avatar-overlay"><Camera size={18} /></div>
+          </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleAvatarChange}
+          />
           <div className="ph-info">
             <h1 className="ph-name">{user.name}</h1>
             <p className="ph-email"><Mail size={14} /> {user.email}</p>

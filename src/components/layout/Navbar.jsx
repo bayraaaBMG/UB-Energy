@@ -86,7 +86,12 @@ export default function Navbar() {
           {user ? (
             <div className="user-menu">
               <Link to="/profile" className="user-info" title={t.nav.profile}>
-                <div className="user-avatar">{user.name.charAt(0)}</div>
+                <div className="user-avatar">
+                  {user.avatar
+                    ? <img src={user.avatar} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                    : user.name.charAt(0)
+                  }
+                </div>
                 <span className="user-name">{user.name}</span>
               </Link>
               <button className="btn btn-secondary" onClick={logout} style={{ padding: "0.4rem 0.8rem" }}>
