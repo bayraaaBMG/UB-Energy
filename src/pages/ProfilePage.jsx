@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -7,7 +7,7 @@ import { getUserBuildings } from "../utils/buildingStorage";
 import {
   User, Building2, Mail, Shield, Calendar, LogOut,
   Edit2, Lock, CheckCircle, AlertCircle, BarChart2, Camera,
-  Download, FileText, Zap, Globe,
+  Download, FileText, Zap, Globe, ChevronDown,
 } from "lucide-react";
 import "./ProfilePage.css";
 
@@ -39,6 +39,13 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
+  // ── report period ──
+  const [reportOpen, setReportOpen] = useState(false);
+  const [period, setPeriod] = useState("month"); // day | month | year | custom
+  const today = new Date().toISOString().slice(0, 10);
+  const [customFrom, setCustomFrom] = useState(today);
+  const [customTo, setCustomTo]   = useState(today);
+
   // ── password change ──
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwSaved, setPwSaved] = useState(false);
@@ -47,6 +54,32 @@ export default function ProfilePage() {
   if (!user) { navigate("/login"); return null; }
 
   const buildings = getUserBuildings(user.id);
+
+  // Filter buildings by selected period
+  const filteredBuildings = useMemo(() => {
+    const now = new Date();
+    return buildings.filter(b => {
+      if (!b.submittedAt) return period === "year"; // fallback: include in year
+      const d = new Date(b.submittedAt);
+      if (period === "day")   return d.toDateString() === now.toDateString();
+      if (period === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (period === "year")  return d.getFullYear() === now.getFullYear();
+      if (period === "custom") {
+        const from = new Date(customFrom); from.setHours(0,0,0,0);
+        const to   = new Date(customTo);   to.setHours(23,59,59,999);
+        return d >= from && d <= to;
+      }
+      return true;
+    });
+  }, [buildings, period, customFrom, customTo]);
+
+  const periodLabel = {
+    day:    "Өнөөдөр",
+    month:  `${new Date().toLocaleDateString("mn-MN", { year: "numeric", month: "long" })}`,
+    year:   `${new Date().getFullYear()} он`,
+    custom: `${customFrom} — ${customTo}`,
+  }[period];
+
   const joinedDate = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" })
     : "—";
@@ -79,12 +112,12 @@ export default function ProfilePage() {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
-  const generateReport = () => {
+  const generateReport = (bList = filteredBuildings) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" });
-    const totalKwh = buildings.reduce((s, b) => s + (b.usage || 0), 0);
-    const avgMonthly = buildings.length > 0
-      ? Math.round(buildings.reduce((s, b) => s + (b.monthly_usage || (b.usage / 12) || 0), 0) / buildings.length)
+    const totalKwh = bList.reduce((s, b) => s + (b.usage || 0), 0);
+    const avgMonthly = bList.length > 0
+      ? Math.round(bList.reduce((s, b) => s + (b.monthly_usage || (b.usage / 12) || 0), 0) / bList.length)
       : 0;
     const typeStr = user.type === "official" ? "Байгуулга" : "Хувь хүн";
 
@@ -120,7 +153,7 @@ tr:nth-child(even) td{background:#f5f9fd}
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
   <div>
     <h1>UB Energy — Барилгын эрчим хүчний тайлан</h1>
-    <div class="sub">Гаргасан огноо: ${dateStr}</div>
+    <div class="sub">Гаргасан огноо: ${dateStr} &nbsp;·&nbsp; Хугацаа: ${periodLabel}</div>
   </div>
 </div>
 
@@ -139,19 +172,19 @@ tr:nth-child(even) td{background:#f5f9fd}
 <div class="section">
   <div class="section-title">Нийт үзүүлэлт</div>
   <div class="stats">
-    <div class="stat-box"><div class="stat-num">${buildings.length}</div><div class="stat-lbl">Нийт барилга</div></div>
+    <div class="stat-box"><div class="stat-num">${bList.length}</div><div class="stat-lbl">Барилга (${periodLabel})</div></div>
     <div class="stat-box"><div class="stat-num">${totalKwh.toLocaleString()}</div><div class="stat-lbl">Нийт кВт·цаг/жил</div></div>
     <div class="stat-box"><div class="stat-num">${avgMonthly.toLocaleString()}</div><div class="stat-lbl">Дундаж сарын кВт·цаг</div></div>
   </div>
 </div>
 
-${buildings.length > 0 ? `
+${bList.length > 0 ? `
 <div class="section">
-  <div class="section-title">Барилгын дэлгэрэнгүй жагсаалт</div>
+  <div class="section-title">Барилгын дэлгэрэнгүй жагсаалт (${periodLabel})</div>
   <table>
-    <thead><tr><th>#</th><th>Нэр</th><th>Төрөл</th><th>Талбай (м²)</th><th>Давхар</th><th>Он</th><th>Дүүрэг</th><th>кВт·цаг/жил</th><th>кВт·цаг/сар</th></tr></thead>
+    <thead><tr><th>#</th><th>Нэр</th><th>Төрөл</th><th>Талбай (м²)</th><th>Давхар</th><th>Он</th><th>Дүүрэг</th><th>кВт·цаг/жил</th><th>кВт·цаг/сар</th><th>Оруулсан огноо</th></tr></thead>
     <tbody>
-      ${buildings.map((b, i) => `<tr>
+      ${bList.map((b, i) => `<tr>
         <td>${i + 1}</td>
         <td>${b.name || "—"}</td>
         <td>${b.type || "—"}</td>
@@ -161,6 +194,7 @@ ${buildings.length > 0 ? `
         <td>${b.district || "—"}</td>
         <td>${(b.usage || 0).toLocaleString()}</td>
         <td>${Math.round((b.monthly_usage || (b.usage / 12) || 0)).toLocaleString()}</td>
+        <td>${b.submittedAt ? new Date(b.submittedAt).toLocaleDateString("mn-MN") : "—"}</td>
       </tr>`).join("")}
     </tbody>
   </table>
@@ -217,7 +251,7 @@ ${buildings.length > 0 ? `
             <p className="ph-joined"><Calendar size={13} /> {t.profile.member_since}: {joinedDate}</p>
           </div>
           <div className="ph-actions">
-            <button className="btn btn-primary" onClick={generateReport} style={{ fontSize: "0.83rem" }}>
+            <button className="btn btn-primary" onClick={() => setReportOpen(o => !o)} style={{ fontSize: "0.83rem" }}>
               <Download size={14} /> Тайлан татах
             </button>
             <button className="btn btn-secondary ph-logout" onClick={handleLogout}>
@@ -281,7 +315,7 @@ ${buildings.length > 0 ? `
             </div>
           </div>
 
-          {/* ── Stats ── */}
+          {/* ── Stats + Report ── */}
           <div className="card profile-stats-card">
             <h3 className="section-title">{t.profile.stats_title}</h3>
             <div className="stat-big">
@@ -305,9 +339,63 @@ ${buildings.length > 0 ? `
                 </div>
               </div>
             )}
-            <button className="btn btn-secondary" style={{ marginTop: "1rem", width: "100%", fontSize: "0.82rem" }} onClick={generateReport}>
-              <Download size={13} /> Тайлан татах (PDF)
-            </button>
+
+            {/* ── Period picker ── */}
+            <div className="report-picker">
+              <button className="report-picker-toggle" onClick={() => setReportOpen(o => !o)}>
+                <Download size={14} />
+                <span>Тайлан татах</span>
+                <ChevronDown size={14} style={{ marginLeft: "auto", transform: reportOpen ? "rotate(180deg)" : "none", transition: "0.2s" }} />
+              </button>
+
+              {reportOpen && (
+                <div className="report-picker-body animate-fade">
+                  <div className="period-tabs">
+                    {[
+                      { id: "day",    label: "Өдөр" },
+                      { id: "month",  label: "Сар" },
+                      { id: "year",   label: "Жил" },
+                      { id: "custom", label: "Тодорхой" },
+                    ].map(p => (
+                      <button
+                        key={p.id}
+                        className={`period-tab${period === p.id ? " active" : ""}`}
+                        onClick={() => setPeriod(p.id)}
+                      >{p.label}</button>
+                    ))}
+                  </div>
+
+                  {period === "custom" && (
+                    <div className="custom-range">
+                      <div className="form-group">
+                        <label className="form-label">Эхлэх огноо</label>
+                        <input type="date" className="form-input" value={customFrom}
+                          onChange={e => setCustomFrom(e.target.value)} max={customTo} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Дуусах огноо</label>
+                        <input type="date" className="form-input" value={customTo}
+                          onChange={e => setCustomTo(e.target.value)} min={customFrom} max={today} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="report-preview">
+                    <Calendar size={13} />
+                    <span>{periodLabel} — <strong>{filteredBuildings.length}</strong> барилга</span>
+                  </div>
+
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: "100%", fontSize: "0.83rem" }}
+                    onClick={() => { generateReport(filteredBuildings); setReportOpen(false); }}
+                    disabled={filteredBuildings.length === 0}
+                  >
+                    <Download size={14} /> PDF тайлан гаргах
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ── Edit name ── */}
