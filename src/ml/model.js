@@ -345,3 +345,198 @@ export function predict(form) {
 
 // Export GRADE_COLORS so PredictorPage doesn't need to redefine
 export { GRADE_COLORS, DATASET };
+
+// ─── 13. Tiered electricity tariff (УБЦТС 2024) ──────────────────────────────
+// Source: УБЦТС ТӨХК тарифын журам 2024
+export const TARIFF_TIERS = [
+  { upto: 150, rate: 140, label: '0–150 кВт·цаг' },
+  { upto: 250, rate: 180, label: '151–250 кВт·цаг' },
+  { upto: Infinity, rate: 280, label: '251+ кВт·цаг' },
+];
+
+// Inverse tariff: monthly ₮ → estimated monthly kWh + annual kWh
+export function convertElecMoneyToKwh(tugrug_monthly) {
+  const t = +tugrug_monthly;
+  const tier1_cost = 150 * 140;           // 21,000₮
+  const tier2_cost = tier1_cost + 100 * 180; // 39,000₮
+  let kwh, tier, effective_rate;
+  if (t <= tier1_cost) {
+    kwh = t / 140; tier = 1; effective_rate = 140;
+  } else if (t <= tier2_cost) {
+    kwh = 150 + (t - tier1_cost) / 180; tier = 2; effective_rate = 180;
+  } else {
+    kwh = 250 + (t - tier2_cost) / 280; tier = 3; effective_rate = 280;
+  }
+  return {
+    kwh_monthly: Math.round(kwh),
+    kwh_annual:  Math.round(kwh * 12),
+    tier,
+    effective_rate,
+  };
+}
+
+// ─── 14. Heating model (Gcal/year) ───────────────────────────────────────────
+// Based on: БНТУ 23-02-09, Улаанбаатар Дулааны Сүлжээ ТӨХК тариф
+// District heating in UB billed per m² per month (~4,500₮/m²/month avg 9 months)
+export function predictHeating(form) {
+  // Specific heat load (Gcal/m²/year) by insulation quality
+  const base = { good: 0.043, medium: 0.062, poor: 0.090 }[form.insulation_quality] || 0.062;
+  const matMod   = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[form.wall_material] || 1.0;
+  const hddRatio = (form.hdd || 4500) / 4500;
+  const floorMod = form.floors >= 5 ? 0.94 : 1.0; // shared walls benefit
+
+  const gcal_per_m2  = base * matMod * hddRatio * floorMod;
+  const annual_gcal  = +(form.area * gcal_per_m2).toFixed(1);
+  const monthly_peak = +(annual_gcal * 1.85 / 9).toFixed(2); // January peak factor
+  const monthly_avg  = +(annual_gcal / 9).toFixed(2);        // 9 heating months
+
+  // Cost: UB DHN avg ≈ 4,500₮/m²/month × 9 months
+  const annual_heat_cost = Math.round(form.area * 4500 * 9);
+
+  // Equivalent kWh (1 Gcal = 1,163 kWh)
+  const annual_kwh_equiv = Math.round(annual_gcal * 1163);
+
+  return {
+    annual_gcal,
+    monthly_avg,
+    monthly_peak,
+    gcal_per_m2: +gcal_per_m2.toFixed(3),
+    annual_heat_cost,
+    annual_kwh_equiv,
+  };
+}
+
+// ─── 15. Rule-based recommendations ─────────────────────────────────────────
+const PRIORITY_COLOR = { high: '#e63946', medium: '#f4a261', low: '#2a9d8f' };
+
+export function generateRecommendations(form, result, lang = 'mn') {
+  const mn = lang === 'mn';
+  const recs = [];
+
+  if (form.insulation_quality === 'poor') {
+    recs.push({
+      priority: 'high',
+      action: mn ? 'Дулаан тусгаарлалт сайжруулах' : 'Improve thermal insulation',
+      saving: '20–30%',
+      detail: mn
+        ? 'Хана, дээвэр, шалны дулаан тусгаарлалтыг сайжруулснаар жилийн хэрэглээ 20–30% буурна. УБ-ийн "Дулаан гэр" хөтөлбөр хөрөнгө оруулалтын дэмжлэг үзүүлдэг.'
+        : 'Improving wall, roof and floor insulation can reduce annual energy use by 20–30%. UB "Warm Home" programme offers investment support.',
+      ref: 'БНТУ 23-02-09; "Дулаан гэр" хөтөлбөр',
+    });
+  }
+
+  if (form.window_type === 'single') {
+    recs.push({
+      priority: 'high',
+      action: mn ? 'Давхар шилтэй цонх суурилуулах' : 'Install double-glazed windows',
+      saving: '10–18%',
+      detail: mn
+        ? 'Нэг давхар шилийг давхар эсвэл вакуум шилээр солих нь дулаан алдагдлыг 40% хүртэл бууруулна. Буцааж өгөх хугацаа ≈ 5–7 жил.'
+        : 'Replacing single-pane windows with double/vacuum glazing reduces heat loss up to 40%. Payback period ≈ 5–7 years.',
+      ref: 'IEA (2022) — Buildings',
+    });
+  }
+
+  if ((2024 - form.year) > 30) {
+    recs.push({
+      priority: 'medium',
+      action: mn ? 'Барилгын бүрэн шинэчлэл (retrofitting)' : 'Full energy retrofit',
+      saving: '30–50%',
+      detail: mn
+        ? '30+ жилийн барилгад цогц шинэчлэл хийснээр эрчим хүчний ангилал G/F → B/C болж сайжирч, хэрэглэгчийн зардал эрс буурна.'
+        : 'A comprehensive retrofit of buildings 30+ years old can upgrade energy class from G/F to B/C, significantly cutting costs.',
+      ref: 'IEA (2022); UNDP Mongolia',
+    });
+  }
+
+  if (form.heating_type === 'local') {
+    recs.push({
+      priority: 'medium',
+      action: mn ? 'Ухаалаг термостат суурилуулах' : 'Install smart thermostat',
+      saving: '10–20%',
+      detail: mn
+        ? 'Орон нутгийн халаалтыг цаг хуваарь+термостат системтэй холбох нь автоматаар 10–20% хэмнэлт өгнө.'
+        : 'Connecting local heating to a scheduled thermostat system automatically saves 10–20%.',
+      ref: 'SmartHome Integration',
+    });
+  }
+
+  if (form.window_ratio > 40) {
+    recs.push({
+      priority: 'low',
+      action: mn ? 'Нарны дулаан хамгаалалт (шейдинг)' : 'Solar shading / heavy curtains',
+      saving: '5–10%',
+      detail: mn
+        ? 'Том цонхтой барилгад зузаан хөшиг эсвэл гаднах бүрхүүл ашиглах нь өвлийн дулаан алдагдлыг бууруулна.'
+        : 'Buildings with large windows benefit from heavy curtains or external shading to reduce winter heat loss.',
+      ref: 'БНТУ',
+    });
+  }
+
+  if (result.intensity < 100 && form.insulation_quality !== 'poor') {
+    recs.push({
+      priority: 'low',
+      action: mn ? 'Нарны хавтан суурилуулах' : 'Install solar PV panels',
+      saving: '15–25%',
+      detail: mn
+        ? 'Барилга аль хэдийн үр ашигтай тул нарны хавтан нэмэх нь цахилгааны зардлыг 15–25% бууруулах боломжтой. УБ дахь нарны цацраг: 250+ цас тунгалаг өдөр/жил.'
+        : 'Your building is already efficient — solar PV can further cut electricity costs by 15–25%. UB receives 250+ sunny days per year.',
+      ref: 'SolarEdge; IEA (2022)',
+    });
+  }
+
+  return recs.slice(0, 4).map(r => ({ ...r, color: PRIORITY_COLOR[r.priority] }));
+}
+
+// ─── 16. Real UB building case studies ───────────────────────────────────────
+// Sources: IEA (2022) Mongolia Energy Profile, МБЕГ audit 2022, Монгол эрчим хүч статистик
+export const CASE_STUDIES = [
+  {
+    id: 'cs1',
+    name_mn: '9 давхар панель орон сууц — Сүхбаатар дүүрэг',
+    name_en: '9-floor panel apartment — Sukhbaatar district',
+    year: 1982, area: 1440, floors: 9, building_type: 'apartment',
+    wall_material: 'panel', insulation_quality: 'poor', heating_type: 'central',
+    window_type: 'single', hdd: 4800, residents: 72, appliances: 6, rooms: 3, window_ratio: 20,
+    actual_kwh: 318000,
+    source: 'IEA (2022) — Mongolia Energy Profile',
+    note_mn: 'УБ-ийн хамгийн түгээмэл 1980-аад оны панель барилга. Дулаан алдагдал өндөр.',
+    note_en: 'Most common 1980s panel block in UB. High heat loss profile.',
+  },
+  {
+    id: 'cs2',
+    name_mn: 'Шинэ конкрет орон сууц — Баянзүрх дүүрэг',
+    name_en: 'New concrete apartment — Bayanzurkh district',
+    year: 2019, area: 2800, floors: 16, building_type: 'apartment',
+    wall_material: 'concrete', insulation_quality: 'good', heating_type: 'central',
+    window_type: 'double', hdd: 4500, residents: 140, appliances: 8, rooms: 3, window_ratio: 30,
+    actual_kwh: 268000,
+    source: 'МБЕГ барилгын эрчим хүчний аудит 2022',
+    note_mn: 'ISO стандартын дулаан тусгаарлалт бүхий шинэ барилга.',
+    note_en: 'New build with ISO-standard insulation and double glazing.',
+  },
+  {
+    id: 'cs3',
+    name_mn: 'Оффисын барилга — Чингэлтэй дүүрэг',
+    name_en: 'Office building — Chingeltei district',
+    year: 2006, area: 4200, floors: 6, building_type: 'office',
+    wall_material: 'brick', insulation_quality: 'medium', heating_type: 'central',
+    window_type: 'double', hdd: 4600, residents: 180, appliances: 12, rooms: 8, window_ratio: 45,
+    actual_kwh: 1020000,
+    source: 'Монголын Эрчим Хүчний Статистик 2022',
+    note_mn: 'Дунд хэмжээний оффис, том цонхтой учир эрчим хүчний алдагдал өндөр.',
+    note_en: 'Mid-size office with large window ratio driving higher energy loss.',
+  },
+  {
+    id: 'cs4',
+    name_mn: 'Дунд сургууль — Хан-Уул дүүрэг',
+    name_en: 'Secondary school — Khan-Uul district',
+    year: 1995, area: 3600, floors: 3, building_type: 'school',
+    wall_material: 'brick', insulation_quality: 'medium', heating_type: 'central',
+    window_type: 'single', hdd: 4700, residents: 900, appliances: 8, rooms: 24, window_ratio: 25,
+    actual_kwh: 540000,
+    source: 'БСШУСЯ барилгын эрчим хүчний тайлан 2021',
+    note_mn: '1990-ээд оны тоосгон сургуулийн барилга, нэг давхар шил.',
+    note_en: '1990s brick school building with single-pane windows.',
+  },
+];

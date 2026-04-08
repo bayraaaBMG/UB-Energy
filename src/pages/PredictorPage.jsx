@@ -8,6 +8,7 @@ import {
   Brain, Zap, TrendingUp, Thermometer,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
   Home, Users, Snowflake, Info, Save,
+  Flame, Lightbulb, AlertTriangle, CheckCircle, DollarSign, FlaskConical,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -16,7 +17,12 @@ import {
 import { ulaanbaatarDistricts } from "../data/mockData";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
-import { predict, METRICS, FEATURE_IMPORTANCE, GRADE_COLORS } from "../ml/model";
+import {
+  predict, METRICS, GRADE_COLORS,
+  convertElecMoneyToKwh, predictHeating,
+  generateRecommendations, CASE_STUDIES,
+  TARIFF_TIERS,
+} from "../ml/model";
 import "./PredictorPage.css";
 
 const STORAGE_KEY = STORAGE_KEYS.buildings;
@@ -161,8 +167,14 @@ export default function PredictorPage() {
     hdd: 4600,
   });
   const [result, setResult] = useState(null);
+  const [heating, setHeating] = useState(null);
+  const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [resultTab, setResultTab] = useState("elec");
+  // ₮ → kWh conversion state
+  const [moneyInput, setMoneyInput] = useState("");
+  const [converted, setConverted] = useState(null);
 
   const handleChange = (e) => {
     const val = e.target.type === "number" || e.target.type === "range"
@@ -173,10 +185,22 @@ export default function PredictorPage() {
   const runModel = () => {
     setLoading(true);
     setSaved(false);
+    setResultTab("elec");
     setTimeout(() => {
-      setResult(predict(form));
+      const r = predict(form);
+      const h = predictHeating(form);
+      const rec = generateRecommendations(form, r, lang);
+      setResult(r);
+      setHeating(h);
+      setRecs(rec);
       setLoading(false);
     }, 900);
+  };
+
+  const handleMoneyConvert = () => {
+    const tugrug = parseFloat(moneyInput);
+    if (!tugrug || tugrug <= 0) return;
+    setConverted(convertElecMoneyToKwh(tugrug));
   };
 
   const bTypes = t.predictor.building_types;
@@ -338,6 +362,64 @@ export default function PredictorPage() {
               </div>
             </Section>
 
+            {/* ── ₮ → kWh Conversion Section ── */}
+            <Section icon={DollarSign} title={lang === "mn" ? "₮ → кВт·цаг хөрвүүлэлт (заавал биш)" : "₮ → kWh Conversion (optional)"} defaultOpen={false}>
+              <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
+                {lang === "mn"
+                  ? "Сарын цахилгааны тооцооны дүнгээ оруулахад шаталсан тарифт үндэслэн кВт·цаг тооцоолж өгнө."
+                  : "Enter your monthly electricity bill amount to estimate consumption using the tiered tariff."}
+              </p>
+              <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div className="form-group" style={{ flex: 1, minWidth: 160, marginBottom: 0 }}>
+                  <label className="form-label">{lang === "mn" ? "Сарын цахилгааны төлбөр (₮)" : "Monthly electricity bill (₮)"}</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    placeholder={lang === "mn" ? "Жишээ: 35000" : "e.g. 35000"}
+                    value={moneyInput}
+                    onChange={e => { setMoneyInput(e.target.value); setConverted(null); }}
+                    min={0}
+                  />
+                </div>
+                <button className="btn btn-secondary" style={{ marginBottom: 0 }} onClick={handleMoneyConvert}>
+                  {lang === "mn" ? "Хөрвүүлэх" : "Convert"}
+                </button>
+              </div>
+
+              {converted && (
+                <div className="tariff-result-box" style={{ marginTop: "0.85rem", padding: "0.9rem 1.1rem", background: "rgba(42,157,143,0.08)", border: "1px solid rgba(42,157,143,0.25)", borderRadius: 10 }}>
+                  <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
+                    <div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#2a9d8f" }}>{converted.kwh_monthly.toLocaleString()} кВт·цаг</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text3)" }}>{lang === "mn" ? "Сарын хэрэглээ (тооцоолол)" : "Estimated monthly consumption"}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#3a8fd4" }}>{converted.kwh_annual.toLocaleString()} кВт·цаг</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text3)" }}>{lang === "mn" ? "Жилийн тооцоолол" : "Estimated annual"}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text3)", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "0.5rem" }}>
+                    {lang === "mn" ? `Шат ${converted.tier} тариф: ${converted.effective_rate}₮/кВт·цаг` : `Tier ${converted.tier} tariff: ${converted.effective_rate}₮/kWh`}
+                  </div>
+                  <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
+                    {TARIFF_TIERS.map((tier, i) => (
+                      <span key={i} style={{
+                        padding: "0.2rem 0.6rem", borderRadius: 20, fontSize: "0.72rem", fontWeight: 600,
+                        background: converted.tier === i + 1 ? "#2a9d8f" : "var(--bg3)",
+                        color: converted.tier === i + 1 ? "#fff" : "var(--text3)",
+                        border: "1px solid var(--border)",
+                      }}>
+                        {tier.label}: {tier.rate}₮
+                      </span>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem" }}>
+                    {lang === "mn" ? "Эх сурвалж: УБЦТС ТӨХК тарифын журам 2024" : "Source: УБЦТС ТӨХК Tariff Schedule 2024"}
+                  </p>
+                </div>
+              )}
+            </Section>
+
             <button
               className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
               onClick={runModel}
@@ -385,8 +467,33 @@ export default function PredictorPage() {
                   {t.predictor.result_title}
                 </h3>
 
-                {/* Main metrics */}
-                <div className="result-metrics">
+                {/* Result Tabs */}
+                <div className="result-tabs" style={{ display: "flex", gap: "0.3rem", marginBottom: "1.1rem", background: "var(--bg3)", padding: "0.3rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                  {[
+                    { id: "elec", icon: Zap, label: lang === "mn" ? "Цахилгаан" : "Electricity" },
+                    { id: "heat", icon: Flame, label: lang === "mn" ? "Дулаан" : "Heating" },
+                    { id: "recs", icon: Lightbulb, label: lang === "mn" ? "Зөвлөмж" : "Recommendations" },
+                    { id: "cases", icon: FlaskConical, label: lang === "mn" ? "Жишээ" : "Case Studies" },
+                  ].map(tab => {
+                    const TIcon = tab.icon;
+                    return (
+                      <button key={tab.id}
+                        onClick={() => setResultTab(tab.id)}
+                        style={{
+                          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem",
+                          padding: "0.4rem 0.5rem", borderRadius: 6, border: "none", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer",
+                          background: resultTab === tab.id ? "var(--primary)" : "transparent",
+                          color: resultTab === tab.id ? "#fff" : "var(--text3)",
+                          transition: "0.2s",
+                        }}>
+                        <TIcon size={13} />{tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* ── Electricity Tab ── */}
+                {resultTab === "elec" && (<div className="animate-fade"><div className="result-metrics">
                   <div className="result-metric main-metric">
                     <div className="metric-value">{result.annual.toLocaleString()} {t.common.units_kwh}</div>
                     <div className="metric-label">{t.predictor.annual_consumption} ({t.predictor.unit_kwh_yr})</div>
@@ -453,6 +560,133 @@ export default function PredictorPage() {
                     />
                   ))}
                 </div>
+
+                </div>)}
+
+                {/* ── Heating Tab ── */}
+                {resultTab === "heat" && heating && (
+                  <div className="animate-fade">
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                      {[
+                        { label: lang === "mn" ? "Жилийн дулааны хэрэглээ" : "Annual heating consumption", value: `${heating.annual_gcal} Гкал`, color: "#f4a261" },
+                        { label: lang === "mn" ? "Сарын дундаж (9 сар)" : "Monthly avg (9 months)", value: `${heating.monthly_avg} Гкал`, color: "#e9c46a" },
+                        { label: lang === "mn" ? "1-р сарын оргил" : "January peak", value: `${heating.monthly_peak} Гкал`, color: "#e63946" },
+                        { label: lang === "mn" ? "Дулааны эквивалент" : "Heating equivalent", value: `${heating.annual_kwh_equiv.toLocaleString()} кВт·цаг`, color: "#3a8fd4" },
+                      ].map(m => (
+                        <div key={m.label} style={{ background: "var(--bg3)", borderRadius: 10, padding: "0.85rem", border: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: m.color }}>{m.value}</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: 3 }}>{m.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ background: "rgba(244,162,97,0.07)", border: "1px solid rgba(244,162,97,0.2)", borderRadius: 10, padding: "1rem", marginBottom: "0.75rem" }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: "0.5rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                        <Flame size={14} style={{ color: "#f4a261" }} />
+                        {lang === "mn" ? "Дулааны зардал (тооцоолол)" : "Estimated heating cost"}
+                      </div>
+                      <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "#f4a261" }}>
+                        {heating.annual_heat_cost.toLocaleString()} ₮
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text3)", marginTop: 4 }}>
+                        {lang === "mn" ? `≈ 4,500₮/м²/сар × 9 сар (УБ ДС ТӨХК дундаж тариф)` : `≈ 4,500₮/m²/month × 9 months (UB DHN avg tariff)`}
+                      </div>
+                    </div>
+
+                    <div style={{ background: "var(--bg3)", borderRadius: 10, padding: "0.85rem", border: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--text2)", lineHeight: 1.7 }}>
+                      <strong style={{ display: "block", marginBottom: 4 }}>{lang === "mn" ? "Загварын тухай" : "About this model"}</strong>
+                      {lang === "mn"
+                        ? `БНТУ 23-02-09 стандартын дулааны ачааллын томьёонд үндэслэсэн. Суурь ${heating.gcal_per_m2} Гкал/м²/жил × ${form.area} м² = ${heating.annual_gcal} Гкал. Дулааны алдагдал: хана ${form.wall_material}, дулаалга ${form.insulation_quality}, HDD ${form.hdd}.`
+                        : `Based on БНТУ 23-02-09 thermal load formula. Base ${heating.gcal_per_m2} Gcal/m²/year × ${form.area} m² = ${heating.annual_gcal} Gcal. Heat loss factors: wall ${form.wall_material}, insulation ${form.insulation_quality}, HDD ${form.hdd}.`}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem" }}>
+                      {lang === "mn" ? "Эх сурвалж: БНТУ 23-02-09; Улаанбаатар Дулааны Сүлжээ ТӨХК" : "Source: БНТУ 23-02-09; Ulaanbaatar Heating Network ТӨХК"}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Recommendations Tab ── */}
+                {resultTab === "recs" && (
+                  <div className="animate-fade">
+                    {recs.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "1.5rem", color: "var(--text3)" }}>
+                        <CheckCircle size={32} style={{ color: "#2a9d8f", marginBottom: 8 }} />
+                        <div>{lang === "mn" ? "Барилга үр ашигтай байна. Тусгай зөвлөмж алга." : "Building is already efficient. No specific recommendations."}</div>
+                      </div>
+                    ) : recs.map((rec, i) => (
+                      <div key={i} style={{
+                        marginBottom: "0.85rem", padding: "0.9rem 1rem",
+                        background: `${rec.color}11`, border: `1px solid ${rec.color}44`,
+                        borderLeft: `4px solid ${rec.color}`, borderRadius: 10,
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                          <strong style={{ color: "var(--text)", fontSize: "0.9rem" }}>{rec.action}</strong>
+                          <span style={{ background: rec.color, color: "#fff", padding: "0.15rem 0.6rem", borderRadius: 20, fontSize: "0.72rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            {lang === "mn" ? "Хэмнэлт" : "Saving"}: {rec.saving}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: "0.82rem", color: "var(--text2)", lineHeight: 1.65, margin: "0 0 0.3rem" }}>{rec.detail}</p>
+                        <span style={{ fontSize: "0.7rem", color: "var(--text3)" }}>{lang === "mn" ? "Эх сурвалж" : "Source"}: {rec.ref}</span>
+                      </div>
+                    ))}
+                    <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem" }}>
+                      {lang === "mn"
+                        ? "Зөвлөмжүүд нь rule-based logic-д суурилсан. Бодит аудитыг мэргэжлийн байгуулагаас авна уу."
+                        : "Recommendations are rule-based. For precise savings, consult a certified energy auditor."}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Case Studies Tab ── */}
+                {resultTab === "cases" && (
+                  <div className="animate-fade">
+                    <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
+                      {lang === "mn"
+                        ? "Загварын үр дүнг бодит УБ барилгуудтай харьцуулна. Тооцоолсон утга бодит өгөгдлөөс ±15% дотор байвал хүлцэж болно."
+                        : "Model predictions compared against real UB buildings. Predictions within ±15% of actual values are acceptable."}
+                    </p>
+                    {CASE_STUDIES.map(cs => {
+                      const predicted = predict(cs);
+                      const errPct = Math.abs((predicted.annual - cs.actual_kwh) / cs.actual_kwh * 100);
+                      const ok = errPct < 15;
+                      return (
+                        <div key={cs.id} style={{ marginBottom: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10 }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text)", marginBottom: "0.5rem" }}>
+                            {lang === "mn" ? cs.name_mn : cs.name_en}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                            <div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>{lang === "mn" ? "Бодит хэрэглээ" : "Actual"}</div>
+                              <div style={{ fontWeight: 700, color: "#f4a261", fontSize: "0.95rem" }}>{cs.actual_kwh.toLocaleString()} кВт·цаг</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>{lang === "mn" ? "Загварын таамаглал" : "Model prediction"}</div>
+                              <div style={{ fontWeight: 700, color: "#3a8fd4", fontSize: "0.95rem" }}>{predicted.annual.toLocaleString()} кВт·цаг</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>{lang === "mn" ? "Алдаа" : "Error"}</div>
+                              <div style={{ fontWeight: 700, color: ok ? "#2a9d8f" : "#e63946", fontSize: "0.95rem", display: "flex", alignItems: "center", gap: 4 }}>
+                                {ok ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
+                                {errPct.toFixed(1)}%
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text3)", lineHeight: 1.5 }}>
+                            {lang === "mn" ? cs.note_mn : cs.note_en}
+                          </div>
+                          <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: 4 }}>
+                            {lang === "mn" ? "Эх сурвалж" : "Source"}: {cs.source}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div style={{ marginTop: "0.5rem", padding: "0.7rem 0.9rem", background: "rgba(58,143,212,0.07)", border: "1px solid rgba(58,143,212,0.2)", borderRadius: 8, fontSize: "0.75rem", color: "var(--text2)", lineHeight: 1.6 }}>
+                      {lang === "mn"
+                        ? "Загвар нь физик EUI томьёо + OLS regression хосолсон. Бодит өгөгдлийн хязгаарлалтаас болж synthetic dataset ашигласан. Жишилтийн утгуудыг тооцоологдсон болохыг анхаарна уу."
+                        : "Model uses physics-informed EUI formula + OLS regression. Synthetic dataset used due to limited public Mongolian building data. Note: actual consumption figures are referenced from published sources."}
+                    </div>
+                  </div>
+                )}
 
                 {/* Model info + save */}
                 <div className="model-info-row">
