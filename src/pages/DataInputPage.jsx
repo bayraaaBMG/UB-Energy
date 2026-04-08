@@ -7,10 +7,12 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight, Info,
+  Layers, Wind, Flame, Users, Thermometer, Target, Zap,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
 import { saveUserBuilding } from "../utils/buildingStorage";
+import { convertElecMoneyToKwh, convertHeatBillToEstimates, TARIFF_TIERS } from "../ml/model";
 
 // ─── Supported file types ─────────────────────────────────────────────────────
 const ACCEPTED_TYPES = {
@@ -60,11 +62,11 @@ function FileItem({ file, t, onRemove, onPreview }) {
 }
 
 // ─── Section header helper ────────────────────────────────────────────────────
-function FormSection({ emoji, title, color, children }) {
+function FormSection({ icon: Icon, title, color, children }) {
   return (
     <div className="form-section">
       <div className="form-section-header" style={{ borderColor: color }}>
-        <span className="form-section-emoji">{emoji}</span>
+        {Icon && <Icon size={15} style={{ color, flexShrink: 0 }} />}
         <span className="form-section-title" style={{ color }}>{title}</span>
       </div>
       <div className="grid grid-2">{children}</div>
@@ -74,7 +76,7 @@ function FormSection({ emoji, title, color, children }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   usePageTitle(t.nav.dataInput);
   const { user } = useAuth();
   const fileRef = useRef(null);
@@ -87,6 +89,8 @@ export default function DataInputPage() {
   const [links, setLinks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [elecBill, setElecBill] = useState("");
+  const [heatBill, setHeatBill] = useState("");
 
   // Close file preview on Escape
   useEffect(() => {
@@ -124,8 +128,6 @@ export default function DataInputPage() {
     // 🌡️ Environment
     outdoor_temp: "",
     season: "winter",
-    // 🎯 Output (target)
-    monthly_usage: "",
     // Location coords
     latitude: "47.9184",
     longitude: "106.9177",
@@ -166,7 +168,8 @@ export default function DataInputPage() {
   const handleManualSubmit = (e) => {
     e.preventDefault();
     // Build a record and persist to localStorage
-    const monthly = parseFloat(form.monthly_usage) || 0;
+    const elecConverted = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
+    const monthly = elecConverted ? elecConverted.kwh_monthly : 0;
     const record = {
       id: `user_${Date.now()}`,
       name:     form.building_name || t.dataInput.unnamed_building,
@@ -204,7 +207,7 @@ export default function DataInputPage() {
       ...f,
       building_name: "", address: "", year: "", total_floors: "",
       floor_number: "", units_per_floor: "", area: "", rooms: "",
-      balcony: false, window_count: "", outdoor_temp: "", monthly_usage: "",
+      balcony: false, window_count: "", outdoor_temp: "",
       occupancy: "",
     }));
   };
@@ -275,7 +278,7 @@ export default function DataInputPage() {
 
               {/* 🏢 Байршил ба бүтэц */}
               <FormSection
-                emoji="🏢"
+                icon={Building2}
                 title={t.dataInput.section_loc_struct}
                 color="#3a8fd4"
               >
@@ -325,7 +328,7 @@ export default function DataInputPage() {
 
               {/* 📐 Айлын мэдээлэл */}
               <FormSection
-                emoji="📐"
+                icon={Layers}
                 title={t.dataInput.section_apartment}
                 color="#9b72cf"
               >
@@ -362,7 +365,7 @@ export default function DataInputPage() {
 
               {/* 🪟 Дулаан алдагдал */}
               <FormSection
-                emoji="🪟"
+                icon={Wind}
                 title={t.dataInput.section_heat_loss}
                 color="#e9c46a"
               >
@@ -404,7 +407,7 @@ export default function DataInputPage() {
 
               {/* 🔥 Халаалт */}
               <FormSection
-                emoji="🔥"
+                icon={Flame}
                 title={t.dataInput.section_heating}
                 color="#f4a261"
               >
@@ -434,7 +437,7 @@ export default function DataInputPage() {
 
               {/* 👨‍👩‍👧‍👦 Хэрэглээ */}
               <FormSection
-                emoji="👨‍👩‍👧‍👦"
+                icon={Users}
                 title={t.predictor.section_occupancy}
                 color="#2a9d8f"
               >
@@ -447,7 +450,7 @@ export default function DataInputPage() {
 
               {/* 🌡️ Орчны өгөгдөл */}
               <FormSection
-                emoji="🌡️"
+                icon={Thermometer}
                 title={t.dataInput.section_env}
                 color="#6a9bbf"
               >
@@ -468,28 +471,129 @@ export default function DataInputPage() {
                 </div>
               </FormSection>
 
-              {/* 🎯 Гаралт */}
+              {/* Сарын төлбөрөөс тооцоолох */}
               <div className="form-section form-section-output">
                 <div className="form-section-header" style={{ borderColor: "#2a9d8f" }}>
-                  <span className="form-section-emoji">🎯</span>
+                  <Target size={15} style={{ color: "#2a9d8f", flexShrink: 0 }} />
                   <span className="form-section-title" style={{ color: "#2a9d8f" }}>
-                    {t.dataInput.output_label}
+                    {lang === "mn" ? "Сарын төлбөрөөс тооцоолох" : "Estimate from monthly bills"}
                   </span>
-                  <span className="form-section-badge">✅</span>
+                  <CheckCircle size={15} style={{ color: "#2a9d8f", marginLeft: "auto" }} />
                 </div>
-                <div className="output-field-wrap">
-                  <label className="form-label output-label" htmlFor="di-monthly_usage">
-                    {t.dataInput.monthly_elec_label}
-                  </label>
-                  <div className="output-input-row">
-                    <input
-                      id="di-monthly_usage" name="monthly_usage" type="number" value={form.monthly_usage} onChange={handleChange}
-                      className="form-input output-input"
-                      placeholder="320" min={0}
-                    />
-                    <span className="output-unit">kWh / {t.dataInput.month_unit}</span>
+                <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
+                  {lang === "mn"
+                    ? "Сарын нэхэмжлэлийн дүнгээ оруулна уу. Тариф болон норматив дээр үндэслэн автоматаар тооцоолно."
+                    : "Enter your monthly bill amounts. Estimates are calculated automatically based on tariffs and norms."}
+                </p>
+
+                <div className="grid grid-2">
+                  <div className="form-group">
+                    <label className="form-label">
+                      <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                      {lang === "mn" ? "Цахилгааны мөнгө (₮/сар)" : "Electricity bill (₮/month)"}
+                    </label>
+                    <input className="form-input" type="number"
+                      placeholder={lang === "mn" ? "Жишээ: 35,000" : "e.g. 35,000"}
+                      value={elecBill} onChange={e => setElecBill(e.target.value)} min={0} />
                   </div>
-                  <p className="output-hint">{t.dataInput.elec_hint}</p>
+                  <div className="form-group">
+                    <label className="form-label">
+                      <Flame size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                      {lang === "mn" ? "Ус + дулааны мөнгө (₮/сар)" : "Water + heating bill (₮/month)"}
+                    </label>
+                    <input className="form-input" type="number"
+                      placeholder={lang === "mn" ? "Жишээ: 80,000" : "e.g. 80,000"}
+                      value={heatBill} onChange={e => setHeatBill(e.target.value)} min={0} />
+                  </div>
+                </div>
+
+                {/* Live results */}
+                {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && (() => {
+                  const ec = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
+                  const hc = parseFloat(heatBill) > 0 ? convertHeatBillToEstimates(parseFloat(heatBill)) : null;
+                  return (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginTop: "0.75rem" }}>
+                      {ec && (<>
+                        <div style={{ background: "rgba(26,110,181,0.09)", border: "1px solid rgba(26,110,181,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a6eb5" }}>{ec.kwh_monthly.toLocaleString()} кВт·цаг</div>
+                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын цахилгааны хэрэглээ" : "Monthly electricity use"}</div>
+                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4, padding: "0.18rem 0.45rem", background: "rgba(26,110,181,0.12)", borderRadius: 6, display: "inline-block" }}>
+                            {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг · шат ${ec.tier}` : `${ec.effective_rate}₮/kWh · tier ${ec.tier}`}
+                          </div>
+                        </div>
+                        <div style={{ background: "rgba(58,143,212,0.09)", border: "1px solid rgba(58,143,212,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#3a8fd4" }}>{ec.kwh_annual.toLocaleString()} кВт·цаг</div>
+                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Жилийн тооцоолол" : "Annual estimate"}</div>
+                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>{lang === "mn" ? "× 12 сар" : "× 12 months"}</div>
+                        </div>
+                      </>)}
+                      {hc && (<>
+                        <div style={{ background: "rgba(244,162,97,0.09)", border: "1px solid rgba(244,162,97,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#f4a261" }}>{hc.heat_gcal_monthly} Гкал</div>
+                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын дулаан" : "Monthly heating"}</div>
+                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.heat_gcal_annual} Гкал/{lang === "mn" ? "жил" : "yr"}</div>
+                        </div>
+                        <div style={{ background: "rgba(42,157,143,0.09)", border: "1px solid rgba(42,157,143,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#2a9d8f" }}>{hc.water_m3_monthly} м³</div>
+                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын ус" : "Monthly water"}</div>
+                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.water_m3_annual} м³/{lang === "mn" ? "жил" : "yr"}</div>
+                        </div>
+                      </>)}
+                    </div>
+                  );
+                })()}
+
+                {/* Formula explanation */}
+                <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, fontSize: "0.78rem", lineHeight: 1.8, color: "var(--text2)" }}>
+                  <strong style={{ display: "block", marginBottom: "0.4rem", color: "var(--text)" }}>
+                    {lang === "mn" ? "Томьёо — хэрхэн тооцоолсон?" : "How are these calculated?"}
+                  </strong>
+                  <div style={{ display: "grid", gap: "0.5rem" }}>
+                    <div>
+                      <span style={{ color: "#1a6eb5", fontWeight: 700 }}>{lang === "mn" ? "Цахилгаан (шаталсан тариф):" : "Electricity (tiered tariff):"}</span>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
+                        {lang === "mn"
+                          ? "0–150 кВт·цаг → 140₮/кВт·цаг (шат 1)"
+                          : "0–150 kWh → 140₮/kWh (tier 1)"}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text3)" }}>
+                        {lang === "mn"
+                          ? "151–250 кВт·цаг → 180₮/кВт·цаг (шат 2)"
+                          : "151–250 kWh → 180₮/kWh (tier 2)"}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text3)" }}>
+                        {lang === "mn"
+                          ? "251+ кВт·цаг → 280₮/кВт·цаг (шат 3)"
+                          : "251+ kWh → 280₮/kWh (tier 3)"}
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: 2 }}>
+                        {lang === "mn"
+                          ? "Урвуу тооцоолол: кВт·цаг = Мөнгө ÷ тариф (шаталсан)"
+                          : "Inverse calc: kWh = Bill ÷ rate (tiered)"}
+                      </div>
+                    </div>
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+                      <span style={{ color: "#f4a261", fontWeight: 700 }}>{lang === "mn" ? "Дулаан (УБ ДС ТӨХК):" : "Heating (UB DHN ТӨХК):"}</span>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
+                        {lang === "mn"
+                          ? "Дулаан (Гкал) = Мөнгө × 72% ÷ 160,000₮/Гкал"
+                          : "Heating (Gcal) = Bill × 72% ÷ 160,000₮/Gcal"}
+                      </div>
+                    </div>
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+                      <span style={{ color: "#2a9d8f", fontWeight: 700 }}>{lang === "mn" ? "Ус (УСУГ):" : "Water (УСУГ):"}</span>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
+                        {lang === "mn"
+                          ? "Ус (м³) = Мөнгө × 28% ÷ 2,100₮/м³"
+                          : "Water (m³) = Bill × 28% ÷ 2,100₮/m³"}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: "0.6rem", fontSize: "0.7rem", color: "var(--text3)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+                    {lang === "mn"
+                      ? "Эх сурвалж: УБЦТС ТӨХК тарифын журам 2024 (цахилгаан) · Улаанбаатар Дулааны Сүлжээ ТӨХК 2024 (дулаан) · УСУГ норматив 2024 (ус)"
+                      : "Sources: УБЦТС ТӨХК Tariff Schedule 2024 (electricity) · Ulaanbaatar Heating Network ТӨХК 2024 (heating) · УСУГ norm 2024 (water)"}
+                  </div>
                 </div>
               </div>
 
@@ -633,7 +737,7 @@ export default function DataInputPage() {
                       const u = URL.createObjectURL(b);
                       const a = document.createElement("a"); a.href = u; a.download = "template.csv"; a.click();
                     }}>
-                    📥 template.csv
+                    template.csv
                   </a>
                 </div>
               </div>
