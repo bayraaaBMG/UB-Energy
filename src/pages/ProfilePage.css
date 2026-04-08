@@ -121,9 +121,16 @@
   margin: 0;
 }
 
-.ph-logout {
+.ph-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-left: auto;
   align-self: center;
+  white-space: nowrap;
+}
+
+.ph-logout {
   white-space: nowrap;
 }
 
@@ -154,6 +161,106 @@
   .stat-big-num { font-size: 1.75rem; }
   .info-row { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
   .info-val { text-align: left; }
+}
+
+/* ── Org banner ── */
+.org-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 1.75rem;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, rgba(42,157,143,0.08), rgba(26,110,181,0.06));
+  border: 1px solid rgba(42,157,143,0.28);
+  flex-wrap: wrap;
+}
+
+.org-banner-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(42,157,143,0.15);
+  color: #2a9d8f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.org-banner-info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.org-banner-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2a9d8f;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 0.2rem;
+}
+
+.org-banner-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.org-banner-sub {
+  font-size: 0.79rem;
+  color: var(--text3);
+  line-height: 1.55;
+}
+
+.org-banner-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.org-stat {
+  text-align: center;
+}
+
+.org-stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2a9d8f;
+}
+
+.org-stat-lbl {
+  font-size: 0.72rem;
+  color: var(--text3);
+}
+
+/* ── Stat rows ── */
+.stat-rows {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.stat-row-lbl {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text3);
+}
+
+.stat-row-val {
+  font-weight: 700;
+  color: var(--text);
 }
 
 /* ── Info rows ── */

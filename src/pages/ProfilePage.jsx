@@ -7,6 +7,7 @@ import { getUserBuildings } from "../utils/buildingStorage";
 import {
   User, Building2, Mail, Shield, Calendar, LogOut,
   Edit2, Lock, CheckCircle, AlertCircle, BarChart2, Camera,
+  Download, FileText, Zap, Globe,
 } from "lucide-react";
 import "./ProfilePage.css";
 
@@ -78,6 +79,105 @@ export default function ProfilePage() {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
+  const generateReport = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" });
+    const totalKwh = buildings.reduce((s, b) => s + (b.usage || 0), 0);
+    const avgMonthly = buildings.length > 0
+      ? Math.round(buildings.reduce((s, b) => s + (b.monthly_usage || (b.usage / 12) || 0), 0) / buildings.length)
+      : 0;
+    const typeStr = user.type === "official" ? "Байгуулга" : "Хувь хүн";
+
+    const html = `<!DOCTYPE html>
+<html lang="mn"><head><meta charset="UTF-8">
+<title>UB Energy — Тайлан — ${user.name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;font-size:13px;color:#1a2a3a;padding:36px 40px;line-height:1.6}
+h1{font-size:22px;color:#1a6eb5;margin-bottom:2px}
+.sub{color:#6a9bbf;font-size:12px;margin-bottom:24px}
+.section{margin-bottom:24px}
+.section-title{font-size:13px;font-weight:700;color:#1a6eb5;border-bottom:2px solid #d0e4f4;padding-bottom:5px;margin-bottom:12px;letter-spacing:.3px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 32px}
+.info-row{display:flex;gap:8px;padding:4px 0}
+.lbl{color:#6a9bbf;min-width:110px;font-size:12px}
+.val{font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat-box{border:1.5px solid #d0e4f4;border-radius:8px;padding:14px;text-align:center}
+.stat-num{font-size:24px;font-weight:700;color:#1a6eb5}
+.stat-lbl{font-size:11px;color:#6a9bbf;margin-top:3px}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#e8f0f8;color:#1a6eb5}
+.badge.off{background:#e8f8f4;color:#2a9d8f}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#1a6eb5;color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid #e8f0f8}
+tr:nth-child(even) td{background:#f5f9fd}
+.footer{margin-top:36px;padding-top:12px;border-top:1px solid #d0e4f4;color:#6a9bbf;font-size:11px;display:flex;justify-content:space-between}
+.print-btn{padding:8px 18px;background:#1a6eb5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:20px}
+@media print{.print-btn{display:none}body{padding:16px}}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">Хэвлэх / PDF болгох</button>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+  <div>
+    <h1>UB Energy — Барилгын эрчим хүчний тайлан</h1>
+    <div class="sub">Гаргасан огноо: ${dateStr}</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Хэрэглэгчийн мэдээлэл</div>
+  <div class="info-grid">
+    <div class="info-row"><span class="lbl">Нэр:</span><span class="val">${user.name}</span></div>
+    <div class="info-row"><span class="lbl">И-мэйл:</span><span class="val">${user.email}</span></div>
+    <div class="info-row"><span class="lbl">Төрөл:</span><span class="badge ${user.type === "official" ? "off" : ""}">${typeStr}</span></div>
+    ${user.org ? `<div class="info-row"><span class="lbl">Байгуулга:</span><span class="val">${user.org}</span></div>` : ""}
+    <div class="info-row"><span class="lbl">Бүртгэгдсэн:</span><span class="val">${joinedDate}</span></div>
+    <div class="info-row"><span class="lbl">Эрх:</span><span class="val">${user.role === "admin" ? "Админ" : "Хэрэглэгч"}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Нийт үзүүлэлт</div>
+  <div class="stats">
+    <div class="stat-box"><div class="stat-num">${buildings.length}</div><div class="stat-lbl">Нийт барилга</div></div>
+    <div class="stat-box"><div class="stat-num">${totalKwh.toLocaleString()}</div><div class="stat-lbl">Нийт кВт·цаг/жил</div></div>
+    <div class="stat-box"><div class="stat-num">${avgMonthly.toLocaleString()}</div><div class="stat-lbl">Дундаж сарын кВт·цаг</div></div>
+  </div>
+</div>
+
+${buildings.length > 0 ? `
+<div class="section">
+  <div class="section-title">Барилгын дэлгэрэнгүй жагсаалт</div>
+  <table>
+    <thead><tr><th>#</th><th>Нэр</th><th>Төрөл</th><th>Талбай (м²)</th><th>Давхар</th><th>Он</th><th>Дүүрэг</th><th>кВт·цаг/жил</th><th>кВт·цаг/сар</th></tr></thead>
+    <tbody>
+      ${buildings.map((b, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${b.name || "—"}</td>
+        <td>${b.type || "—"}</td>
+        <td>${b.area || "—"}</td>
+        <td>${b.floors || "—"}</td>
+        <td>${b.year || "—"}</td>
+        <td>${b.district || "—"}</td>
+        <td>${(b.usage || 0).toLocaleString()}</td>
+        <td>${Math.round((b.monthly_usage || (b.usage / 12) || 0)).toLocaleString()}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+</div>` : `<p style="color:#6a9bbf;padding:16px 0">Барилгын мэдээлэл байхгүй байна.</p>`}
+
+<div class="footer">
+  <span>UB Energy · ubenergy.vercel.app</span>
+  <span>Тайлан гаргасан: ${dateStr}</span>
+</div>
+</body></html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Popup blocked. Please allow popups for this site."); return; }
+    win.document.write(html);
+    win.document.close();
+  };
+
   return (
     <div className="profile-page">
       <div className="container">
@@ -116,10 +216,39 @@ export default function ProfilePage() {
             </div>
             <p className="ph-joined"><Calendar size={13} /> {t.profile.member_since}: {joinedDate}</p>
           </div>
-          <button className="btn btn-secondary ph-logout" onClick={handleLogout}>
-            <LogOut size={15} /> {t.profile.logout_btn}
-          </button>
+          <div className="ph-actions">
+            <button className="btn btn-primary" onClick={generateReport} style={{ fontSize: "0.83rem" }}>
+              <Download size={14} /> Тайлан татах
+            </button>
+            <button className="btn btn-secondary ph-logout" onClick={handleLogout}>
+              <LogOut size={15} /> {t.profile.logout_btn}
+            </button>
+          </div>
         </div>
+
+        {/* ── Байгуулгын хэрэглэгч ── */}
+        {user.type === "official" && (
+          <div className="card org-banner animate-fade">
+            <div className="org-banner-icon"><Globe size={28} /></div>
+            <div className="org-banner-info">
+              <div className="org-banner-label">Байгуулгын бүртгэл</div>
+              <div className="org-banner-name">{user.org || user.name}</div>
+              <div className="org-banner-sub">
+                Та байгуулгын эрхээр нэвтэрсэн байна. Бүх барилгын мэдээлэл, тайлан, статистикийг байгуулгын нэрийн өмнөөс удирдах боломжтой.
+              </div>
+            </div>
+            <div className="org-banner-stats">
+              <div className="org-stat">
+                <div className="org-stat-num">{buildings.length}</div>
+                <div className="org-stat-lbl">Барилга</div>
+              </div>
+              <div className="org-stat">
+                <div className="org-stat-num">{buildings.reduce((s, b) => s + (b.usage || 0), 0).toLocaleString()}</div>
+                <div className="org-stat-lbl">кВт·цаг/жил</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="profile-grid">
 
@@ -156,12 +285,29 @@ export default function ProfilePage() {
           <div className="card profile-stats-card">
             <h3 className="section-title">{t.profile.stats_title}</h3>
             <div className="stat-big">
-              <BarChart2 size={32} style={{ color: "#3a8fd4" }} />
+              <BarChart2 size={28} style={{ color: "#3a8fd4" }} />
               <div>
                 <div className="stat-big-num">{buildings.length}</div>
                 <div className="stat-big-lbl">{t.profile.buildings_saved}</div>
               </div>
             </div>
+            {buildings.length > 0 && (
+              <div className="stat-rows">
+                <div className="stat-row">
+                  <span className="stat-row-lbl"><Zap size={13} /> Нийт кВт·цаг/жил</span>
+                  <span className="stat-row-val">{buildings.reduce((s, b) => s + (b.usage || 0), 0).toLocaleString()}</span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-row-lbl"><FileText size={13} /> Дундаж сарын</span>
+                  <span className="stat-row-val">
+                    {Math.round(buildings.reduce((s, b) => s + (b.monthly_usage || (b.usage / 12) || 0), 0) / buildings.length).toLocaleString()} кВт·цаг
+                  </span>
+                </div>
+              </div>
+            )}
+            <button className="btn btn-secondary" style={{ marginTop: "1rem", width: "100%", fontSize: "0.82rem" }} onClick={generateReport}>
+              <Download size={13} /> Тайлан татах (PDF)
+            </button>
           </div>
 
           {/* ── Edit name ── */}
