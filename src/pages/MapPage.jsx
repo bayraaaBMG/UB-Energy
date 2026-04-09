@@ -196,6 +196,35 @@ function getRecommendations(b, calc, lang) {
 const CITY_ANNUAL  = monthlyEnergyData.reduce((s, m) => s + m.usage, 0);
 const MONTH_FRACS  = monthlyEnergyData.map(m => m.usage / CITY_ANNUAL);
 
+// ─── Known building corrections (OSM often missing start_date / wrong type) ───
+// Keys: lowercase substrings of the building's name tag
+const KNOWN_BUILDINGS = {
+  "shangri-la":        { year: 2015, type: "commercial", floors: 18, insulation_quality: "good", wall_material: "concrete" },
+  "шангри-ла":         { year: 2015, type: "commercial", floors: 18, insulation_quality: "good", wall_material: "concrete" },
+  "shangri":           { year: 2015, type: "commercial", floors: 18, insulation_quality: "good", wall_material: "concrete" },
+  "blue sky":          { year: 2010, type: "office",     floors: 25, insulation_quality: "good", wall_material: "concrete" },
+  "блу скай":          { year: 2010, type: "office",     floors: 25, insulation_quality: "good", wall_material: "concrete" },
+  "central tower":     { year: 2014, type: "office",     floors: 21, insulation_quality: "good", wall_material: "concrete" },
+  "монгол улс":        { year: 2006, type: "office",     floors: 14 },
+  "state department":  { year: 2006, type: "office",     floors: 14 },
+  "их дэлгүүр":        { year: 1958, type: "commercial", floors: 5,  insulation_quality: "poor", wall_material: "brick" },
+  "ikh delguur":       { year: 1958, type: "commercial", floors: 5,  insulation_quality: "poor", wall_material: "brick" },
+  "ulaanbaatar hotel": { year: 1961, type: "commercial", floors: 8,  insulation_quality: "poor", wall_material: "brick" },
+  "улаанбаатар зочид": { year: 1961, type: "commercial", floors: 8,  insulation_quality: "poor", wall_material: "brick" },
+  "nomin":             { year: 2005, type: "commercial", floors: 6,  insulation_quality: "medium", wall_material: "concrete" },
+  "номин":             { year: 2005, type: "commercial", floors: 6,  insulation_quality: "medium", wall_material: "concrete" },
+  "mercury":           { year: 2008, type: "commercial", floors: 8,  insulation_quality: "medium", wall_material: "concrete" },
+  "меркури":           { year: 2008, type: "commercial", floors: 8,  insulation_quality: "medium", wall_material: "concrete" },
+};
+
+function applyKnownCorrections(name, override) {
+  const lc = (name || "").toLowerCase();
+  for (const [key, vals] of Object.entries(KNOWN_BUILDINGS)) {
+    if (lc.includes(key)) return { ...override, ...vals };
+  }
+  return override;
+}
+
 // ─── OSM / Overpass helpers ────────────────────────────────────────────────────
 function osmAreaSqm(geom) {
   const pts = geom.map(n => ({
@@ -233,13 +262,15 @@ function osmToBuilding(el) {
   const nameTag = tags.name || "";
   const addrStr = [tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ");
   const name    = nameTag || addrStr || `#${String(el.id).slice(-4)}`;
-  return {
+
+  const base = {
     id: el.id, name, type,
     area: Math.max(30, area), floors, year,
     district: tags["addr:district"] || tags["addr:suburb"] || "Улаанбаатар",
     osmGeom: geom, tags,
     source: "osm",
   };
+  return applyKnownCorrections(name, base);
 }
 
 function mockGeom(lat, lng, areaSqm) {
