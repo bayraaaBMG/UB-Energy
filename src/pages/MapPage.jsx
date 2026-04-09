@@ -842,6 +842,24 @@ export default function MapPage() {
   const mockCount = buildings.filter(b => b.source === "mock").length;
   const userCount = buildings.filter(b => b.source === "user" || b.source === "predictor").length;
 
+  // Stats for analysis strip — computed from all loaded buildings
+  const analysisStats = useMemo(() => {
+    if (buildings.length === 0) return null;
+    const calcs = buildings.map(b => ({ b, c: calcBuilding(b) }));
+    const totalKwh  = calcs.reduce((s, { c }) => s + c.total, 0);
+    const totalCo2  = calcs.reduce((s, { c }) => s + c.co2, 0);
+    const avgIntens = Math.round(calcs.reduce((s, { c }) => s + c.intensity, 0) / calcs.length);
+    // Grade distribution
+    const gradeCounts = {};
+    calcs.forEach(({ c }) => { gradeCounts[c.grade] = (gradeCounts[c.grade] || 0) + 1; });
+    // Top 3 high-intensity buildings
+    const topHigh = [...calcs]
+      .sort((a, b) => b.c.intensity - a.c.intensity)
+      .slice(0, 3)
+      .map(({ b, c }) => ({ name: b.name, intensity: c.intensity, grade: c.grade, type: b.type }));
+    return { totalKwh, totalCo2: +totalCo2.toFixed(0), avgIntens, gradeCounts, topHigh, count: calcs.length };
+  }, [buildings]);
+
   return (
     <div className="map-outer">
       {/* ── Full-screen map + panel row ── */}
@@ -972,6 +990,116 @@ export default function MapPage() {
           }
         </div>
       </div>
+
+      {/* ── Analysis strip ── */}
+      {analysisStats && (
+        <section className="analysis-strip">
+          <div className="analysis-inner">
+            <div className="analysis-title">
+              <BarChart2 size={16} style={{ color: "#3a8fd4" }} />
+              {lang === "mn"
+                ? `Ачаалсан ${analysisStats.count} барилгын дүн шинжилгээ`
+                : `Analysis of ${analysisStats.count} loaded buildings`}
+            </div>
+            <div className="analysis-cards">
+              {/* Total energy */}
+              <div className="an-card">
+                <div className="an-icon" style={{ background: "rgba(244,162,97,0.12)" }}>
+                  <Zap size={16} style={{ color: "#f4a261" }} />
+                </div>
+                <div>
+                  <div className="an-val">{(analysisStats.totalKwh / 1e6).toFixed(1)} <span className="an-unit">МВт·цаг/жил</span></div>
+                  <div className="an-lbl">{lang === "mn" ? "Нийт таамагласан хэрэглээ" : "Total estimated consumption"}</div>
+                </div>
+              </div>
+              {/* Total CO₂ */}
+              <div className="an-card">
+                <div className="an-icon" style={{ background: "rgba(230,111,81,0.12)" }}>
+                  <Wind size={16} style={{ color: "#e76f51" }} />
+                </div>
+                <div>
+                  <div className="an-val">{(analysisStats.totalCo2 / 1000).toFixed(1)} <span className="an-unit">кт CO₂/жил</span></div>
+                  <div className="an-lbl">{lang === "mn" ? "Нийт нүүрхүчлийн хий" : "Total CO₂ emissions"}</div>
+                </div>
+              </div>
+              {/* Avg intensity */}
+              <div className="an-card">
+                <div className="an-icon" style={{ background: "rgba(155,114,207,0.12)" }}>
+                  <TrendingUp size={16} style={{ color: "#9b72cf" }} />
+                </div>
+                <div>
+                  <div className="an-val">{analysisStats.avgIntens} <span className="an-unit">kWh/m²</span></div>
+                  <div className="an-lbl">{lang === "mn" ? "Дундаж эрчим хүчний эрч" : "Average energy intensity"}</div>
+                </div>
+              </div>
+              {/* Grade distribution */}
+              <div className="an-card an-card-wide">
+                <div className="an-icon" style={{ background: "rgba(42,157,143,0.12)" }}>
+                  <Award size={16} style={{ color: "#2a9d8f" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="an-lbl" style={{ marginBottom: "0.45rem" }}>
+                    {lang === "mn" ? "Зэрэглэлийн тархалт A–G" : "Grade distribution A–G"}
+                  </div>
+                  <div className="grade-dist-bar">
+                    {["A","B","C","D","E","F","G"].map(g => {
+                      const cnt  = analysisStats.gradeCounts[g] || 0;
+                      const pct  = Math.round(cnt / analysisStats.count * 100);
+                      if (pct === 0) return null;
+                      return (
+                        <div key={g} className="gdb-seg"
+                          style={{ width: `${pct}%`, background: GRADE_COLORS[g] }}
+                          title={`${g}: ${cnt} (${pct}%)`}>
+                          {pct > 7 ? g : ""}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="grade-dist-lbls">
+                    {["A","B","C","D","E","F","G"].map(g => {
+                      const cnt = analysisStats.gradeCounts[g] || 0;
+                      if (!cnt) return null;
+                      return (
+                        <span key={g} style={{ color: GRADE_COLORS[g], fontSize: "0.68rem" }}>
+                          {g} {cnt}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top high-intensity buildings */}
+            {analysisStats.topHigh.length > 0 && (
+              <div className="an-top">
+                <div className="an-top-title">
+                  <TrendingUp size={13} style={{ color: "#e63946" }} />
+                  {lang === "mn" ? "Өндөр хэрэглээтэй барилгууд" : "Highest intensity buildings"}
+                </div>
+                {analysisStats.topHigh.map((b, i) => (
+                  <div key={i} className="an-top-row">
+                    <span className="an-top-rank">#{i + 1}</span>
+                    <span className="an-top-name">{b.name}</span>
+                    <span className="an-top-grade" style={{ background: GRADE_COLORS[b.grade] }}>{b.grade}</span>
+                    <span className="an-top-val">{b.intensity.toLocaleString()} kWh/m²</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Overpass API limit note */}
+            <div className="an-api-note">
+              <Database size={12} style={{ color: "#667788", flexShrink: 0 }} />
+              <span>
+                {lang === "mn"
+                  ? "Overpass API нэг хүсэлтэд 1,000 барилга, 3 MB, 12 секундийн хязгаартай. Тулам хэлбэрийн кэш ашиглан давхар татахаас сэргийлнэ. Газрын зургийг хөдөлгөхөд шинэ хэсгийн барилгуудыг автоматаар нэмнэ."
+                  : "Overpass API limits: 1,000 buildings per request, 3 MB max response, 12 s timeout. Grid-cell caching prevents duplicate fetches. Panning the map auto-loads new areas."}
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── How it works section ── */}
       <HowItWorks t={t} lang={lang} />
