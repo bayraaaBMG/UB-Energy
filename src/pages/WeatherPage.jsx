@@ -5,7 +5,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Cloud, Wind, Droplets, Thermometer,
   Eye, Gauge, Snowflake, AlertTriangle,
-  TrendingDown, TrendingUp, Clock, CalendarDays, Zap, RefreshCw,
+  TrendingDown, TrendingUp, Clock, CalendarDays, Zap, RefreshCw, MapPin, Sunrise, Sunset,
 } from "lucide-react";
 import {
   ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -352,7 +352,7 @@ export default function WeatherPage() {
         <div className="weather-hero-bg" />
         <div className="container weather-hero-inner">
           <div className="weather-location">
-            <div className="location-pin">📍</div>
+            <div className="location-pin"><MapPin size={22} /></div>
             <div>
               <h1 className="location-name">{t.weather.city_name}</h1>
               <p className="location-sub">{t.weather.country} · {t.weather.info_sub}</p>
@@ -423,8 +423,8 @@ export default function WeatherPage() {
               </div>
 
               <div className="sun-row">
-                <span>🌅 {data.sunrise}</span>
-                <span>🌇 {data.sunset}</span>
+                <span><Sunrise size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />{data.sunrise}</span>
+                <span><Sunset size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />{data.sunset}</span>
               </div>
 
               {data.snow_chance >= 40 && (
@@ -597,13 +597,13 @@ export default function WeatherPage() {
               <p>{t.weather.src_api_desc}</p>
             </div>
             <div className="ws-badges">
-              <span className="ws-badge">🕐 {timeStr}</span>
-              <span className="ws-badge">🔄 {fetchedAt ? (() => {
+              <span className="ws-badge"><Clock size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{timeStr}</span>
+              <span className="ws-badge"><RefreshCw size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{fetchedAt ? (() => {
                 const hh = String(fetchedAt.getHours()).padStart(2,"0");
                 const mm = String(fetchedAt.getMinutes()).padStart(2,"0");
                 return t.weather.updated_time.replace("{time}", `${hh}:${mm}`);
               })() : "—"}</span>
-              <span className="ws-badge">🌡️ {t.weather.city_name}</span>
+              <span className="ws-badge"><Thermometer size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{t.weather.city_name}</span>
             </div>
           </div>
         </div>

@@ -198,7 +198,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <div className="csb-note">⚠️ {t.home.chart_src_note}</div>
+                <div className="csb-note">{t.home.chart_src_note}</div>
               </div>
             </div>
 

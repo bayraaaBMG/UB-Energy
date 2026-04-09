@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
-  CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown,
+  CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown, X,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -175,7 +175,7 @@ function ResultsModal({ building, lang, t, onClose }) {
             <div className="res-grade-badge" style={{ background: GRADE_COLORS[calc.grade] }}>
               {calc.grade}
             </div>
-            <button className="chatbot-close" onClick={onClose} aria-label={t.common.close}>✕</button>
+            <button className="chatbot-close" onClick={onClose} aria-label={t.common.close}><X size={14} /></button>
           </div>
         </div>
 
