@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight, Info,
-  Layers, Wind, Flame, Users, Thermometer, Target, Zap,
+  Layers, Wind, Flame, Target, Zap,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
@@ -101,34 +101,19 @@ export default function DataInputPage() {
   }, [previewFile]);
 
   const [form, setForm] = useState({
-    // 🏢 Location & structure
     building_name: "",
     address: "",
     district: "Сүхбаатар",
     year: "",
     total_floors: "",
-    floor_number: "",
-    units_per_floor: "",
-    // 📐 Apartment
     building_type: "apartment",
     area: "",
     rooms: "",
-    balcony: false,
-    // 🪟 Heat loss
-    window_count: "",
-    window_direction: "south",
     window_type: "double",
     door_type: "metal",
-    // 🔥 Heating
     heating_type: "central",
     insulation_quality: "medium",
     wall_material: "panel",
-    // 👨‍👩‍👧‍👦 Occupancy
-    occupancy: "",
-    // 🌡️ Environment
-    outdoor_temp: "",
-    season: "winter",
-    // Location coords
     latitude: "47.9184",
     longitude: "106.9177",
   });
@@ -175,25 +160,17 @@ export default function DataInputPage() {
       name:     form.building_name || t.dataInput.unnamed_building,
       type:     form.building_type,
       area:     parseFloat(form.area) || 0,
-      floors:   parseInt(form.total_floors) || parseInt(form.floor_number) || 1,
+      floors:   parseInt(form.total_floors) || 1,
       year:     parseInt(form.year) || new Date().getFullYear(),
       district: form.district,
-      usage:    Math.round(monthly * 12),   // estimated annual kWh
+      usage:    Math.round(monthly * 12),
       monthly_usage: monthly,
-      floor_number:    parseInt(form.floor_number) || null,
-      units_per_floor: parseInt(form.units_per_floor) || null,
       rooms:           parseInt(form.rooms) || null,
-      balcony:         form.balcony,
-      window_count:    parseInt(form.window_count) || null,
-      window_direction: form.window_direction,
       window_type:     form.window_type,
       door_type:       form.door_type,
       heating_type:    form.heating_type,
       insulation_quality: form.insulation_quality,
       wall_material:   form.wall_material,
-      occupancy:       parseInt(form.occupancy) || null,
-      outdoor_temp:    parseFloat(form.outdoor_temp) || null,
-      season:          form.season,
       latitude:        parseFloat(form.latitude),
       longitude:       parseFloat(form.longitude),
       source: "user",
@@ -205,10 +182,7 @@ export default function DataInputPage() {
     setTimeout(() => setSubmitted(false), 5000);
     setForm(f => ({
       ...f,
-      building_name: "", address: "", year: "", total_floors: "",
-      floor_number: "", units_per_floor: "", area: "", rooms: "",
-      balcony: false, window_count: "", outdoor_temp: "",
-      occupancy: "",
+      building_name: "", address: "", year: "", total_floors: "", area: "", rooms: "",
     }));
   };
 
@@ -302,7 +276,7 @@ export default function DataInputPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="di-year">{t.predictor.year}</label>
+                  <label className="form-label" htmlFor="di-year">{lang === "mn" ? "Баригдсан огноо" : "Year Built"}</label>
                   <input id="di-year" name="year" type="number" value={form.year} onChange={handleChange}
                     className="form-input" placeholder="1950–2026" min={1950} max={2026} />
                 </div>
@@ -312,24 +286,12 @@ export default function DataInputPage() {
                   <input id="di-total_floors" name="total_floors" type="number" value={form.total_floors} onChange={handleChange}
                     className="form-input" placeholder="18" min={1} max={60} />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-floor_number">{t.dataInput.your_floor}</label>
-                  <input id="di-floor_number" name="floor_number" type="number" value={form.floor_number} onChange={handleChange}
-                    className="form-input" placeholder="10" min={1} />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-units_per_floor">{t.dataInput.units_per_floor}</label>
-                  <input id="di-units_per_floor" name="units_per_floor" type="number" value={form.units_per_floor} onChange={handleChange}
-                    className="form-input" placeholder="4" min={1} />
-                </div>
               </FormSection>
 
-              {/* 📐 Айлын мэдээлэл */}
+              {/* 📐 Барилгын мэдээлэл */}
               <FormSection
                 icon={Layers}
-                title={t.dataInput.section_apartment}
+                title={lang === "mn" ? "Барилгын мэдээлэл" : "Building Details"}
                 color="#9b72cf"
               >
                 <div className="form-group">
@@ -350,17 +312,6 @@ export default function DataInputPage() {
                   <input id="di-rooms" name="rooms" type="number" value={form.rooms} onChange={handleChange}
                     className="form-input" placeholder="3" min={1} max={20} />
                 </div>
-
-                <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "0.75rem", paddingTop: "1.6rem" }}>
-                  <input
-                    type="checkbox" name="balcony" id="balcony"
-                    checked={form.balcony} onChange={handleChange}
-                    style={{ width: 18, height: 18, accentColor: "#9b72cf", cursor: "pointer" }}
-                  />
-                  <label htmlFor="balcony" className="form-label" style={{ margin: 0, cursor: "pointer" }}>
-                    {t.dataInput.has_balcony}
-                  </label>
-                </div>
               </FormSection>
 
               {/* 🪟 Дулаан алдагдал */}
@@ -369,23 +320,6 @@ export default function DataInputPage() {
                 title={t.dataInput.section_heat_loss}
                 color="#e9c46a"
               >
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-window_count">{t.dataInput.window_count}</label>
-                  <input id="di-window_count" name="window_count" type="number" value={form.window_count} onChange={handleChange}
-                    className="form-input" placeholder="6" min={0} />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-window_direction">{t.dataInput.window_orientation}</label>
-                  <select id="di-window_direction" name="window_direction" value={form.window_direction} onChange={handleChange} className="form-select">
-                    <option value="south">{t.dataInput.dir_south}</option>
-                    <option value="north">{t.dataInput.dir_north}</option>
-                    <option value="east">{t.dataInput.dir_east}</option>
-                    <option value="west">{t.dataInput.dir_west}</option>
-                    <option value="mixed">{t.dataInput.dir_mixed}</option>
-                  </select>
-                </div>
-
                 <div className="form-group">
                   <label className="form-label" htmlFor="di-window_type">{t.predictor.window_type}</label>
                   <select id="di-window_type" name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
@@ -435,42 +369,6 @@ export default function DataInputPage() {
                 </div>
               </FormSection>
 
-              {/* 👨‍👩‍👧‍👦 Хэрэглээ */}
-              <FormSection
-                icon={Users}
-                title={t.predictor.section_occupancy}
-                color="#2a9d8f"
-              >
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-occupancy">{t.predictor.residents}</label>
-                  <input id="di-occupancy" name="occupancy" type="number" value={form.occupancy} onChange={handleChange}
-                    className="form-input" placeholder="4" min={1} />
-                </div>
-              </FormSection>
-
-              {/* 🌡️ Орчны өгөгдөл */}
-              <FormSection
-                icon={Thermometer}
-                title={t.dataInput.section_env}
-                color="#6a9bbf"
-              >
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-outdoor_temp">{t.dataInput.outdoor_temp}</label>
-                  <input id="di-outdoor_temp" name="outdoor_temp" type="number" value={form.outdoor_temp} onChange={handleChange}
-                    className="form-input" placeholder="-15" min={-50} max={40} />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-season">{t.dataInput.season}</label>
-                  <select id="di-season" name="season" value={form.season} onChange={handleChange} className="form-select">
-                    <option value="winter">{t.dataInput.season_winter}</option>
-                    <option value="spring">{t.dataInput.season_spring}</option>
-                    <option value="summer">{t.dataInput.season_summer}</option>
-                    <option value="autumn">{t.dataInput.season_autumn}</option>
-                  </select>
-                </div>
-              </FormSection>
-
               {/* Сарын төлбөрөөс тооцоолох */}
               <div className="form-section form-section-output">
                 <div className="form-section-header" style={{ borderColor: "#2a9d8f" }}>
@@ -490,7 +388,7 @@ export default function DataInputPage() {
                   <div className="form-group">
                     <label className="form-label">
                       <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                      {lang === "mn" ? "Цахилгааны мөнгө (₮/сар)" : "Electricity bill (₮/month)"}
+                      {lang === "mn" ? "Цахилгааны зардал (₮/сар)" : "Electricity cost (₮/month)"}
                     </label>
                     <input className="form-input" type="number"
                       placeholder={lang === "mn" ? "Жишээ: 35,000" : "e.g. 35,000"}
@@ -499,7 +397,7 @@ export default function DataInputPage() {
                   <div className="form-group">
                     <label className="form-label">
                       <Flame size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                      {lang === "mn" ? "Ус + дулааны мөнгө (₮/сар)" : "Water + heating bill (₮/month)"}
+                      {lang === "mn" ? "Халаалтын зардал (₮/сар)" : "Heating cost (₮/month)"}
                     </label>
                     <input className="form-input" type="number"
                       placeholder={lang === "mn" ? "Жишээ: 80,000" : "e.g. 80,000"}
