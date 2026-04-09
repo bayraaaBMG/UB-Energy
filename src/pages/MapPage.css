@@ -419,6 +419,98 @@
 .ct-m { color: #667788; margin-bottom: 2px; }
 .ct-v { color: #fff; font-weight: 700; }
 
+/* ─── ML hero ─────────────────────────────────────────────────────────────── */
+.ml-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  background: linear-gradient(135deg, rgba(26,110,181,0.14), rgba(42,157,143,0.08));
+  border: 1px solid rgba(26,110,181,0.28);
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+}
+.ml-hero-badge {
+  background: #1a6eb5;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0.18rem 0.5rem;
+  border-radius: 5px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.ml-hero-body { min-width: 0; }
+.ml-hero-val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.ml-hero-unit { font-size: 0.72rem; font-weight: 500; color: var(--text3); }
+.ml-hero-sub  { font-size: 0.68rem; color: var(--text3); margin-top: 0.15rem; }
+
+/* ─── Actual data row ─────────────────────────────────────────────────────── */
+.actual-data-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(42,157,143,0.09);
+  border: 1px solid rgba(42,157,143,0.26);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+
+/* ─── Recommendations ─────────────────────────────────────────────────────── */
+.reco-baseline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0 0.65rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.6rem;
+}
+.reco-item {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(42,74,107,0.15);
+}
+.reco-item:last-of-type { border-bottom: none; }
+.reco-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.reco-body { min-width: 0; flex: 1; }
+.reco-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+.reco-desc  { font-size: 0.74rem; color: var(--text3); line-height: 1.55; margin-bottom: 0.35rem; }
+.reco-saving {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2a9d8f;
+}
+.reco-note {
+  margin-top: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--text3);
+  line-height: 1.6;
+  padding: 0.5rem 0.65rem;
+  background: var(--bg3);
+  border-radius: 7px;
+  border: 1px solid var(--border);
+}
+
 /* ─── How it works section ───────────────────────────────────────────────── */
 .how-section {
   background: var(--bg2, #0d1827);
