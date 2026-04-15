@@ -111,7 +111,26 @@ export default function DataInputPage() {
   const [heatBill, setHeatBill] = useState("");
   const [formErrors, setFormErrors] = useState({});
 
-  // Live ML preview — run predict whenever area/type/year/floors change
+  // form state must be declared BEFORE any hooks that reference it
+  const [form, setForm] = useState({
+    building_name: "",
+    address: "",
+    district: "Сүхбаатар",
+    year: "",
+    total_floors: "",
+    building_type: "apartment",
+    area: "",
+    rooms: "",
+    window_type: "double",
+    door_type: "metal",
+    heating_type: "central",
+    insulation_quality: "medium",
+    wall_material: "panel",
+    latitude: "47.9184",
+    longitude: "106.9177",
+  });
+
+  // Live ML preview — run predict whenever key fields change
   const livePreview = React.useMemo(() => {
     const area = parseFloat(form.area);
     if (!area || area < 10) return null;
@@ -146,24 +165,6 @@ export default function DataInputPage() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [previewFile]);
-
-  const [form, setForm] = useState({
-    building_name: "",
-    address: "",
-    district: "Сүхбаатар",
-    year: "",
-    total_floors: "",
-    building_type: "apartment",
-    area: "",
-    rooms: "",
-    window_type: "double",
-    door_type: "metal",
-    heating_type: "central",
-    insulation_quality: "medium",
-    wall_material: "panel",
-    latitude: "47.9184",
-    longitude: "106.9177",
-  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
