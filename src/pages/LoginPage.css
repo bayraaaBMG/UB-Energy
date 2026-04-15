@@ -1,0 +1,141 @@
+.login-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(26,110,181,0.1) 0%, transparent 70%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--accent);
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+
+.type-tabs {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.type-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.type-tab.active {
+  background: var(--primary);
+  color: white;
+}
+
+.type-tab:hover:not(.active) {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.login-form { display: flex; flex-direction: column; }
+
+.pw-row {
+  position: relative;
+}
+
+.pw-row .form-input {
+  padding-right: 2.8rem;
+}
+
+.pw-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text3);
+  padding: 0.2rem;
+}
+
+.pw-toggle:hover { color: var(--text); }
+
+.login-error {
+  padding: 0.6rem 1rem;
+  background: rgba(230,57,70,0.15);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.login-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.8rem;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+
+.login-switch {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.switch-btn {
+  background: none;
+  border: none;
+  color: var(--primary-light);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.switch-btn:hover { color: var(--accent); }
+
+.demo-hint {
+  margin-top: 1rem;
+  text-align: center;
+  padding: 0.5rem;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--text3);
+  border: 1px dashed var(--border);
+}
