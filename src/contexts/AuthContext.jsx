@@ -105,6 +105,28 @@ export function AuthProvider({ children }) {
   // ── logout ──
   const logout = () => setUser(null);
 
+  // ── checkEmailForReset — step 1: verify email exists ──
+  const checkEmailForReset = (email) => {
+    const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!found) return { ok: false, error: "email_not_found" };
+    if (found.id === ADMIN.id) return { ok: false, error: "admin_reset" };
+    return { ok: true };
+  };
+
+  // ── resetPassword — step 2: set new password for verified email ──
+  const resetPassword = (email, newPassword) => {
+    if (newPassword.length < 6) return { ok: false, error: "too_short" };
+    const stored = loadUsers();
+    const exists = stored.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (!exists) return { ok: false, error: "email_not_found" };
+    saveUsers(stored.map(u =>
+      u.email.toLowerCase() === email.trim().toLowerCase()
+        ? { ...u, password: newPassword }
+        : u
+    ));
+    return { ok: true };
+  };
+
   // ── updateUser ──
   const updateUser = ({ name, currentPassword, newPassword, avatar }) => {
     const allUsers = getAllUsers();
@@ -137,7 +159,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, updateUser }}>
+    <AuthContext.Provider value={{ user, login, logout, register, updateUser, checkEmailForReset, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

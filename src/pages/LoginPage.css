@@ -139,3 +139,80 @@
   color: var(--text3);
   border: 1px dashed var(--border);
 }
+
+/* ─── Forgot / reset password ──────────────────────────────────────────────── */
+.forgot-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(58,143,212,0.1);
+  border: 1px solid rgba(58,143,212,0.2);
+  margin: 0 auto 0.75rem;
+}
+
+.forgot-subtitle {
+  font-size: 0.83rem;
+  color: var(--text3);
+  text-align: center;
+  margin: -0.25rem 0 0.5rem;
+  line-height: 1.5;
+}
+
+.pw-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.pw-label-row .form-label { margin-bottom: 0; }
+
+.forgot-inline-btn {
+  background: none;
+  border: none;
+  color: var(--primary-light, #3a8fd4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.forgot-inline-btn:hover { opacity: 1; }
+
+.forgot-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 1.1rem;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.forgot-back-btn:hover { color: var(--text2); }
+
+.reset-success {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(42,157,143,0.1);
+  border: 1px solid rgba(42,157,143,0.25);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.85rem;
+  color: #2a9d8f;
+  font-weight: 500;
+  line-height: 1.45;
+}
