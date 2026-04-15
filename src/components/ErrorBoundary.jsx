@@ -37,6 +37,11 @@ export default class ErrorBoundary extends Component {
         <p style={{ color: "var(--text2)", maxWidth: 400, margin: 0, fontSize: "0.9rem" }}>
           {t.message}
         </p>
+        {this.state.error && (
+          <pre style={{ maxWidth: 600, overflowX: "auto", background: "#1a1a2e", color: "#ff6b6b", padding: "1rem", borderRadius: 8, fontSize: "0.75rem", textAlign: "left", marginTop: "0.5rem" }}>
+            {String(this.state.error)}
+          </pre>
+        )}
         <button className="btn btn-primary" onClick={() => window.location.reload()}>
           {t.refresh}
         </button>
