@@ -92,6 +92,43 @@ function FormSection({ icon: Icon, title, color, children }) {
   );
 }
 
+// ─── Bill results display ─────────────────────────────────────────────────────
+function BillResults({ elecBill, heatBill, lang }) {
+  const ec = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
+  const hc = parseFloat(heatBill) > 0 ? convertHeatBillToEstimates(parseFloat(heatBill)) : null;
+  if (!ec && !hc) return null;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginTop: "0.75rem" }}>
+      {ec && (<>
+        <div style={{ background: "rgba(26,110,181,0.09)", border: "1px solid rgba(26,110,181,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a6eb5" }}>{ec.kwh_monthly.toLocaleString()} кВт·цаг</div>
+          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын цахилгааны хэрэглээ" : "Monthly electricity use"}</div>
+          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4, padding: "0.18rem 0.45rem", background: "rgba(26,110,181,0.12)", borderRadius: 6, display: "inline-block" }}>
+            {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг · шат ${ec.tier}` : `${ec.effective_rate}₮/kWh · tier ${ec.tier}`}
+          </div>
+        </div>
+        <div style={{ background: "rgba(58,143,212,0.09)", border: "1px solid rgba(58,143,212,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#3a8fd4" }}>{ec.kwh_annual.toLocaleString()} кВт·цаг</div>
+          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Жилийн тооцоолол" : "Annual estimate"}</div>
+          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>{lang === "mn" ? "× 12 сар" : "× 12 months"}</div>
+        </div>
+      </>)}
+      {hc && (<>
+        <div style={{ background: "rgba(244,162,97,0.09)", border: "1px solid rgba(244,162,97,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#f4a261" }}>{hc.heat_gcal_monthly} Гкал</div>
+          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын дулаан" : "Monthly heating"}</div>
+          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.heat_gcal_annual} Гкал/{lang === "mn" ? "жил" : "yr"}</div>
+        </div>
+        <div style={{ background: "rgba(42,157,143,0.09)", border: "1px solid rgba(42,157,143,0.28)", borderRadius: 10, padding: "0.85rem" }}>
+          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#2a9d8f" }}>{hc.water_m3_monthly} м³</div>
+          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын ус" : "Monthly water"}</div>
+          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.water_m3_annual} м³/{lang === "mn" ? "жил" : "yr"}</div>
+        </div>
+      </>)}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
   const { t, lang } = useLang();
@@ -152,7 +189,7 @@ export default function DataInputPage() {
       insulation_quality: form.insulation_quality || "medium",
       window_type: form.window_type || "double",
     };
-    return predict(mlInput);
+    try { return predict(mlInput); } catch { return null; }
   }, [form.area, form.building_type, form.year, form.total_floors, form.wall_material,
       form.heating_type, form.insulation_quality, form.window_type, form.rooms]);
 
@@ -467,40 +504,7 @@ export default function DataInputPage() {
                 </div>
 
                 {/* Live results */}
-                {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && (() => {
-                  const ec = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
-                  const hc = parseFloat(heatBill) > 0 ? convertHeatBillToEstimates(parseFloat(heatBill)) : null;
-                  return (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginTop: "0.75rem" }}>
-                      {ec && (<>
-                        <div style={{ background: "rgba(26,110,181,0.09)", border: "1px solid rgba(26,110,181,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a6eb5" }}>{ec.kwh_monthly.toLocaleString()} кВт·цаг</div>
-                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын цахилгааны хэрэглээ" : "Monthly electricity use"}</div>
-                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4, padding: "0.18rem 0.45rem", background: "rgba(26,110,181,0.12)", borderRadius: 6, display: "inline-block" }}>
-                            {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг · шат ${ec.tier}` : `${ec.effective_rate}₮/kWh · tier ${ec.tier}`}
-                          </div>
-                        </div>
-                        <div style={{ background: "rgba(58,143,212,0.09)", border: "1px solid rgba(58,143,212,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#3a8fd4" }}>{ec.kwh_annual.toLocaleString()} кВт·цаг</div>
-                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Жилийн тооцоолол" : "Annual estimate"}</div>
-                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>{lang === "mn" ? "× 12 сар" : "× 12 months"}</div>
-                        </div>
-                      </>)}
-                      {hc && (<>
-                        <div style={{ background: "rgba(244,162,97,0.09)", border: "1px solid rgba(244,162,97,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#f4a261" }}>{hc.heat_gcal_monthly} Гкал</div>
-                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын дулаан" : "Monthly heating"}</div>
-                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.heat_gcal_annual} Гкал/{lang === "mn" ? "жил" : "yr"}</div>
-                        </div>
-                        <div style={{ background: "rgba(42,157,143,0.09)", border: "1px solid rgba(42,157,143,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-                          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#2a9d8f" }}>{hc.water_m3_monthly} м³</div>
-                          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын ус" : "Monthly water"}</div>
-                          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.water_m3_annual} м³/{lang === "mn" ? "жил" : "yr"}</div>
-                        </div>
-                      </>)}
-                    </div>
-                  );
-                })()}
+                {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && <BillResults elecBill={elecBill} heatBill={heatBill} lang={lang} />}
 
                 {/* Formula explanation */}
                 <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, fontSize: "0.78rem", lineHeight: 1.8, color: "var(--text2)" }}>
