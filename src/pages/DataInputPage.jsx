@@ -19,7 +19,7 @@ const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f5
 // ─── Building-type dynamic schema ─────────────────────────────────────────────
 const TYPE_SCHEMA = {
   apartment: {
-    color: "#3a8fd4", emoji: "🏠",
+    color: "#3a8fd4",
     desc: { mn: "Орон сууцны барилга — айлуудын тоо, өрөөний тоогоор ачааллыг тооцоолно.", en: "Residential — occupancy derived from units, floors, and rooms per unit." },
     fields: [
       { key: "units_per_floor",    label: { mn: "Давхарт хэдэн айл",    en: "Units per floor" },      type: "number", default: 4,  min: 1,  max: 40,   hint: { mn: "Нэг давхарт байх орон сууцны тоо", en: "Apartments on each floor" } },
@@ -41,7 +41,7 @@ const TYPE_SCHEMA = {
     },
   },
   office: {
-    color: "#2a9d8f", emoji: "🏢",
+    color: "#2a9d8f",
     desc: { mn: "Оффисын барилга — ажиллагсад, компьютерийн тоогоор цахилгааны ачааллыг тооцоолно.", en: "Office — load estimated from employees and equipment count." },
     fields: [
       { key: "employees",    label: { mn: "Ажиллагсдын тоо",         en: "Employees" },               type: "number", default: 50,  min: 1, max: 5000 },
@@ -63,7 +63,7 @@ const TYPE_SCHEMA = {
     },
   },
   school: {
-    color: "#e9c46a", emoji: "🏫",
+    color: "#e9c46a",
     desc: { mn: "Сургуулийн барилга — анги танхим, сурагчдын тоогоор тооцоолно.", en: "School — energy load based on classrooms, students, and staff." },
     fields: [
       { key: "classrooms",  label: { mn: "Ангийн тасалгааны тоо",  en: "Classrooms" },    type: "number", default: 20,  min: 1,  max: 200  },
@@ -86,7 +86,7 @@ const TYPE_SCHEMA = {
     },
   },
   hospital: {
-    color: "#e63946", emoji: "🏥",
+    color: "#e63946",
     desc: { mn: "Эмнэлгийн барилга — ор, тасгийн тоо болон 24/7 ачааллаар тооцоолно.", en: "Hospital — energy load based on beds, departments, and 24/7 operation." },
     fields: [
       { key: "beds",        label: { mn: "Ортны тоо",          en: "Patient beds" },      type: "number", default: 80, min: 1,  max: 5000 },
@@ -107,7 +107,7 @@ const TYPE_SCHEMA = {
     },
   },
   commercial: {
-    color: "#f4a261", emoji: "🏬",
+    color: "#f4a261",
     desc: { mn: "Арилжааны барилга — дэлгүүрийн тоо, ажлын цагаар цахилгааны ачааллыг тооцоолно.", en: "Commercial — load based on shop units, operating hours, and equipment." },
     fields: [
       { key: "shops",           label: { mn: "Дэлгүүр / нэгжийн тоо",   en: "Shops / units" },          type: "number", default: 15,  min: 1, max: 500 },
@@ -129,7 +129,7 @@ const TYPE_SCHEMA = {
     },
   },
   warehouse: {
-    color: "#6c757d", emoji: "🏭",
+    color: "#6c757d",
     desc: { mn: "Агуулахын барилга — ажлын цаг, хөргөлтийн горимоор тооцоолно.", en: "Warehouse — energy based on ceiling height, operating hours, and cooling." },
     fields: [
       { key: "ceiling_height",  label: { mn: "Таазны өндөр (м)",        en: "Ceiling height (m)" },   type: "number", default: 8,  min: 3, max: 30 },
@@ -238,7 +238,6 @@ function TypeSpecificSection({ type, form, onChange, lang }) {
     <div className="type-specific-section animate-fade">
       {/* Type banner */}
       <div className="type-banner" style={{ borderColor: schema.color, background: `${schema.color}0d` }}>
-        <span className="type-banner-emoji">{schema.emoji}</span>
         <div>
           <div className="type-banner-name" style={{ color: schema.color }}>
             {lang === "mn" ? schema.desc.mn : schema.desc.en}
@@ -598,7 +597,7 @@ export default function DataInputPage() {
           <div className="input-layout animate-fade">
             <form onSubmit={handleManualSubmit} className="card input-form">
 
-              {/* 🏢 Байршил ба бүтэц */}
+              {/* Байршил ба бүтэц */}
               <FormSection
                 icon={Building2}
                 title={t.dataInput.section_loc_struct}
@@ -653,7 +652,7 @@ export default function DataInputPage() {
                     <select id="di-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select type-select">
                       {Object.entries(t.predictor.building_types).map(([k, v]) => (
                         <option key={k} value={k}>
-                          {TYPE_SCHEMA[k]?.emoji} {v}
+                          {v}
                         </option>
                       ))}
                     </select>
