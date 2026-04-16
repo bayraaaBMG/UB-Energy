@@ -23,10 +23,12 @@ const MapPage            = lazy(() => import("./pages/MapPage"));
 const WeatherPage        = lazy(() => import("./pages/WeatherPage"));
 const OWIDPage           = lazy(() => import("./pages/OWIDPage"));
 const ProfilePage        = lazy(() => import("./pages/ProfilePage"));
+const MySpacePage        = lazy(() => import("./pages/MySpacePage"));
 
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
   const location = useLocation();
+  if (authLoading) return <PageLoader />;
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return children;
 }
@@ -81,6 +83,7 @@ export default function App() {
                 <Route path="/data-input" element={<ProtectedRoute><DataInputPage /></ProtectedRoute>} />
                 <Route path="/database" element={<ProtectedRoute><DatabasePage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/my-space" element={<ProtectedRoute><MySpacePage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

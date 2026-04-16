@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
-  CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown, X,
+  CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown, X, Star,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { monthlyEnergyData } from "../data/mockData";
 import { getAllBuildings, deleteUserBuilding } from "../utils/buildingStorage";
+import { toggleFavorite, getFavorites } from "../utils/userDataStorage";
 import "./DatabasePage.css";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -373,6 +374,14 @@ export default function DatabasePage() {
   const [allBuildingsState, setAllBuildingsState] = useState(() => getAllBuildings(isAdmin ? null : user?.id));
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
+  const [favorites, setFavorites] = useState(() => user ? getFavorites(user.id) : []);
+  const favIds = new Set(favorites.map(f => f.id));
+
+  const handleToggleFav = (b) => {
+    if (!user) return;
+    toggleFavorite(user.id, b);
+    setFavorites(getFavorites(user.id));
+  };
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -590,6 +599,16 @@ export default function DatabasePage() {
                       >
                         <BarChart2 size={14} />
                       </button>
+                      {user && (
+                        <button
+                          className="action-btn"
+                          title={favIds.has(b.id) ? (lang === "mn" ? "Дуртайгаас хасах" : "Remove from favorites") : (lang === "mn" ? "Дуртайд нэмэх" : "Add to favorites")}
+                          onClick={() => handleToggleFav(b)}
+                          style={{ color: favIds.has(b.id) ? "#f4a261" : undefined }}
+                        >
+                          <Star size={14} fill={favIds.has(b.id) ? "#f4a261" : "none"} />
+                        </button>
+                      )}
                       {isMine && confirmId === b.id ? (
                         <>
                           <button className="action-btn delete" onClick={() => confirm(handleDelete)} aria-label={t.admin.confirm_delete}>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 
@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, Zap, TrendingUp,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
-  Home, Snowflake, Info, Save, X,
+  Home, Snowflake, Info, Save, X, Bookmark,
   Flame, Lightbulb, AlertTriangle, CheckCircle, DollarSign, FlaskConical,
 } from "lucide-react";
 import {
@@ -22,6 +22,7 @@ import {
   TARIFF_TIERS,
 } from "../ml/model";
 import { saveUserBuilding } from "../utils/buildingStorage";
+import { savePrediction, saveScenario } from "../utils/userDataStorage";
 import "./PredictorPage.css";
 
 const BUILDING_COLORS = {
@@ -141,6 +142,7 @@ export default function PredictorPage() {
   usePageTitle(t.nav.predictor);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({
     building_name: "",
     district: "Сүхбаатар",
@@ -164,6 +166,17 @@ export default function PredictorPage() {
   const [elecBill, setElecBill] = useState("");
   const [heatBill, setHeatBill] = useState("");
   const [baseline, setBaseline] = useState(null); // { form, result, label }
+  const [scenLabel, setScenLabel] = useState("");
+  const [showScenModal, setShowScenModal] = useState(false);
+  const [scenSaved, setScenSaved] = useState(false);
+
+  // Load scenario from My Space
+  useEffect(() => {
+    const s = location.state?.scenario;
+    if (s?.form) {
+      setForm(f => ({ ...f, ...s.form }));
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     const val = e.target.type === "number" || e.target.type === "range"
@@ -192,6 +205,14 @@ export default function PredictorPage() {
       setHeating(h);
       setRecs(rec);
       setLoading(false);
+      // Auto-save to prediction history
+      if (user?.id) {
+        savePrediction(user.id, {
+          form: { ...enriched, name: form.building_name || `${form.area}м² ${form.building_type}`, grade: r.grade },
+          result: r.annual,
+          heating: h,
+        });
+      }
     }, 900);
   };
 
@@ -740,6 +761,16 @@ export default function PredictorPage() {
                   <span className="model-badge" title={`MAE = ${METRICS.mae.toLocaleString()} kWh on test set`}>
                     MAE = {METRICS.mae.toLocaleString()} kWh
                   </span>
+                  {user && (
+                    <button
+                      className="btn btn-secondary pred-save-btn"
+                      onClick={() => { setScenLabel(""); setShowScenModal(true); }}
+                      title={lang === "mn" ? "Сценари хадгалах" : "Save scenario"}
+                    >
+                      <Bookmark size={14} />
+                      {lang === "mn" ? "Сценари" : "Scenario"}
+                    </button>
+                  )}
                   <button
                     className="btn btn-secondary pred-save-btn"
                     onClick={() => {
@@ -777,6 +808,61 @@ export default function PredictorPage() {
           </div>
         </div>
       </div>
+
+      {/* Scenario save modal */}
+      {showScenModal && (
+        <div className="pred-modal-overlay" onClick={() => setShowScenModal(false)}>
+          <div className="pred-modal card" onClick={e => e.stopPropagation()}>
+            <div className="pred-modal-header">
+              <strong>{lang === "mn" ? "Сценари хадгалах" : "Save Scenario"}</strong>
+              <button className="pred-modal-close" onClick={() => setShowScenModal(false)}><X size={18} /></button>
+            </div>
+            <p style={{ fontSize: "0.85rem", color: "var(--text3)", marginBottom: "0.75rem" }}>
+              {lang === "mn" ? "Энэ тохиргоог хадгалж 'Миний орон зай' хуудаснаас дахин ачааллах боломжтой." : "Save this configuration to reload it later from My Space."}
+            </p>
+            <input
+              className="form-input"
+              placeholder={lang === "mn" ? "Сценарийн нэр..." : "Scenario name..."}
+              value={scenLabel}
+              onChange={e => setScenLabel(e.target.value)}
+              autoFocus
+              onKeyDown={e => {
+                if (e.key === "Enter" && scenLabel.trim()) {
+                  saveScenario(user.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  setShowScenModal(false);
+                  setScenSaved(true);
+                  setTimeout(() => setScenSaved(false), 2500);
+                }
+              }}
+            />
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", justifyContent: "flex-end" }}>
+              <button className="btn btn-secondary" onClick={() => setShowScenModal(false)}>
+                {lang === "mn" ? "Болих" : "Cancel"}
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={!scenLabel.trim()}
+                onClick={() => {
+                  saveScenario(user.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  setShowScenModal(false);
+                  setScenSaved(true);
+                  setTimeout(() => setScenSaved(false), 2500);
+                }}
+              >
+                <Bookmark size={14} /> {lang === "mn" ? "Хадгалах" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scenario saved toast */}
+      {scenSaved && (
+        <div className="pred-toast">
+          <CheckCircle size={16} style={{ color: "#2a9d8f" }} />
+          {lang === "mn" ? "Сценари хадгалагдлаа!" : "Scenario saved!"}
+        </div>
+      )}
     </div>
   );
 }

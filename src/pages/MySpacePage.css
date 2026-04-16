@@ -1,0 +1,563 @@
+/* ── My Space Page ──────────────────────────────────────────────────────────── */
+.ms-page { padding: 0 0 3rem; }
+
+/* Header */
+.ms-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ms-header-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ms-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.ms-header-info { flex: 1; }
+
+.ms-header-info h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text1);
+  margin: 0 0 0.25rem;
+}
+
+.ms-header-info p {
+  font-size: 0.88rem;
+  color: var(--text3);
+  margin: 0 0 0.5rem;
+}
+
+.ms-header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ms-header-name { font-weight: 600; font-size: 0.95rem; color: var(--text1); }
+
+.ms-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ms-chip-admin   { background: rgba(230,57,70,0.12);  color: #e63946; }
+.ms-chip-manager { background: rgba(244,162,97,0.15); color: #e07030; }
+
+/* Tabs */
+.ms-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+
+.ms-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ms-tab-btn:hover { color: var(--text1); }
+
+.ms-tab-btn.active {
+  color: var(--primary-light);
+  border-bottom-color: var(--primary-light);
+  font-weight: 700;
+}
+
+.ms-tab-badge {
+  background: var(--primary);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  min-width: 18px;
+  text-align: center;
+}
+
+.ms-tab-label { white-space: nowrap; }
+
+/* Stat grid */
+.ms-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.ms-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+.ms-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ms-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text1);
+  line-height: 1.1;
+}
+
+.ms-stat-label {
+  font-size: 0.77rem;
+  color: var(--text3);
+  line-height: 1.3;
+}
+
+/* Summary row */
+.ms-summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Type distribution */
+.ms-type-dist { padding: 1.25rem; }
+.ms-type-dist h4 { margin: 0 0 1rem; font-size: 0.9rem; color: var(--text2); }
+
+.ms-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.ms-type-label { min-width: 90px; color: var(--text2); text-transform: capitalize; }
+
+.ms-type-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ms-type-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.ms-type-count { color: var(--text3); min-width: 20px; text-align: right; }
+
+/* Activity feed */
+.ms-activity-feed { padding: 1.25rem; }
+.ms-activity-feed h4 { margin: 0 0 1rem; font-size: 0.9rem; color: var(--text2); }
+
+.ms-activity-list { list-style: none; padding: 0; margin: 0; }
+
+.ms-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.ms-activity-item:last-child { border-bottom: none; }
+
+.ms-activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ms-dot-building   { background: #1a6eb5; }
+.ms-dot-prediction { background: #2a9d8f; }
+.ms-dot-scenario   { background: #f4a261; }
+
+.ms-activity-name { flex: 1; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-activity-date { color: var(--text3); flex-shrink: 0; font-size: 0.78rem; }
+.ms-empty-small   { color: var(--text3); font-size: 0.85rem; margin: 0; }
+
+/* Buildings list */
+.ms-buildings-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.ms-building-card { padding: 1rem 1.25rem; }
+
+.ms-building-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ms-building-info { flex: 1; min-width: 0; }
+
+.ms-building-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.ms-building-name strong { font-size: 0.95rem; color: var(--text1); }
+
+.ms-building-meta,
+.ms-building-energy {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text3);
+  flex-wrap: wrap;
+}
+
+.ms-building-energy { margin-top: 0.25rem; color: var(--text2); }
+
+/* Grade pill */
+.ms-grade-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* Icon buttons */
+.ms-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.ms-icon-btn:hover { background: var(--bg3); }
+
+.ms-icon-btn.ms-danger { color: var(--danger, #e63946); }
+.ms-icon-btn.ms-danger:hover { background: rgba(230,57,70,0.1); border-color: rgba(230,57,70,0.3); }
+
+/* Org tag row */
+.ms-org-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.ms-org-tag-input {
+  flex: 1;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  color: var(--text1);
+  font-size: 0.82rem;
+}
+
+.ms-tag-btn { font-size: 0.8rem; padding: 0.3rem 0.7rem; }
+
+/* Dataset */
+.ms-dataset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.ms-quality-score { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: var(--text2); }
+.ms-quality-value { font-size: 1.2rem; font-weight: 800; }
+.ms-dataset-btns  { display: flex; gap: 0.5rem; }
+
+/* Table */
+.ms-table-scroll { overflow-x: auto; }
+
+.ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ms-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  border-bottom: 2px solid var(--border);
+  background: var(--bg2);
+}
+
+.ms-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text1);
+  vertical-align: middle;
+}
+
+.ms-table tr:last-child td { border-bottom: none; }
+.ms-table tr:hover td { background: var(--bg2); }
+
+/* List header */
+.ms-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--text3);
+}
+
+.ms-danger-btn { color: var(--danger, #e63946); }
+
+/* Cards list (history/scenarios) */
+.ms-cards-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Prediction card */
+.ms-pred-card { padding: 1rem 1.25rem; }
+
+.ms-pred-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ms-pred-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.ms-pred-name strong { font-size: 0.92rem; color: var(--text1); }
+
+.ms-pred-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.79rem;
+  color: var(--text3);
+  margin-bottom: 0.25rem;
+}
+
+.ms-pred-result {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+.ms-pred-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.ms-pred-date { font-size: 0.75rem; color: var(--text3); }
+
+/* Scenario card */
+.ms-scenario-card { padding: 1rem 1.25rem; }
+
+.ms-scenario-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ms-scenario-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+}
+
+.ms-scenario-name strong { font-size: 0.92rem; color: var(--text1); }
+
+.ms-scenario-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.79rem;
+  color: var(--text3);
+  margin-bottom: 0.25rem;
+}
+
+.ms-scenario-date { font-size: 0.75rem; color: var(--text3); }
+
+.ms-scenario-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+.ms-load-btn { font-size: 0.82rem; padding: 0.35rem 0.75rem; display: flex; align-items: center; gap: 0.3rem; }
+
+/* Reports */
+.ms-report-card { padding: 1.5rem; }
+.ms-report-card h4 { margin: 0 0 1rem; }
+
+.ms-period-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--text2);
+  flex-wrap: wrap;
+}
+
+.ms-period-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ms-period-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.ms-report-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text3);
+  margin-bottom: 1.25rem;
+}
+
+.ms-report-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+/* Role info */
+.ms-role-info-card { padding: 1.25rem; }
+
+.ms-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.ms-role-desc { font-size: 0.85rem; color: var(--text2); margin: 0 0 0.5rem; line-height: 1.5; }
+
+.ms-role-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+
+/* Empty state */
+.ms-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text3);
+}
+
+.ms-empty p { margin: 0; font-size: 0.88rem; }
+
+/* No user */
+.ms-no-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem;
+  text-align: center;
+  color: var(--text3);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .ms-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .ms-summary-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .ms-stat-grid { grid-template-columns: 1fr 1fr; }
+  .ms-tab-btn { padding: 0.4rem 0.55rem; font-size: 0.78rem; }
+  .ms-tab-label { display: none; }
+  .ms-header { flex-direction: column; align-items: flex-start; }
+  .ms-scenario-main { flex-direction: column; align-items: flex-start; }
+  .ms-pred-main { flex-direction: column; }
+  .ms-report-btns { flex-direction: column; }
+}

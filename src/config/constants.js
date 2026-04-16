@@ -13,4 +13,7 @@ export const STORAGE_KEYS = {
   users:        "ub_users",
   buildings:    "ub_buildings_user",
   weatherCache: "ub_weather_v2",
+  predictions:  "ub_predictions",
+  scenarios:    "ub_scenarios",
+  favorites:    "ub_favorites",
 };

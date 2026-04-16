@@ -273,6 +273,198 @@ export default function OWIDPage() {
           </div>
           <p className="citation-note">{t.owid.citation_note}</p>
         </div>
+
+        {/* ── Local MN Building Energy Data ── */}
+        <div className="owid-local-section mt-3">
+          <div className="owid-local-header">
+            <div className="owid-local-title-row">
+              <Building2 size={22} style={{ color: "#e63946" }} />
+              <h2>{lang === "mn" ? "УБ — Барилгын дулааны мэдээлэл" : "UB — Building Heat Energy Data"}</h2>
+            </div>
+            <p className="owid-local-subtitle">
+              {lang === "mn"
+                ? "Улаанбаатар хотын дулаан хангамж болон барилгын эрчим хүчний хэрэглээний албан ёсны статистик мэдээлэл"
+                : "Official statistics on Ulaanbaatar's district heating and building energy consumption"}
+            </p>
+          </div>
+
+          {/* Stat cards */}
+          <div className="owid-local-stats">
+            {[
+              {
+                icon: <Building2 size={20} />,
+                color: "#1a6eb5",
+                value: "3,500+",
+                label: lang === "mn" ? "Дулааны сүлжээнд холбогдсон барилга" : "Buildings connected to district heat",
+                source: "dulaan.mn",
+              },
+              {
+                icon: <Thermometer size={20} />,
+                color: "#e63946",
+                value: "~70–100",
+                unit: "Гкал/жил",
+                label: lang === "mn" ? "Нэг орон сууцны жилийн дулааны хэрэглээ" : "Avg. apartment heat consumption per year",
+                source: "dulaan.mn",
+              },
+              {
+                icon: <Zap size={20} />,
+                color: "#f4a261",
+                value: "250–350",
+                unit: "кВт·цаг/м²",
+                label: lang === "mn" ? "Хуучин барилгын дулааны эрчим хүчний хэрэглэх хэмжээ" : "Heat energy intensity — Soviet-era buildings",
+                source: "tog.mn",
+              },
+              {
+                icon: <TrendingUp size={20} />,
+                color: "#2a9d8f",
+                value: "~45%",
+                label: lang === "mn" ? "Нийт эрчим хүчний хэрэглээнд барилгын эзлэх хувь" : "Share of total energy consumed by buildings",
+                source: "tog.mn",
+              },
+              {
+                icon: <BarChart2 size={20} />,
+                color: "#a8c5e0",
+                value: "7 сар",
+                label: lang === "mn" ? "Халаалтын сезоны үргэлжлэх хугацаа (10-р — 4-р сар)" : "Heating season duration (Oct – Apr)",
+                source: "dulaan.mn",
+              },
+              {
+                icon: <Cloud size={20} />,
+                color: "#6c757d",
+                value: "95%+",
+                label: lang === "mn" ? "ДЦС-ийн дулаан нийлүүлэлтийн эзлэх хувь" : "District heat supplied by CHP plants",
+                source: "dulaan.mn",
+              },
+            ].map((s, i) => (
+              <div key={i} className="owid-local-stat-card card">
+                <span className="owid-local-stat-icon" style={{ background: `${s.color}1a`, color: s.color }}>
+                  {s.icon}
+                </span>
+                <div className="owid-local-stat-body">
+                  <div className="owid-local-stat-value">
+                    {s.value}
+                    {s.unit && <span className="owid-local-stat-unit"> {s.unit}</span>}
+                  </div>
+                  <div className="owid-local-stat-label">{s.label}</div>
+                  <div className="owid-local-stat-src">{s.source}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Data table */}
+          <div className="card mt-3 owid-local-table-wrap">
+            <h4 style={{ marginBottom: "1rem" }}>
+              {lang === "mn" ? "Барилгын ангиллаар дулааны хэрэглээ" : "Heat Consumption by Building Type"}
+            </h4>
+            <div className="owid-local-table-scroll">
+              <table className="owid-local-table">
+                <thead>
+                  <tr>
+                    <th>{lang === "mn" ? "Барилгын төрөл" : "Building Type"}</th>
+                    <th>{lang === "mn" ? "Баригдсан он" : "Built"}</th>
+                    <th>{lang === "mn" ? "Дулааны эрчим хүч (кВт·цаг/м²/жил)" : "Heat Intensity (kWh/m²/yr)"}</th>
+                    <th>{lang === "mn" ? "Тайлбар" : "Notes"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      type: lang === "mn" ? "Зөвлөлтийн стандарт (хуучин)" : "Soviet-era standard panel",
+                      built: "1960–1990",
+                      heat: "280–350",
+                      note: lang === "mn" ? "Дулаан алдагдал өндөр" : "High heat loss, poor insulation",
+                    },
+                    {
+                      type: lang === "mn" ? "Орчин үеийн орон сууц" : "Modern residential",
+                      built: "2000–2015",
+                      heat: "160–220",
+                      note: lang === "mn" ? "Сайжруулсан тусгаарлалт" : "Improved insulation standards",
+                    },
+                    {
+                      type: lang === "mn" ? "Шинэ барилга (БНМХ)" : "New build (current standard)",
+                      built: "2015–одоо",
+                      heat: "100–150",
+                      note: lang === "mn" ? "БНбД 23-02 стандарт" : "Meets BNbD 23-02 standard",
+                    },
+                    {
+                      type: lang === "mn" ? "Оффис / Арилжааны барилга" : "Office / Commercial",
+                      built: "2000–одоо",
+                      heat: "120–200",
+                      note: lang === "mn" ? "Хэрэглэгдэх байдлаас хамаарна" : "Varies by occupancy & systems",
+                    },
+                    {
+                      type: lang === "mn" ? "Нийтийн ашиглалтын барилга" : "Public / institutional",
+                      built: "1970–одоо",
+                      heat: "180–300",
+                      note: lang === "mn" ? "Эмнэлэг, сургууль гэх мэт" : "Hospitals, schools, etc.",
+                    },
+                  ].map((row, i) => (
+                    <tr key={i}>
+                      <td><strong>{row.type}</strong></td>
+                      <td>{row.built}</td>
+                      <td><span className="owid-local-heat-badge">{row.heat}</span></td>
+                      <td style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{row.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Source citations */}
+          <div className="owid-local-sources card mt-3">
+            <h4 style={{ marginBottom: "0.75rem" }}>
+              {lang === "mn" ? "Эх сурвалж" : "Sources"}
+            </h4>
+            <div className="owid-local-src-list">
+              <a
+                href="https://www.dulaan.mn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="owid-local-src-link"
+              >
+                <Thermometer size={15} />
+                <div>
+                  <strong>Дулаан ХК</strong>
+                  <span>
+                    {lang === "mn"
+                      ? " — Улаанбаатар хотын дулаан хангамжийн нэгдсэн сүлжээний компани. Дулааны хэрэглээ, холболтын статистик."
+                      : " — Ulaanbaatar District Heating Network Company. Heat consumption and connection statistics."}
+                  </span>
+                  <span className="owid-local-src-url"> dulaan.mn</span>
+                </div>
+                <ExternalLink size={13} style={{ flexShrink: 0, color: "var(--text-secondary)" }} />
+              </a>
+              <a
+                href="https://www.tog.mn/news/5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="owid-local-src-link"
+              >
+                <Zap size={15} />
+                <div>
+                  <strong>ТОГ.МН</strong>
+                  <span>
+                    {lang === "mn"
+                      ? " — Монгол Улсын эрчим хүчний мэдээллийн портал. Барилгын эрчим хүчний хэрэглээний тайлан."
+                      : " — Mongolia's energy sector news portal. Building energy consumption reports."}
+                  </span>
+                  <span className="owid-local-src-url"> tog.mn/news/5</span>
+                </div>
+                <ExternalLink size={13} style={{ flexShrink: 0, color: "var(--text-secondary)" }} />
+              </a>
+              <div className="owid-local-src-note">
+                <Info size={13} />
+                <span>
+                  {lang === "mn"
+                    ? "Дээрх тоон үзүүлэлтүүд нь БОАЖЯ, Эрчим хүчний яам болон Дулаан ХК-ийн нийтэлсэн тайлан дээр үндэслэсэн болно."
+                    : "Figures are based on reports published by the Ministry of Environment, Ministry of Energy, and Dulaan LLC."}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

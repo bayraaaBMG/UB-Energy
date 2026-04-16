@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   Home, LogIn, Brain, LayoutDashboard, Upload, Database,
   Settings, Accessibility, Lightbulb, Map, Menu, X, Globe, LogOut, Zap,
-  CloudSun, BarChart2
+  CloudSun, BarChart2, Package
 } from "lucide-react";
 import { APP_NAME } from "../../config/constants";
 import "./Navbar.css";
@@ -24,6 +24,7 @@ const navItems = (t, user) => [
     { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
     { path: "/data-input", label: t.nav.dataInput, icon: Upload },
     { path: "/database", label: t.nav.database, icon: Database },
+    { path: "/my-space", label: t.nav.mySpace, icon: Package },
     ...(user.role === "admin" ? [{ path: "/admin", label: t.nav.admin, icon: Settings }] : []),
   ] : []),
 ];

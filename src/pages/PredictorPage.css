@@ -349,3 +349,66 @@
   .result-metrics { grid-template-columns: 1fr; }
   .result-metric.main-metric { grid-column: 1; }
 }
+
+/* ── Scenario modal ── */
+.pred-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.pred-modal {
+  width: 100%;
+  max-width: 380px;
+  padding: 1.5rem;
+}
+
+.pred-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.pred-modal-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+}
+
+/* Scenario save button */
+.pred-save-btn { display: flex; align-items: center; gap: 0.35rem; }
+
+/* Toast */
+.pred-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 1100;
+  animation: toast-in 0.25s ease;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
