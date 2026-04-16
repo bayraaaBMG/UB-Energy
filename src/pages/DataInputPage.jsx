@@ -16,6 +16,142 @@ import { convertElecMoneyToKwh, convertHeatBillToEstimates, TARIFF_TIERS, predic
 
 const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
 
+// ─── Building-type dynamic schema ─────────────────────────────────────────────
+const TYPE_SCHEMA = {
+  apartment: {
+    color: "#3a8fd4", emoji: "🏠",
+    desc: { mn: "Орон сууцны барилга — айлуудын тоо, өрөөний тоогоор ачааллыг тооцоолно.", en: "Residential — occupancy derived from units, floors, and rooms per unit." },
+    fields: [
+      { key: "units_per_floor",    label: { mn: "Давхарт хэдэн айл",    en: "Units per floor" },      type: "number", default: 4,  min: 1,  max: 40,   hint: { mn: "Нэг давхарт байх орон сууцны тоо", en: "Apartments on each floor" } },
+      { key: "avg_rooms_per_unit", label: { mn: "Нэг айлын өрөөний тоо", en: "Rooms per unit" },       type: "number", default: 2,  min: 1,  max: 8 },
+      { key: "has_elevator",       label: { mn: "Лифт байгаа",           en: "Has elevator" },         type: "check" },
+      { key: "has_basement",       label: { mn: "Подвал/гараж байгаа",   en: "Basement / garage" },   type: "check" },
+    ],
+    derive: (f) => {
+      const units = (f.units_per_floor || 4) * Math.max(1, parseInt(f.total_floors) || 3);
+      const elev  = f.has_elevator ? 1.08 : 1;
+      const base  = f.has_basement ? 1.05 : 1;
+      return {
+        rooms:      units * (f.avg_rooms_per_unit || 2),
+        residents:  Math.round(units * 2.5),
+        appliances: Math.min(50, Math.round(units * 0.85 * elev * base)),
+        info_mn:    `Нийт ${units} айл · ${Math.round(units * 2.5)} оршин суугч`,
+        info_en:    `${units} total units · ${Math.round(units * 2.5)} residents`,
+      };
+    },
+  },
+  office: {
+    color: "#2a9d8f", emoji: "🏢",
+    desc: { mn: "Оффисын барилга — ажиллагсад, компьютерийн тоогоор цахилгааны ачааллыг тооцоолно.", en: "Office — load estimated from employees and equipment count." },
+    fields: [
+      { key: "employees",    label: { mn: "Ажиллагсдын тоо",         en: "Employees" },               type: "number", default: 50,  min: 1, max: 5000 },
+      { key: "computers",    label: { mn: "Компьютер / ажлын байр",  en: "Computers / workstations" }, type: "number", default: 40,  min: 0, max: 2000 },
+      { key: "working_hours",label: { mn: "Өдрийн ажлын цаг",        en: "Working hours / day" },      type: "number", default: 8,   min: 1, max: 24   },
+      { key: "has_server",   label: { mn: "Сервер өрөөтэй",          en: "Has server room" },          type: "check" },
+    ],
+    derive: (f) => {
+      const hrFactor = ((f.working_hours || 8) / 8);
+      const srv      = f.has_server ? 1.15 : 1;
+      const apps     = Math.min(50, Math.max(2, Math.round(((f.computers || 40) / 5) * hrFactor * srv)));
+      return {
+        rooms:      Math.max(1, Math.ceil((f.employees || 50) / 4)),
+        residents:  f.employees || 50,
+        appliances: apps,
+        info_mn:    `${f.employees || 50} ажиллагсад · ${f.computers || 40} компьютер · ${f.working_hours || 8}ц/өдөр`,
+        info_en:    `${f.employees || 50} staff · ${f.computers || 40} computers · ${f.working_hours || 8}h/day`,
+      };
+    },
+  },
+  school: {
+    color: "#e9c46a", emoji: "🏫",
+    desc: { mn: "Сургуулийн барилга — анги танхим, сурагчдын тоогоор тооцоолно.", en: "School — energy load based on classrooms, students, and staff." },
+    fields: [
+      { key: "classrooms",  label: { mn: "Ангийн тасалгааны тоо",  en: "Classrooms" },    type: "number", default: 20,  min: 1,  max: 200  },
+      { key: "students",    label: { mn: "Сурагчдын нийт тоо",      en: "Total students" }, type: "number", default: 600, min: 10, max: 10000 },
+      { key: "school_staff",label: { mn: "Багш + ажилтны тоо",      en: "Teachers + staff"},type: "number", default: 50,  min: 1,  max: 500  },
+      { key: "has_gym",     label: { mn: "Спортын заалтай",          en: "Has sports hall" },type: "check" },
+      { key: "has_cafeteria",label:{ mn: "Гуанзтай",                en: "Has cafeteria" },  type: "check" },
+    ],
+    derive: (f) => {
+      const gym  = f.has_gym      ? 1.12 : 1;
+      const cafe = f.has_cafeteria? 1.08 : 1;
+      const total = (f.students || 600) + (f.school_staff || 50);
+      return {
+        rooms:      f.classrooms || 20,
+        residents:  total,
+        appliances: Math.min(50, Math.max(2, Math.round((f.classrooms || 20) * 2 * gym * cafe))),
+        info_mn:    `${f.classrooms || 20} анги · ${total} хүн`,
+        info_en:    `${f.classrooms || 20} classrooms · ${total} people`,
+      };
+    },
+  },
+  hospital: {
+    color: "#e63946", emoji: "🏥",
+    desc: { mn: "Эмнэлгийн барилга — ор, тасгийн тоо болон 24/7 ачааллаар тооцоолно.", en: "Hospital — energy load based on beds, departments, and 24/7 operation." },
+    fields: [
+      { key: "beds",        label: { mn: "Ортны тоо",          en: "Patient beds" },      type: "number", default: 80, min: 1,  max: 5000 },
+      { key: "departments", label: { mn: "Тасгийн тоо",         en: "Departments" },       type: "number", default: 8,  min: 1,  max: 100  },
+      { key: "has_icu",     label: { mn: "ЭМТ / Intensive care", en: "Has ICU" },          type: "check" },
+      { key: "is_24h",      label: { mn: "24/7 ажилладаг",       en: "24/7 operation" },   type: "check" },
+    ],
+    derive: (f) => {
+      const h24  = f.is_24h  ? 1.4 : 1;
+      const icu  = f.has_icu ? 1.2 : 1;
+      return {
+        rooms:      f.departments || 8,
+        residents:  Math.round((f.beds || 80) * 1.8),
+        appliances: Math.min(50, Math.max(5, Math.round((f.beds || 80) * 0.45 * h24 * icu))),
+        info_mn:    `${f.beds || 80} ор · ${f.departments || 8} тасаг${f.is_24h ? " · 24/7" : ""}`,
+        info_en:    `${f.beds || 80} beds · ${f.departments || 8} depts${f.is_24h ? " · 24/7" : ""}`,
+      };
+    },
+  },
+  commercial: {
+    color: "#f4a261", emoji: "🏬",
+    desc: { mn: "Арилжааны барилга — дэлгүүрийн тоо, ажлын цагаар цахилгааны ачааллыг тооцоолно.", en: "Commercial — load based on shop units, operating hours, and equipment." },
+    fields: [
+      { key: "shops",           label: { mn: "Дэлгүүр / нэгжийн тоо",   en: "Shops / units" },          type: "number", default: 15,  min: 1, max: 500 },
+      { key: "commercial_hours",label: { mn: "Ажлын цаг (цаг/өдөр)",    en: "Operating hours/day" },    type: "number", default: 12,  min: 1, max: 24  },
+      { key: "has_escalator",   label: { mn: "Эскалатор / лифт байгаа",  en: "Escalators / lifts" },    type: "check" },
+      { key: "has_cold_storage",label: { mn: "Хөргөгч агуулах байгаа",  en: "Cold storage" },           type: "check" },
+    ],
+    derive: (f) => {
+      const hrs  = ((f.commercial_hours || 12) / 10);
+      const esc  = f.has_escalator   ? 1.12 : 1;
+      const cold = f.has_cold_storage? 1.18 : 1;
+      return {
+        rooms:      f.shops || 15,
+        residents:  (f.shops || 15) * 3,
+        appliances: Math.min(50, Math.max(3, Math.round((f.shops || 15) * 2 * hrs * esc * cold))),
+        info_mn:    `${f.shops || 15} дэлгүүр · ${f.commercial_hours || 12}ц/өдөр`,
+        info_en:    `${f.shops || 15} shops · ${f.commercial_hours || 12}h/day`,
+      };
+    },
+  },
+  warehouse: {
+    color: "#6c757d", emoji: "🏭",
+    desc: { mn: "Агуулахын барилга — ажлын цаг, хөргөлтийн горимоор тооцоолно.", en: "Warehouse — energy based on ceiling height, operating hours, and cooling." },
+    fields: [
+      { key: "ceiling_height",  label: { mn: "Таазны өндөр (м)",        en: "Ceiling height (m)" },   type: "number", default: 8,  min: 3, max: 30 },
+      { key: "operating_hours", label: { mn: "Ажлын цаг (цаг/өдөр)",   en: "Operating hours/day" }, type: "number", default: 10, min: 1, max: 24 },
+      { key: "has_cooling",     label: { mn: "Хөргөлтийн агуулах",      en: "Refrigerated storage" }, type: "check" },
+      { key: "has_loading_dock",label: { mn: "Ачаалах тавцантай",       en: "Has loading dock" },     type: "check" },
+    ],
+    derive: (f) => {
+      const area = parseFloat(f.area) || 500;
+      const cold = f.has_cooling ? 1.6 : 1;
+      const hrs  = ((f.operating_hours || 10) / 8);
+      return {
+        rooms:      2,
+        residents:  Math.max(2, Math.round(area / 200)),
+        appliances: Math.min(50, Math.max(2, Math.round(area / 500 * 3 * cold * hrs))),
+        info_mn:    `${f.ceiling_height || 8}м өндөр · ${f.operating_hours || 10}ц/өдөр${f.has_cooling ? " · Хөргөлттэй" : ""}`,
+        info_en:    `${f.ceiling_height || 8}m ceiling · ${f.operating_hours || 10}h/day${f.has_cooling ? " · Cooled" : ""}`,
+      };
+    },
+  },
+};
+
 function computeQualityScore(form, elecBill, heatBill) {
   let score = 0;
   if (form.building_name.trim())                              score += 15;
@@ -88,6 +224,85 @@ function FormSection({ icon: Icon, title, color, children }) {
         <span className="form-section-title" style={{ color }}>{title}</span>
       </div>
       <div className="grid grid-2">{children}</div>
+    </div>
+  );
+}
+
+// ─── Type-specific dynamic section ───────────────────────────────────────────
+function TypeSpecificSection({ type, form, onChange, lang }) {
+  const schema = TYPE_SCHEMA[type];
+  if (!schema) return null;
+  const derived = schema.derive(form);
+
+  return (
+    <div className="type-specific-section animate-fade">
+      {/* Type banner */}
+      <div className="type-banner" style={{ borderColor: schema.color, background: `${schema.color}0d` }}>
+        <span className="type-banner-emoji">{schema.emoji}</span>
+        <div>
+          <div className="type-banner-name" style={{ color: schema.color }}>
+            {lang === "mn" ? schema.desc.mn : schema.desc.en}
+          </div>
+          <div className="type-derived-info">
+            <span>{lang === "mn" ? "Тооцоологдсон:" : "Derived:"}</span>
+            <strong style={{ color: schema.color }}>{lang === "mn" ? derived.info_mn : derived.info_en}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Fields */}
+      <div className="type-fields-grid">
+        {schema.fields.map(field => (
+          field.type === "check" ? (
+            <label key={field.key} className="type-check-label">
+              <input
+                type="checkbox"
+                name={field.key}
+                checked={!!form[field.key]}
+                onChange={onChange}
+                className="type-checkbox"
+              />
+              <span className="type-check-text">{lang === "mn" ? field.label.mn : field.label.en}</span>
+            </label>
+          ) : (
+            <div key={field.key} className="form-group">
+              <label className="form-label" htmlFor={`di-${field.key}`}>
+                {lang === "mn" ? field.label.mn : field.label.en}
+              </label>
+              <input
+                id={`di-${field.key}`}
+                type="number"
+                name={field.key}
+                value={form[field.key] ?? field.default}
+                onChange={onChange}
+                className="form-input"
+                min={field.min}
+                max={field.max}
+                placeholder={String(field.default)}
+              />
+              {field.hint && (
+                <div className="type-field-hint">{lang === "mn" ? field.hint.mn : field.hint.en}</div>
+              )}
+            </div>
+          )
+        ))}
+      </div>
+
+      {/* Derived values chip row */}
+      <div className="type-derived-chips">
+        <span className="type-chip">
+          <span className="type-chip-label">{lang === "mn" ? "Өрөөний тоо" : "Rooms"}</span>
+          <strong>{derived.rooms}</strong>
+        </span>
+        <span className="type-chip">
+          <span className="type-chip-label">{lang === "mn" ? "Хүн" : "People"}</span>
+          <strong>{derived.residents}</strong>
+        </span>
+        <span className="type-chip">
+          <span className="type-chip-label">{lang === "mn" ? "Техник (ML)" : "Appliances (ML)"}</span>
+          <strong>{derived.appliances}</strong>
+        </span>
+      </div>
     </div>
   );
 }
@@ -165,33 +380,63 @@ export default function DataInputPage() {
     wall_material: "panel",
     latitude: "47.9184",
     longitude: "106.9177",
+    // ── Apartment ──
+    units_per_floor: 4,
+    avg_rooms_per_unit: 2,
+    has_elevator: false,
+    has_basement: false,
+    // ── Office ──
+    employees: 50,
+    computers: 40,
+    working_hours: 8,
+    has_server: false,
+    // ── School ──
+    classrooms: 20,
+    students: 600,
+    school_staff: 50,
+    has_gym: false,
+    has_cafeteria: false,
+    // ── Hospital ──
+    beds: 80,
+    departments: 8,
+    has_icu: false,
+    is_24h: false,
+    // ── Commercial ──
+    shops: 15,
+    commercial_hours: 12,
+    has_escalator: false,
+    has_cold_storage: false,
+    // ── Warehouse ──
+    ceiling_height: 8,
+    operating_hours: 10,
+    has_cooling: false,
+    has_loading_dock: false,
   });
 
-  // Live ML preview — run predict whenever key fields change
+  // Live ML preview — uses type-specific derived occupancy when available
   const livePreview = React.useMemo(() => {
     const area = parseFloat(form.area);
     if (!area || area < 10) return null;
     const type = form.building_type || "apartment";
-    const resPer100 = { apartment: 5, office: 3, school: 4, hospital: 6, commercial: 2, warehouse: 1 };
-    const appPer100 = { apartment: 8, office: 5, school: 4, hospital: 10, commercial: 6, warehouse: 3 };
+    const schema = TYPE_SCHEMA[type];
+    const derived = schema ? schema.derive(form) : null;
     const mlInput = {
       building_type: type,
       area,
-      year:  Math.max(1940, Math.min(2026, parseInt(form.year) || 1990)),
+      year:   Math.max(1940, Math.min(2026, parseInt(form.year) || 1990)),
       floors: Math.max(1, parseInt(form.total_floors) || 3),
-      rooms:  parseInt(form.rooms) || Math.max(1, Math.round(area / 50)),
-      hdd: 4500,
+      rooms:  derived?.rooms  ?? (parseInt(form.rooms) || Math.max(1, Math.round(area / 50))),
+      hdd:    4500,
       window_ratio: 25,
-      residents: Math.max(1, Math.round(area / 100 * (resPer100[type] || 4))),
-      appliances: Math.min(50, Math.max(2, Math.round(area / 100 * (appPer100[type] || 6)))),
-      wall_material: form.wall_material || "panel",
-      heating_type: form.heating_type || "central",
+      residents:  derived?.residents  ?? Math.max(1, Math.round(area / 100 * 4)),
+      appliances: derived?.appliances ?? Math.min(50, Math.max(2, Math.round(area / 100 * 6))),
+      wall_material:      form.wall_material      || "panel",
+      heating_type:       form.heating_type       || "central",
       insulation_quality: form.insulation_quality || "medium",
-      window_type: form.window_type || "double",
+      window_type:        form.window_type        || "double",
     };
     try { return predict(mlInput); } catch { return null; }
-  }, [form.area, form.building_type, form.year, form.total_floors, form.wall_material,
-      form.heating_type, form.insulation_quality, form.window_type, form.rooms]);
+  }, [form]);
 
   const qualityScore = computeQualityScore(form, elecBill, heatBill);
 
@@ -250,6 +495,8 @@ export default function DataInputPage() {
     // Build record — normalizeBuilding in buildingStorage will run ML
     const elecConverted = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
     const monthly_usage = elecConverted ? elecConverted.kwh_monthly : null;
+    const schema  = TYPE_SCHEMA[form.building_type];
+    const derived = schema ? schema.derive(form) : {};
     const record = {
       id:           `user_${Date.now()}`,
       name:         form.building_name || t.dataInput.unnamed_building,
@@ -259,7 +506,9 @@ export default function DataInputPage() {
       year:         parseInt(form.year) || new Date().getFullYear(),
       district:     form.district,
       monthly_usage,
-      rooms:        parseInt(form.rooms) || null,
+      rooms:        derived.rooms    ?? parseInt(form.rooms) ?? null,
+      residents:    derived.residents ?? null,
+      appliances:   derived.appliances ?? null,
       window_type:  form.window_type,
       door_type:    form.door_type,
       heating_type: form.heating_type,
@@ -270,6 +519,10 @@ export default function DataInputPage() {
       source:       "user",
       userId:       user?.id || null,
       submittedAt:  new Date().toISOString(),
+      // Type-specific extras
+      type_details: Object.fromEntries(
+        (schema?.fields || []).map(f => [f.key, form[f.key] ?? f.default])
+      ),
     };
     saveUserBuilding(record);
     setSubmitted(true);
@@ -386,31 +639,40 @@ export default function DataInputPage() {
               </FormSection>
 
               {/* 📐 Барилгын мэдээлэл */}
-              <FormSection
-                icon={Layers}
-                title={lang === "mn" ? "Барилгын мэдээлэл" : "Building Details"}
-                color="#9b72cf"
-              >
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-building_type">{t.predictor.building_type}</label>
-                  <select id="di-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
-                    {Object.entries(t.predictor.building_types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
+              <div className="form-section">
+                <div className="form-section-header" style={{ borderColor: "#9b72cf" }}>
+                  <Layers size={15} style={{ color: "#9b72cf", flexShrink: 0 }} />
+                  <span className="form-section-title" style={{ color: "#9b72cf" }}>
+                    {lang === "mn" ? "Барилгын мэдээлэл" : "Building Details"}
+                  </span>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-area">{t.predictor.area} *</label>
-                  <input id="di-area" name="area" type="number" value={form.area} onChange={handleChange}
-                    className={`form-input${formErrors.area ? " input-error" : ""}`} placeholder="m²" min={10} required />
-                  {formErrors.area && <div className="field-error">{formErrors.area}</div>}
+                {/* Type selector + area always visible */}
+                <div className="grid grid-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="di-building_type">{t.predictor.building_type}</label>
+                    <select id="di-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select type-select">
+                      {Object.entries(t.predictor.building_types).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {TYPE_SCHEMA[k]?.emoji} {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="di-area">{t.predictor.area} *</label>
+                    <input id="di-area" name="area" type="number" value={form.area} onChange={handleChange}
+                      className={`form-input${formErrors.area ? " input-error" : ""}`} placeholder="м²" min={10} required />
+                    {formErrors.area && <div className="field-error">{formErrors.area}</div>}
+                  </div>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-rooms">{t.predictor.rooms}</label>
-                  <input id="di-rooms" name="rooms" type="number" value={form.rooms} onChange={handleChange}
-                    className="form-input" placeholder="3" min={1} max={20} />
-                </div>
-              </FormSection>
+                {/* Dynamic type-specific fields */}
+                <TypeSpecificSection
+                  type={form.building_type}
+                  form={form}
+                  onChange={handleChange}
+                  lang={lang}
+                />
+              </div>
 
               {/* 🪟 Дулаан алдагдал */}
               <FormSection

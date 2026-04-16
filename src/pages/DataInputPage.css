@@ -498,3 +498,118 @@
 /* Validation */
 .input-error { border-color: var(--danger) !important; }
 .field-error { font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem; }
+/* ── Type-specific dynamic section ────────────────────────────────────────── */
+.type-specific-section {
+  margin-top: 1rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* Type banner */
+.type-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  margin-bottom: 0;
+}
+
+.type-banner-emoji { font-size: 1.5rem; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+
+.type-banner-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 0.2rem;
+}
+
+.type-derived-info {
+  font-size: 0.78rem;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.type-derived-info strong { font-weight: 700; }
+
+/* Fields grid */
+.type-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 0 0.5rem;
+}
+
+/* Checkbox fields */
+.type-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 0.84rem;
+  color: var(--text2);
+  user-select: none;
+}
+
+.type-check-label:hover { background: var(--bg3); }
+
+.type-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.type-check-text { line-height: 1.3; }
+
+/* Field hint */
+.type-field-hint {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+/* Derived chips */
+.type-derived-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.type-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.type-chip-label { color: var(--text3); }
+.type-chip strong { color: var(--text1); font-weight: 700; }
+
+/* Type selector with emoji */
+.type-select { font-size: 0.9rem; }
+
+@media (max-width: 600px) {
+  .type-fields-grid { grid-template-columns: 1fr; }
+  .type-derived-chips { flex-direction: column; align-items: flex-start; }
+}
