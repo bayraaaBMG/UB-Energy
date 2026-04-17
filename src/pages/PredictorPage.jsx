@@ -761,6 +761,9 @@ export default function PredictorPage() {
                   <span className="model-badge" title={`MAE = ${METRICS.mae.toLocaleString()} kWh on test set`}>
                     MAE = {METRICS.mae.toLocaleString()} kWh
                   </span>
+                  <span className="model-badge" title="Macro-averaged F1 score for energy grade (A–G) classification on held-out test set">
+                    F1 = {METRICS.f1}
+                  </span>
                   {user && (
                     <button
                       className="btn btn-secondary pred-save-btn"

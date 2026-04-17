@@ -257,6 +257,32 @@ function evalMetrics(yTrue, yPred) {
   return { r2: +r2.toFixed(4), mae: Math.round(mae), mape: +mape.toFixed(1) };
 }
 
+// ─── F1-score (macro) for grade classification ────────────────────────────────
+// kWh → intensity → grade (A–G), then macro-averaged F1 across all grade classes.
+// This measures how accurately the regression model also predicts the energy grade.
+function kwhToGrade(kwh, area) {
+  const intensity = area > 0 ? kwh / area : 0;
+  return GRADE_STEPS.find(([thr]) => intensity < thr)?.[1] ?? 'G';
+}
+
+function f1MacroScore(yTrue, yPred, areas) {
+  const GRADES = ['A','B','C','D','E','F','G'];
+  const trueGrades = yTrue.map((y, i) => kwhToGrade(y, areas[i]));
+  const predGrades = yPred.map((y, i) => kwhToGrade(y, areas[i]));
+
+  const f1s = GRADES.map(g => {
+    const tp = trueGrades.filter((t, i) => t === g && predGrades[i] === g).length;
+    const fp = predGrades.filter((p, i) => p === g && trueGrades[i] !== g).length;
+    const fn = trueGrades.filter((t, i) => t === g && predGrades[i] !== g).length;
+    if (tp + fp === 0 || tp + fn === 0) return null; // class absent in split
+    const precision = tp / (tp + fp);
+    const recall    = tp / (tp + fn);
+    return (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
+  }).filter(v => v !== null);
+
+  return +(f1s.reduce((a, b) => a + b, 0) / f1s.length).toFixed(4);
+}
+
 // ─── 9. Training ──────────────────────────────────────────────────────────────
 const DATASET       = generateDataset(600);
 const { train, test } = splitData(DATASET, 0.2, 99);
@@ -281,13 +307,16 @@ const Xty    = matMul(Xt, y_train.map(y => [y]));
 const BETA   = matMul(XtXinv, Xty).map(r => r[0]);
 
 // ─── 10. Evaluate on held-out test set ───────────────────────────────────────
-const y_pred_test = X_test.map(row => BETA.reduce((s, b, i) => s + b * row[i], 0));
+const y_pred_test  = X_test.map(row => BETA.reduce((s, b, i) => s + b * row[i], 0));
 const TEST_METRICS = evalMetrics(y_test, y_pred_test);
+const test_areas   = test.map(s => s.area);
+const TEST_F1      = f1MacroScore(y_test, y_pred_test, test_areas);
 
 export const METRICS = {
   r2:      TEST_METRICS.r2,
   mae:     TEST_METRICS.mae,
   mape:    TEST_METRICS.mape,
+  f1:      TEST_F1,
   n_train: train.length,
   n_test:  test.length,
   n_total: DATASET.length,
