@@ -258,11 +258,11 @@ function evalMetrics(yTrue, yPred) {
 }
 
 // ─── F1-score (macro) for grade classification ────────────────────────────────
-// kWh → intensity → grade (A–G), then macro-averaged F1 across all grade classes.
-// This measures how accurately the regression model also predicts the energy grade.
+const GRADE_STEPS_F1 = [[50,'A'],[100,'B'],[150,'C'],[200,'D'],[250,'E'],[300,'F']];
+
 function kwhToGrade(kwh, area) {
   const intensity = area > 0 ? kwh / area : 0;
-  return GRADE_STEPS.find(([thr]) => intensity < thr)?.[1] ?? 'G';
+  return GRADE_STEPS_F1.find(([thr]) => intensity < thr)?.[1] ?? 'G';
 }
 
 function f1MacroScore(yTrue, yPred, areas) {
