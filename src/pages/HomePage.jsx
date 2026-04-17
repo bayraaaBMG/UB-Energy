@@ -6,7 +6,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Users, Target, Info, LogIn,
+  Building2, Zap, Users, Target, Info, LogIn, FlaskConical, CheckCircle,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -35,30 +35,34 @@ export default function HomePage() {
   const allBuildings = React.useMemo(() => getAllBuildings(), []);
   const stats        = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
 
+  const DEMO_BADGE = { mn: "Demo өгөгдөл", en: "Demo data",     icon: FlaskConical, color: "#f4a261" };
+  const REAL_BADGE = { mn: "Бодит үзүүлэлт", en: "Real metric", icon: CheckCircle,  color: "#2a9d8f" };
+  const SYNT_BADGE = { mn: "Синтетик датасет", en: "Synthetic dataset", icon: FlaskConical, color: "#6c757d" };
+
   const STATS = [
     {
       icon: Building2,
       value: stats ? `${stats.count.toLocaleString()} ${t.home.stat1_unit}` : `— ${t.home.stat1_unit}`,
       label: t.home.stat1_label,
-      color: "#3a8fd4", src: t.home.stat1_src,
+      color: "#3a8fd4", src: t.home.stat1_src, badge: DEMO_BADGE,
     },
     {
       icon: Zap,
       value: stats ? `${stats.totalMwh >= 1000 ? (stats.totalMwh / 1000).toFixed(1) + " GWh" : stats.totalMwh + " MWh"}` : "— MWh",
       label: t.home.stat2_label,
-      color: "#e9c46a", src: t.home.stat2_src,
+      color: "#e9c46a", src: t.home.stat2_src, badge: DEMO_BADGE,
     },
     {
       icon: Target,
       value: `${(METRICS.r2 * 100).toFixed(1)}%`,
       label: t.home.stat3_label,
-      color: "#2a9d8f", src: t.home.stat3_src,
+      color: "#2a9d8f", src: t.home.stat3_src, badge: REAL_BADGE,
     },
     {
       icon: Users,
       value: `${METRICS.n_total} ${t.home.stat4_unit}`,
       label: t.home.stat4_label,
-      color: "#f4a261", src: t.home.stat4_src,
+      color: "#f4a261", src: t.home.stat4_src, badge: SYNT_BADGE,
     },
   ];
 
@@ -80,6 +84,11 @@ export default function HomePage() {
             </div>
           )}
           <h1 className="hero-title">{t.home.hero_title}</h1>
+          <p className="hero-purpose">
+            {lang === "mn"
+              ? "Монголын барилгуудын эрчим хүчний хэрэглээг ML загвараар таамаглаж, дүн шинжилгээ хийж, хэмнэлтийн зөвлөмж өгдөг нэгдсэн систем."
+              : "An integrated system that predicts, analyzes, and provides energy-saving recommendations for Mongolian buildings using ML models."}
+          </p>
           <p className="hero-subtitle">{t.home.hero_subtitle}</p>
           <div className="hero-actions">
             <Link to="/predictor" className="btn btn-accent">
@@ -107,15 +116,22 @@ export default function HomePage() {
       <section className="stats-section">
         <div className="container">
           <div className="grid grid-4">
-            {STATS.map(({ icon: Icon, value, label, color }) => (
-              <div className="stat-card card animate-fade" key={label}>
-                <div className="stat-icon" style={{ background: `${color}22`, color }}>
-                  <Icon size={24} />
+            {STATS.map(({ icon: Icon, value, label, color, badge }) => {
+              const BadgeIcon = badge.icon;
+              return (
+                <div className="stat-card card animate-fade" key={label}>
+                  <div className="stat-icon" style={{ background: `${color}22`, color }}>
+                    <Icon size={24} />
+                  </div>
+                  <div className="stat-value">{value}</div>
+                  <div className="stat-label">{label}</div>
+                  <span className="stat-data-badge" style={{ color: badge.color, borderColor: `${badge.color}44`, background: `${badge.color}10` }}>
+                    <BadgeIcon size={10} />
+                    {lang === "mn" ? badge.mn : badge.en}
+                  </span>
                 </div>
-                <div className="stat-value">{value}</div>
-                <div className="stat-label">{label}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Stats source table */}
@@ -161,9 +177,15 @@ export default function HomePage() {
             </div>
 
             <div className="card">
-              <h3 className="section-title" style={{ fontSize: "1rem" }}>
-                {t.home.chart_title}
-              </h3>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                <h3 className="section-title" style={{ fontSize: "1rem", margin: 0 }}>
+                  {t.home.chart_title}
+                </h3>
+                <span className="stat-data-badge" style={{ color: "#f4a261", borderColor: "rgba(244,162,97,0.4)", background: "rgba(244,162,97,0.1)" }}>
+                  <FlaskConical size={10} />
+                  {lang === "mn" ? "Demo өгөгдөл" : "Demo data"}
+                </span>
+              </div>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                   <defs>
