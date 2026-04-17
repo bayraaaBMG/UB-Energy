@@ -17,10 +17,10 @@ import { getAllBuildings, computeStats } from "../utils/buildingStorage";
 import "./HomePage.css";
 
 const FEATURES = (t) => [
-  { icon: Brain,     title: t.home.feature1_title, text: t.home.feature1_text, color: "#3a8fd4" },
-  { icon: CloudRain, title: t.home.feature2_title, text: t.home.feature2_text, color: "#2a9d8f" },
-  { icon: BarChart2, title: t.home.feature3_title, text: t.home.feature3_text, color: "#e9c46a" },
-  { icon: Lightbulb, title: t.home.feature4_title, text: t.home.feature4_text, color: "#f4a261" },
+  { icon: Brain,     title: t.home.feature1_title, text: t.home.feature1_text, color: "#3a8fd4", path: "/predictor" },
+  { icon: CloudRain, title: t.home.feature2_title, text: t.home.feature2_text, color: "#2a9d8f", path: "/weather"   },
+  { icon: BarChart2, title: t.home.feature3_title, text: t.home.feature3_text, color: "#e9c46a", path: "/dashboard" },
+  { icon: Lightbulb, title: t.home.feature4_title, text: t.home.feature4_text, color: "#f4a261", path: "/recommendations" },
 ];
 
 export default function HomePage() {
@@ -224,14 +224,17 @@ export default function HomePage() {
       <section className="features-section">
         <div className="container">
           <div className="grid grid-4">
-            {FEATURES(t).map(({ icon: Icon, title, text, color }) => (
-              <div className="feature-card card animate-fade" key={title}>
+            {FEATURES(t).map(({ icon: Icon, title, text, color, path }) => (
+              <Link to={path} className="feature-card card animate-fade" key={title}>
                 <div className="feature-icon" style={{ background: `${color}22`, color }}>
                   <Icon size={28} />
                 </div>
                 <h3 className="feature-title">{title}</h3>
                 <p className="feature-text">{text}</p>
-              </div>
+                <span className="feature-arrow" style={{ color }}>
+                  <ArrowRight size={16} />
+                </span>
+              </Link>
             ))}
           </div>
         </div>
