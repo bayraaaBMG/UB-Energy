@@ -22,8 +22,8 @@ const TYPE_SCHEMA = {
     color: "#3a8fd4",
     desc: { mn: "Орон сууцны барилга — айлуудын тоо, өрөөний тоогоор ачааллыг тооцоолно.", en: "Residential — occupancy derived from units, floors, and rooms per unit." },
     fields: [
-      { key: "units_per_floor",    label: { mn: "Давхарт хэдэн айл",    en: "Units per floor" },      type: "number", default: 4,  min: 1,  max: 40,   hint: { mn: "Нэг давхарт байх орон сууцны тоо", en: "Apartments on each floor" } },
-      { key: "avg_rooms_per_unit", label: { mn: "Нэг айлын өрөөний тоо", en: "Rooms per unit" },       type: "number", default: 2,  min: 1,  max: 8 },
+      { key: "units_per_floor",    label: { mn: "Давхрын айлын тоо", en: "Units per floor" },      type: "number", default: 4,  min: 1,  max: 40,   hint: { mn: "Нэг давхарт байх орон сууцны тоо", en: "Apartments on each floor" } },
+      { key: "avg_rooms_per_unit", label: { mn: "Өрөөний тоо",        en: "Rooms per unit" },       type: "number", default: 2,  min: 1,  max: 8 },
       { key: "has_elevator",       label: { mn: "Лифт байгаа",           en: "Has elevator" },         type: "check" },
       { key: "has_basement",       label: { mn: "Подвал/гараж байгаа",   en: "Basement / garage" },   type: "check" },
     ],
@@ -688,14 +688,6 @@ export default function DataInputPage() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label" htmlFor="di-door_type">{t.dataInput.door_type}</label>
-                  <select id="di-door_type" name="door_type" value={form.door_type} onChange={handleChange} className="form-select">
-                    <option value="metal">{t.dataInput.door_metal}</option>
-                    <option value="wood">{t.dataInput.door_wood}</option>
-                    <option value="insulated">{t.dataInput.door_insulated}</option>
-                  </select>
-                </div>
               </FormSection>
 
               {/* 🔥 Халаалт */}
