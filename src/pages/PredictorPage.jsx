@@ -30,103 +30,116 @@ const BUILDING_COLORS = {
   hospital: "#e63946", warehouse: "#a8c5e0", commercial: "#f4a261"
 };
 
-// ─── CSS 3D Building ──────────────────────────────────────────────────────────
+// ─── SVG Isometric Building ───────────────────────────────────────────────────
 function Building3D({ floors, area, buildingType }) {
   const color = BUILDING_COLORS[buildingType] || "#3a8fd4";
-  const W = 130, D = 70;
-  const H = Math.min(Math.max(Math.round(floors * 16), 70), 210);
+  const W = 120;
+  const dx = 48, dy = 28;                              // depth in screen px (30° oblique)
+  const H = Math.min(Math.max(floors * 20, 80), 240);
+  const svgW = W + dx, svgH = dy + H;
+
   const nFloors = Math.min(floors, 10);
   const floorH = H / nFloors;
   const winCols = Math.min(4, Math.max(2, Math.floor(W / 35)));
-  const winW = (W - (winCols + 1) * 8) / winCols;
-  const winH = Math.max(7, floorH * 0.42);
+  const winW = Math.max(8, (W - (winCols + 1) * 10) / winCols);
+  const winH = Math.max(6, floorH * 0.4);
+
+  // Parametric point on side face: u ∈ [0,1] depth, v ∈ [0,1] height
+  const spt = (u, v) => `${W + u * dx},${dy * (1 - u) + v * H}`;
+
+  const id = buildingType;
 
   return (
-    <div className="b3d-scene">
-      <div className="b3d-box" style={{ width: W, height: H }}>
-        {/* Front face */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, width: W, height: H,
-          background: `linear-gradient(175deg, ${color}cc 0%, ${color} 100%)`,
-          overflow: "hidden", borderRadius: "3px 3px 0 0",
-        }}>
-          {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => (
-            <div key={i} style={{
-              position: "absolute", left: 0, right: 0,
-              top: `${((i + 1) / nFloors) * 100}%`,
-              height: 1, background: "rgba(255,255,255,0.2)",
-            }} />
-          ))}
-          {Array.from({ length: nFloors }, (_, row) =>
-            Array.from({ length: winCols }, (_, col) => (
-              <div key={`${row}-${col}`} style={{
-                position: "absolute",
-                width: winW, height: winH,
-                left: 8 + col * (winW + 8),
-                top: row * floorH + (floorH - winH) * 0.28,
-                background: "rgba(200,235,255,0.5)",
-                border: "1px solid rgba(255,255,255,0.35)",
-                borderRadius: 2,
-              }} />
-            ))
-          )}
-          <div style={{
-            position: "absolute", bottom: 0, left: "50%",
-            transform: "translateX(-50%)",
-            width: 18, height: Math.max(22, floorH * 0.65),
-            background: "rgba(0,0,0,0.28)", borderRadius: "3px 3px 0 0",
-          }} />
-          <div style={{
-            position: "absolute", bottom: 5, right: 7,
-            fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.65)",
-          }}>{Math.round(area)}m²</div>
-        </div>
+    <svg viewBox={`0 0 ${svgW} ${svgH}`} width={svgW} height={svgH}
+      style={{ display: "block", margin: "0 auto", overflow: "visible" }}>
+      <defs>
+        <linearGradient id={`fg-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.82" />
+          <stop offset="100%" stopColor={color} stopOpacity="1" />
+        </linearGradient>
+        <clipPath id={`cf-${id}`}>
+          <polygon points={`0,${dy} ${W},${dy} ${W},${dy + H} 0,${dy + H}`} />
+        </clipPath>
+        <clipPath id={`cs-${id}`}>
+          <polygon points={`${W},${dy} ${W+dx},0 ${W+dx},${H} ${W},${dy+H}`} />
+        </clipPath>
+      </defs>
 
-        {/* Right side face */}
-        <div style={{
-          position: "absolute", top: 0, left: W,
-          width: D, height: H,
-          background: "rgba(0,0,0,0.3)",
-          transformOrigin: "left center",
-          transform: "rotateY(-90deg)",
-          overflow: "hidden",
-        }}>
-          {Array.from({ length: nFloors }, (_, row) => (
-            <div key={row} style={{
-              position: "absolute",
-              width: D * 0.35, height: winH,
-              left: D * 0.15,
-              top: row * floorH + (floorH - winH) * 0.28,
-              background: "rgba(200,235,255,0.2)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 2,
-            }} />
-          ))}
-        </div>
+      {/* ── Top (roof) face ── */}
+      <polygon points={`${dx},0 ${W+dx},0 ${W},${dy} 0,${dy}`}
+        fill={color} opacity={0.38}
+        stroke="rgba(255,255,255,0.4)" strokeWidth={0.6} />
 
-        {/* Roof face */}
-        <div style={{
-          position: "absolute", top: 0, left: 0,
-          width: W, height: D,
-          background: "rgba(255,255,255,0.18)",
-          transformOrigin: "top center",
-          transform: "rotateX(-90deg)",
-        }}>
-          <div style={{
-            position: "absolute", top: "25%", left: "15%",
-            width: "22%", height: "45%",
-            background: "rgba(255,255,255,0.15)",
-            borderRadius: 3, border: "1px solid rgba(255,255,255,0.2)",
-          }} />
-          <div style={{
-            position: "absolute", top: "20%", right: "18%",
-            width: "18%", height: "50%",
-            background: "rgba(255,255,255,0.1)",
-            borderRadius: 2, border: "1px solid rgba(255,255,255,0.12)",
-          }} />
-        </div>
-      </div>
-    </div>
+      {/* Roof HVAC accent */}
+      <polygon points={`${dx+8},4 ${dx+26},4 ${dx+22},${dy-4} ${dx+4},${dy-4}`}
+        fill="rgba(255,255,255,0.18)" />
+
+      {/* ── Front face ── */}
+      <polygon points={`0,${dy} ${W},${dy} ${W},${dy+H} 0,${dy+H}`}
+        fill={`url(#fg-${id})`}
+        stroke="rgba(255,255,255,0.25)" strokeWidth={0.5} />
+
+      {/* Front floor lines */}
+      {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => (
+        <line key={`fl-${i}`}
+          x1={0} y1={dy + (i + 1) * floorH}
+          x2={W} y2={dy + (i + 1) * floorH}
+          stroke="rgba(255,255,255,0.18)" strokeWidth={0.7} />
+      ))}
+
+      {/* Front windows */}
+      {Array.from({ length: nFloors }, (_, row) =>
+        Array.from({ length: winCols }, (_, col) => (
+          <rect key={`fw-${row}-${col}`}
+            x={10 + col * (winW + 10)}
+            y={dy + row * floorH + (floorH - winH) * 0.28}
+            width={winW} height={winH}
+            fill="rgba(200,235,255,0.55)" rx={1.5}
+            clipPath={`url(#cf-${id})`} />
+        ))
+      )}
+
+      {/* Front door */}
+      <rect x={W / 2 - 9} y={dy + H - Math.max(22, floorH * 0.65)}
+        width={18} height={Math.max(22, floorH * 0.65)}
+        fill="rgba(0,0,0,0.32)" rx={2}
+        clipPath={`url(#cf-${id})`} />
+
+      {/* ── Right side face ── */}
+      <polygon points={`${W},${dy} ${W+dx},0 ${W+dx},${H} ${W},${dy+H}`}
+        fill={color} opacity={0.6}
+        stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
+
+      {/* Side floor lines */}
+      {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => {
+        const v = (i + 1) / nFloors;
+        return (
+          <line key={`sl-${i}`}
+            x1={W} y1={dy + v * H}
+            x2={W + dx} y2={v * H}
+            stroke="rgba(255,255,255,0.12)" strokeWidth={0.7} />
+        );
+      })}
+
+      {/* Side windows */}
+      {Array.from({ length: Math.min(nFloors, 8) }, (_, row) => {
+        const v0 = (row * floorH + floorH * 0.3) / H;
+        const v1 = (row * floorH + floorH * 0.72) / H;
+        return (
+          <polygon key={`sw-${row}`}
+            points={[spt(0.22, v0), spt(0.72, v0), spt(0.72, v1), spt(0.22, v1)].join(" ")}
+            fill="rgba(180,220,255,0.28)" rx={1}
+            clipPath={`url(#cs-${id})`} />
+        );
+      })}
+
+      {/* Area label */}
+      <text x={W + dx * 0.5} y={H * 0.88}
+        textAnchor="middle" dominantBaseline="middle"
+        fill="rgba(255,255,255,0.5)" fontSize={8} fontWeight="700">
+        {Math.round(area)}m²
+      </text>
+    </svg>
   );
 }
 

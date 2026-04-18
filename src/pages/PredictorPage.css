@@ -427,26 +427,23 @@
   font-weight: 500;
 }
 
-/* ── 3D Building ─────────────────────────────────────────────────────────────── */
+/* ── 3D Building (SVG oblique projection) ────────────────────────────────────── */
 .b3d-scene {
-  perspective: 700px;
-  perspective-origin: 55% 25%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 1rem 1rem 3.5rem;
+  padding: 1.5rem 1rem 2.5rem;
   min-height: 260px;
 }
 
-.b3d-box {
-  position: relative;
-  transform-style: preserve-3d;
-  transform: rotateX(18deg) rotateY(-28deg);
-  transition: transform 0.4s ease;
+.b3d-scene svg {
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
+  transition: transform 0.35s ease, filter 0.35s ease;
 }
 
-.b3d-box:hover {
-  transform: rotateX(22deg) rotateY(-42deg);
+.b3d-scene svg:hover {
+  transform: scale(1.04) translateY(-4px);
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,0.55));
 }
 
 /* ── Estimate badge ──────────────────────────────────────────────────────────── */
