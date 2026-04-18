@@ -16,4 +16,5 @@ export const STORAGE_KEYS = {
   predictions:  "ub_predictions",
   scenarios:    "ub_scenarios",
   favorites:    "ub_favorites",
+  reduceMotion: "ub_reduce_motion",
 };

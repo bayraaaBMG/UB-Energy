@@ -535,6 +535,389 @@
 
 .ms-empty p { margin: 0; font-size: 0.88rem; }
 
+/* ── Summary wrapper ────────────────────────────────────────────────────────── */
+.ms-summary { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ── Greeting banner ─────────────────────────────────────────────────────────── */
+.ms-greeting-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(26,110,181,0.07), rgba(42,157,143,0.05));
+  border: 1px solid rgba(26,110,181,0.18);
+  flex-wrap: wrap;
+}
+
+.ms-greeting-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.ms-greeting-text strong { color: var(--primary-light); }
+
+.ms-greeting-date {
+  font-size: 0.78rem;
+  color: var(--text3);
+}
+
+.ms-greeting-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ms-greeting-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.ms-greeting-chip.warn {
+  background: rgba(230,57,70,0.08);
+  border-color: rgba(230,57,70,0.25);
+  color: #e63946;
+}
+
+/* ── Quick Actions ───────────────────────────────────────────────────────────── */
+.ms-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+}
+
+.ms-qa-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  text-align: center;
+}
+
+.ms-qa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border-color: var(--primary);
+}
+
+.ms-qa-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ms-qa-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text2);
+  line-height: 1.3;
+}
+
+/* ── Clickable stat cards ────────────────────────────────────────────────────── */
+.ms-stat-clickable {
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  width: 100%;
+  transition: box-shadow 0.15s, transform 0.15s;
+  position: relative;
+}
+
+.ms-stat-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+.ms-stat-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ms-stat-clickable:hover .ms-stat-arrow { opacity: 1; }
+
+/* ── Extra stats row ─────────────────────────────────────────────────────────── */
+.ms-extra-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.ms-extra-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+
+.ms-extra-icon { flex-shrink: 0; }
+
+.ms-extra-val {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.ms-extra-lbl {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 0.1rem;
+}
+
+/* ── High-risk alert card ────────────────────────────────────────────────────── */
+.ms-alert-card { padding: 1rem 1.25rem; border-left: 3px solid #e63946; }
+
+.ms-alert-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e63946;
+  margin-bottom: 0.75rem;
+}
+
+.ms-alert-count {
+  margin-left: auto;
+  background: #e63946;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+}
+
+.ms-alert-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.ms-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: var(--bg3);
+}
+
+.ms-alert-name { flex: 1; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-alert-val  { color: var(--text2); font-weight: 600; flex-shrink: 0; }
+.ms-alert-dist { color: var(--text3); font-size: 0.75rem; flex-shrink: 0; }
+
+/* ── Buildings tab toolbar ───────────────────────────────────────────────────── */
+.ms-bld-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.ms-bld-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.ms-bld-search-icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.ms-bld-search {
+  width: 100%;
+  padding: 0.45rem 2rem 0.45rem 2.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.ms-bld-search:focus { outline: none; border-color: var(--primary); }
+
+.ms-bld-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.1rem;
+  line-height: 1;
+}
+
+.ms-sort-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
+.ms-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.15s;
+  white-space: nowrap;
+}
+
+.ms-sort-btn:hover { background: var(--bg3); color: var(--text2); }
+.ms-sort-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.ms-bld-count {
+  font-size: 0.78rem;
+  color: var(--text3);
+  margin-bottom: 0.5rem;
+}
+
+/* ── Building card grade accent bar ─────────────────────────────────────────── */
+.ms-bld-grade-bar {
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-right: 0.25rem;
+}
+
+/* ── Dataset quality bar ─────────────────────────────────────────────────────── */
+.ms-quality-bar-wrap {
+  width: 80px;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-left: 0.5rem;
+}
+
+.ms-quality-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Latest prediction featured card ────────────────────────────────────────── */
+.ms-latest-pred {
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid #2a9d8f;
+}
+
+.ms-latest-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #2a9d8f;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.6rem;
+}
+
+.ms-latest-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ms-latest-info { flex: 1; }
+
+.ms-latest-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.ms-latest-name strong { font-size: 1rem; color: var(--text); }
+
+.ms-latest-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text3);
+}
+
+.ms-latest-kwh { text-align: right; flex-shrink: 0; }
+
+.ms-latest-kwh-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2a9d8f;
+  line-height: 1;
+}
+
+.ms-latest-kwh-lbl {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 0.15rem;
+}
+
+.ms-latest-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text3);
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive updates ──────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ms-quick-actions  { grid-template-columns: repeat(2, 1fr); }
+  .ms-extra-stats    { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .ms-quick-actions  { grid-template-columns: repeat(2, 1fr); }
+  .ms-extra-stats    { grid-template-columns: 1fr 1fr; }
+  .ms-bld-toolbar    { flex-direction: column; align-items: stretch; }
+  .ms-sort-btns      { flex-wrap: wrap; }
+  .ms-greeting-banner { flex-direction: column; align-items: flex-start; }
+  .ms-latest-main    { flex-direction: column; align-items: flex-start; }
+  .ms-latest-kwh     { text-align: left; }
+}
+
+/* ── No user ─────────────────────────────────────────────────────────────────── */
 /* No user */
 .ms-no-user {
   display: flex;

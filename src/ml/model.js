@@ -254,7 +254,11 @@ function evalMetrics(yTrue, yPred) {
   const r2     = 1 - ssRes / ssTot;
   const mae    = yTrue.reduce((s, y, i) => s + Math.abs(y - yPred[i]), 0) / n;
   const mape   = yTrue.reduce((s, y, i) => s + Math.abs(y - yPred[i]) / (Math.abs(y) || 1), 0) / n * 100;
-  return { r2: +r2.toFixed(4), mae: Math.round(mae), mape: +mape.toFixed(1) };
+  const rmse   = Math.sqrt(ssRes / n);
+  // Confidence: % of predictions within ±15% of actual
+  const within15 = yTrue.filter((y, i) => Math.abs(y - yPred[i]) / (Math.abs(y) || 1) <= 0.15).length;
+  const confidence = within15 / n * 100;
+  return { r2: +r2.toFixed(4), mae: Math.round(mae), mape: +mape.toFixed(1), rmse: Math.round(rmse), confidence: +confidence.toFixed(1) };
 }
 
 // ─── F1-score (macro) for grade classification ────────────────────────────────
@@ -312,15 +316,27 @@ const TEST_METRICS = evalMetrics(y_test, y_pred_test);
 const test_areas   = test.map(s => s.area);
 const TEST_F1      = f1MacroScore(y_test, y_pred_test, test_areas);
 
+// Coverage: % of test records where prediction is within ±20% (data coverage metric)
+const within20 = y_test.filter((y, i) => Math.abs(y - y_pred_test[i]) / (Math.abs(y) || 1) <= 0.20).length;
+
 export const METRICS = {
-  r2:      TEST_METRICS.r2,
-  mae:     TEST_METRICS.mae,
-  mape:    TEST_METRICS.mape,
-  f1:      TEST_F1,
-  n_train: train.length,
-  n_test:  test.length,
-  n_total: DATASET.length,
+  r2:         TEST_METRICS.r2,
+  mae:        TEST_METRICS.mae,
+  rmse:       TEST_METRICS.rmse,
+  mape:       TEST_METRICS.mape,
+  confidence: TEST_METRICS.confidence,
+  coverage:   +(within20 / y_test.length * 100).toFixed(1),
+  f1:         TEST_F1,
+  n_train:    train.length,
+  n_test:     test.length,
+  n_total:    DATASET.length,
 };
+
+// Actual vs Predicted scatter data (sample of test set, max 80 points)
+const _step = Math.max(1, Math.floor(y_test.length / 80));
+export const ACTUAL_VS_PREDICTED = y_test
+  .filter((_, i) => i % _step === 0)
+  .map((actual, i) => ({ actual: Math.round(actual), predicted: Math.round(y_pred_test[i * _step]) }));
 
 // ─── 11. Feature importance (normalized |β| of scaled features) ──────────────
 //   Equivalent to permutation importance for linear models on scaled data

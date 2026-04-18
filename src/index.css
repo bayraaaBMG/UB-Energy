@@ -38,8 +38,11 @@
   --text2: #eeeeee;
   --text3: #cccccc;
   --primary: #00aaff;
+  --primary-light: #55ccff;
   --accent: #ffdd00;
   --success: #00ff88;
+  --danger: #ff4455;
+  --warning: #ffaa00;
 }
 
 *, *::before, *::after {
@@ -197,4 +200,57 @@ input, select, textarea { font-family: inherit; }
   .card { padding: 0.9rem; }
   .grid { gap: 0.9rem; }
   .section-title { font-size: 1rem; }
+}
+
+/* ── Skip to content (screen readers + keyboard) ─────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 1rem;
+  z-index: 10000;
+  padding: 0.6rem 1.2rem;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  text-decoration: none;
+  transition: top 0.15s;
+  border: 2px solid var(--primary-light);
+}
+.skip-link:focus { top: 0; outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ── Focus-visible ring (keyboard navigation) ────────────────────────────────── */
+/* Applied only when navigating by keyboard, not mouse clicks */
+:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Form inputs already show box-shadow on focus — keep that and add visible ring */
+.form-input:focus-visible,
+.form-select:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 0;
+}
+
+/* ── Reduce motion: system preference ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Reduce motion: user toggle via ThemeContext ─────────────────────────────── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

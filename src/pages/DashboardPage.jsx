@@ -8,16 +8,19 @@ import {
   LayoutDashboard, AlertTriangle, TrendingUp, TrendingDown,
   Zap, Thermometer, Activity, X,
   Building2, Database, ArrowRight,
+  Download, FileText, Clock, SlidersHorizontal, Info,
+  Gauge, ShieldCheck, Radio,
 } from "lucide-react";
 import {
   Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, ComposedChart, Area
+  Tooltip, ResponsiveContainer, Legend, ComposedChart, Area,
+  ScatterChart, Scatter, ReferenceLine,
 } from "recharts";
 import {
   monthlyEnergyData, dailyEnergyData, yearlyEnergyData,
-  featureImportanceData, shapData,
+  featureImportanceData, shapData, ulaanbaatarDistricts,
 } from "../data/mockData";
-import { METRICS } from "../ml/model";
+import { METRICS, ACTUAL_VS_PREDICTED } from "../ml/model";
 import { getAllBuildings, computeStats } from "../utils/buildingStorage";
 import "./DashboardPage.css";
 
@@ -54,17 +57,75 @@ function AlertBox({ title, message, onClose }) {
   );
 }
 
+const BUILDING_TYPE_LABELS = {
+  apartment:  { mn: "Орон сууц",    en: "Apartment" },
+  office:     { mn: "Оффис",        en: "Office" },
+  school:     { mn: "Сургууль",     en: "School" },
+  hospital:   { mn: "Эмнэлэг",      en: "Hospital" },
+  warehouse:  { mn: "Агуулах",      en: "Warehouse" },
+  hotel:      { mn: "Зочид буудал", en: "Hotel" },
+  commercial: { mn: "Худалдаа",     en: "Commercial" },
+};
+
+function exportCSV(buildings, lang) {
+  const headers = lang === "mn"
+    ? ["Нэр","Дүүрэг","Төрөл","Талбай (м²)","Он","Зэрэглэл","Эрчим (kWh/м²)","Жилийн kWh","CO₂ (т)"]
+    : ["Name","District","Type","Area (m²)","Year","Grade","Intensity (kWh/m²)","Annual kWh","CO₂ (t)"];
+  const rows = buildings.map(b => [
+    b.name, b.district, b.type, b.area, b.year, b.grade,
+    b.intensity, Math.round(b.predicted_kwh), b.co2,
+  ]);
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `ubenergy_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function DashboardPage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.dashboard);
   const { user } = useAuth();
-  const [period, setPeriod] = useState("monthly");
-  const [showAlert, setShowAlert] = useState(true);
+  const [period, setPeriod]         = useState("monthly");
+  const [showAlert, setShowAlert]   = useState(true);
+  const [showNote, setShowNote]     = useState(true);
+  const [districtFilter, setDistrictFilter] = useState("all");
+  const [typeFilter, setTypeFilter]         = useState("all");
 
   const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
 
   const allBuildings = React.useMemo(() => getAllBuildings(user?.id), [user?.id]);
-  const stats        = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
+
+  const availableTypes = React.useMemo(() => {
+    const types = [...new Set(allBuildings.map(b => b.type).filter(Boolean))];
+    return types.sort();
+  }, [allBuildings]);
+
+  const filteredBuildings = React.useMemo(() => {
+    let bs = allBuildings;
+    if (districtFilter !== "all") bs = bs.filter(b => (b.district || "") === districtFilter);
+    if (typeFilter !== "all")     bs = bs.filter(b => b.type === typeFilter);
+    return bs;
+  }, [allBuildings, districtFilter, typeFilter]);
+
+  const stats = React.useMemo(() => computeStats(filteredBuildings), [filteredBuildings]);
+
+  const lastUpdated = React.useMemo(() => {
+    const userBuilds = allBuildings.filter(b => b.source === "user");
+    if (userBuilds.length === 0) return new Date().toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US");
+    const latest = userBuilds.reduce((max, b) => {
+      const ts = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+      return ts > max ? ts : max;
+    }, 0);
+    return latest > 0
+      ? new Date(latest).toLocaleString(lang === "mn" ? "mn-MN" : "en-US", { dateStyle: "medium", timeStyle: "short" })
+      : new Date().toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US");
+  }, [allBuildings, lang]);
 
   const userBuildings     = allBuildings.filter(b => b.source === "user" && (!user || b.userId === user.id));
   const userBuildingCount = userBuildings.length;
@@ -97,7 +158,10 @@ export default function DashboardPage() {
         <div className="page-header flex-between" style={{ flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <h1><LayoutDashboard size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.dashboard.title}</h1>
-            <p>{t.dashboard.subtitle}</p>
+            <p className="dash-last-updated">
+              <Clock size={12} />
+              {t.dashboard.last_updated}: {lastUpdated}
+            </p>
           </div>
           {user && (
             <div className="dash-user-info card" style={{ padding: "0.6rem 1.1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -115,6 +179,63 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* ── Toolbar: filters + export ── */}
+        <div className="dash-toolbar card mb-3">
+          <div className="dash-toolbar-left">
+            <SlidersHorizontal size={15} className="dash-toolbar-icon" />
+            <span className="dash-toolbar-label">{t.dashboard.filters_label}</span>
+            <select
+              className="dash-filter-select"
+              value={districtFilter}
+              onChange={e => setDistrictFilter(e.target.value)}
+            >
+              <option value="all">{t.dashboard.all_districts}</option>
+              {ulaanbaatarDistricts.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <select
+              className="dash-filter-select"
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+            >
+              <option value="all">{t.dashboard.all_types}</option>
+              {availableTypes.map(tp => (
+                <option key={tp} value={tp}>
+                  {(BUILDING_TYPE_LABELS[tp]?.[lang]) || tp}
+                </option>
+              ))}
+            </select>
+            {(districtFilter !== "all" || typeFilter !== "all") && (
+              <button
+                className="dash-filter-clear"
+                onClick={() => { setDistrictFilter("all"); setTypeFilter("all"); }}
+              >
+                <X size={12} /> {lang === "mn" ? "Арилгах" : "Clear"}
+              </button>
+            )}
+          </div>
+          <div className="dash-toolbar-right">
+            <button className="dash-export-btn" onClick={() => exportCSV(filteredBuildings, lang)}>
+              <Download size={14} /> {t.dashboard.export_csv}
+            </button>
+            <button className="dash-export-btn" onClick={() => window.print()}>
+              <FileText size={14} /> {t.dashboard.export_pdf}
+            </button>
+          </div>
+        </div>
+
+        {showNote && (
+          <div className="dash-backend-note mb-3">
+            <Info size={15} className="dbn-icon" />
+            <div className="dbn-content">
+              <strong>{t.dashboard.backend_note_title}</strong>
+              <span>{t.dashboard.backend_note_msg}</span>
+            </div>
+            <button className="dbn-close" onClick={() => setShowNote(false)}><X size={13} /></button>
+          </div>
+        )}
 
         {showAlert && (
           <AlertBox
@@ -167,6 +288,14 @@ export default function DashboardPage() {
             <Link to="/data-input" className="btn btn-primary" style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }}>
               {t.dashboard.add_building}
             </Link>
+          </div>
+        )}
+
+        {/* No-results notice */}
+        {filteredBuildings.length === 0 && (districtFilter !== "all" || typeFilter !== "all") && (
+          <div className="dash-no-results card mb-3">
+            <Building2 size={18} opacity={0.3} />
+            <span>{t.dashboard.no_filtered}</span>
           </div>
         )}
 
@@ -305,6 +434,137 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── Model accuracy cards ── */}
+        <div className="grid grid-3 mb-3">
+          <div className="model-metric-card card">
+            <div className="mmc-header">
+              <div className="mmc-icon" style={{ background: "rgba(58,143,212,0.15)", color: "#3a8fd4" }}>
+                <Gauge size={20} />
+              </div>
+              <div>
+                <div className="mmc-label">{lang === "mn" ? "Загварын нарийвчлал" : "Model Accuracy"}</div>
+                <div className="mmc-sub">MAE / RMSE</div>
+              </div>
+            </div>
+            <div className="mmc-values">
+              <div className="mmc-kv">
+                <span className="mmc-k">MAE</span>
+                <span className="mmc-v">{METRICS.mae.toLocaleString()} <em>kWh</em></span>
+              </div>
+              <div className="mmc-kv">
+                <span className="mmc-k">RMSE</span>
+                <span className="mmc-v">{METRICS.rmse.toLocaleString()} <em>kWh</em></span>
+              </div>
+              <div className="mmc-kv">
+                <span className="mmc-k">MAPE</span>
+                <span className="mmc-v">{METRICS.mape}%</span>
+              </div>
+            </div>
+            <p className="mmc-note">
+              {lang === "mn"
+                ? "Дундаж алдаа ба үндэс квадрат алдаа — бага байх тусам сайн"
+                : "Mean & root-mean-square error — lower is better"}
+            </p>
+          </div>
+
+          <div className="model-metric-card card">
+            <div className="mmc-header">
+              <div className="mmc-icon" style={{ background: "rgba(42,157,143,0.15)", color: "#2a9d8f" }}>
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <div className="mmc-label">{lang === "mn" ? "Итгэлцлийн хувь" : "Confidence"}</div>
+                <div className="mmc-sub">{lang === "mn" ? "±15% дотор" : "Within ±15%"}</div>
+              </div>
+            </div>
+            <div className="mmc-big-value" style={{ color: "#2a9d8f" }}>
+              {METRICS.confidence}%
+            </div>
+            <div className="mmc-bar-wrap">
+              <div className="mmc-bar-track">
+                <div className="mmc-bar-fill" style={{ width: `${METRICS.confidence}%`, background: "#2a9d8f" }} />
+              </div>
+            </div>
+            <p className="mmc-note">
+              {lang === "mn"
+                ? `Тест өгөгдлийн ${METRICS.confidence}% нь бодит утгаас ±15%-иас дотор байна`
+                : `${METRICS.confidence}% of test predictions fall within ±15% of actual`}
+            </p>
+          </div>
+
+          <div className="model-metric-card card">
+            <div className="mmc-header">
+              <div className="mmc-icon" style={{ background: "rgba(233,196,106,0.15)", color: "#e9c46a" }}>
+                <Radio size={20} />
+              </div>
+              <div>
+                <div className="mmc-label">{lang === "mn" ? "Өгөгдлийн хамрах хүрээ" : "Data Coverage"}</div>
+                <div className="mmc-sub">{lang === "mn" ? "±20% дотор" : "Within ±20%"}</div>
+              </div>
+            </div>
+            <div className="mmc-big-value" style={{ color: "#e9c46a" }}>
+              {METRICS.coverage}%
+            </div>
+            <div className="mmc-bar-wrap">
+              <div className="mmc-bar-track">
+                <div className="mmc-bar-fill" style={{ width: `${METRICS.coverage}%`, background: "#e9c46a" }} />
+              </div>
+            </div>
+            <p className="mmc-note">
+              {lang === "mn"
+                ? `Нийт ${METRICS.n_total} өгөгдлийн ${METRICS.n_test} тест — таамаглалын хамрах хувь`
+                : `${METRICS.n_test} of ${METRICS.n_total} records tested — prediction coverage rate`}
+            </p>
+          </div>
+        </div>
+
+        {/* ── Actual vs Predicted scatter chart ── */}
+        <div className="card mb-3">
+          <div className="chart-header flex-between" style={{ marginBottom: "1rem" }}>
+            <h3 className="section-title" style={{ marginBottom: 0 }}>
+              {lang === "mn" ? "Бодит vs Таамаглал (тест өгөгдөл)" : "Actual vs Predicted (test set)"}
+            </h3>
+            <span className="avp-badge">
+              n = {ACTUAL_VS_PREDICTED.length} {lang === "mn" ? "барилга" : "buildings"}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <ScatterChart margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" />
+              <XAxis
+                type="number" dataKey="actual" name={lang === "mn" ? "Бодит" : "Actual"}
+                tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false}
+                label={{ value: lang === "mn" ? "Бодит (kWh)" : "Actual (kWh)", position: "insideBottom", offset: -2, fill: "#6a9bbf", fontSize: 11 }}
+              />
+              <YAxis
+                type="number" dataKey="predicted" name={lang === "mn" ? "Таамаглал" : "Predicted"}
+                tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} axisLine={false}
+                label={{ value: lang === "mn" ? "Таамаглал (kWh)" : "Predicted (kWh)", angle: -90, position: "insideLeft", offset: 12, fill: "#6a9bbf", fontSize: 11 }}
+              />
+              <Tooltip
+                cursor={{ strokeDasharray: "3 3" }}
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={(v, name) => [`${v.toLocaleString()} kWh`, name]}
+              />
+              {/* Perfect prediction line y=x */}
+              <ReferenceLine
+                segment={[
+                  { x: Math.min(...ACTUAL_VS_PREDICTED.map(d => d.actual)), y: Math.min(...ACTUAL_VS_PREDICTED.map(d => d.actual)) },
+                  { x: Math.max(...ACTUAL_VS_PREDICTED.map(d => d.actual)), y: Math.max(...ACTUAL_VS_PREDICTED.map(d => d.actual)) },
+                ]}
+                stroke="#e9c46a" strokeDasharray="6 3" strokeWidth={1.5}
+                label={{ value: "y=x", fill: "#e9c46a", fontSize: 11 }}
+              />
+              <Scatter data={ACTUAL_VS_PREDICTED} fill="#3a8fd4" opacity={0.65} r={4} name={lang === "mn" ? "Барилга" : "Building"} />
+            </ScatterChart>
+          </ResponsiveContainer>
+          <p className="avp-note">
+            {lang === "mn"
+              ? `Шар шугам нь төгс таамаглалын шугам (y=x). Цэгүүд шугамд ойр байх тусам загвар нарийвчлалтай. R² = ${METRICS.r2}`
+              : `Yellow line = perfect prediction (y=x). Points closer to the line indicate better accuracy. R² = ${METRICS.r2}`}
+          </p>
         </div>
 
         {/* Feature importance + SHAP */}

@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 import {
   Globe, ExternalLink, RefreshCw, Info, ChevronDown, ChevronUp,
   Zap, User, Plug, Building2, Cloud, Leaf, Sun, TrendingUp, Thermometer, BarChart2,
+  Brain, ArrowRight, Database, FlaskConical, CheckCircle,
 } from "lucide-react";
 import "./OWIDPage.css";
 
@@ -115,9 +117,14 @@ function ChartFrame({ chart, expanded, onToggle, lang, t }) {
             <p className="owid-chart-sub">{subtitle}</p>
           </div>
         </div>
-        <span className="owid-expand-btn" aria-hidden="true">
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span className="owid-ext-badge">
+            <Globe size={10} /> Our World in Data
+          </span>
+          <span className="owid-expand-btn" aria-hidden="true">
+            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </span>
+        </div>
       </button>
 
       <p className="owid-chart-desc">{desc}</p>
@@ -207,11 +214,48 @@ export default function OWIDPage() {
           </div>
         </div>
 
-        <div className="owid-info-banner card mb-3">
-          <Info size={18} style={{ color: "var(--primary-light)", flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <strong>{t.owid.what_is}</strong>
-            <p>{t.owid.what_is_desc}</p>
+        {/* ── Data provenance banner ── */}
+        <div className="owid-provenance-banner card mb-3">
+          <div className="owid-prov-col owid-prov-ext">
+            <div className="owid-prov-head">
+              <Globe size={15} style={{ color: "#3a8fd4" }} />
+              <span>{lang === "mn" ? "Гаднын эх сурвалж (энэ хуудас)" : "External sources (this page)"}</span>
+            </div>
+            <div className="owid-prov-body">
+              <p>
+                {lang === "mn"
+                  ? "Доорх бүх графикууд нь Our World in Data болон Монголын dulaan.mn, tog.mn зэрэг гаднын эх сурвалжаас авсан. UBenergy нь эдгээр өгөгдлийг өөрийн серверт хадгалдаггүй — шууд iframe-ээр харуулдаг."
+                  : "All charts below are from Our World in Data and Mongolian sources (dulaan.mn, tog.mn). UBenergy does not store this data — it is displayed via embedded iframes from the original sources."}
+              </p>
+              <div className="owid-prov-src-chips">
+                <span className="owid-prov-chip"><Globe size={11} /> Our World in Data</span>
+                <span className="owid-prov-chip"><Thermometer size={11} /> dulaan.mn</span>
+                <span className="owid-prov-chip"><Zap size={11} /> tog.mn</span>
+                <span className="owid-prov-chip"><Database size={11} /> IEA 2022</span>
+              </div>
+            </div>
+          </div>
+          <div className="owid-prov-divider" />
+          <div className="owid-prov-col owid-prov-own">
+            <div className="owid-prov-head">
+              <Brain size={15} style={{ color: "#9b72cf" }} />
+              <span>{lang === "mn" ? "UBenergy өөрийн тооцоолол" : "UBenergy's own calculations"}</span>
+            </div>
+            <div className="owid-prov-body">
+              <p>
+                {lang === "mn"
+                  ? "Predictor болон Dashboard хэсгүүд нь энд харуулж буй дэлхийн хандлагыг лавлагаа болгон ашиглан Монголын барилгын эрчим хүчний хэрэглээг ML загвараар тооцдог."
+                  : "The Predictor and Dashboard use the global benchmarks shown here as reference points, then run ML models to estimate energy consumption for specific Mongolian buildings."}
+              </p>
+              <div className="owid-prov-links">
+                <Link to="/predictor" className="owid-prov-link">
+                  <Brain size={12} /> {lang === "mn" ? "Predictor" : "Predictor"} <ArrowRight size={11} />
+                </Link>
+                <Link to="/dashboard" className="owid-prov-link">
+                  <BarChart2 size={12} /> {lang === "mn" ? "Dashboard" : "Dashboard"} <ArrowRight size={11} />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -242,6 +286,83 @@ export default function OWIDPage() {
               t={t}
             />
           ))}
+        </div>
+
+        {/* ── Bridge: OWID global → UBenergy local ── */}
+        <div className="owid-bridge-section mt-3">
+          <div className="owid-bridge-header">
+            <CheckCircle size={18} style={{ color: "#2a9d8f" }} />
+            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>
+              {lang === "mn"
+                ? "Дэлхийн статистик → UBenergy-д хэрхэн ашигласан бэ?"
+                : "How does this global data connect to UBenergy?"}
+            </h3>
+          </div>
+          <div className="owid-bridge-grid">
+            {[
+              {
+                owid_fact: lang === "mn" ? "Монголын цахилгааны 95%+ нүүрснээс" : "Mongolia: 95%+ coal electricity",
+                owid_src:  "Our World in Data · IEA",
+                arrow_label: lang === "mn" ? "Энэхүү утгад үндэслэн Predictor:" : "Predictor uses this as:",
+                our_use:   lang === "mn" ? "Цахилгааны ялгарлын коэффициент 0.73 kg CO₂/kWh ашигладаг" : "Emission factor 0.73 kg CO₂/kWh for electricity grid",
+                color: "#e63946",
+                icon: Cloud,
+                link: "/predictor",
+                link_label: lang === "mn" ? "CO₂ тооцоол" : "Calculate CO₂",
+              },
+              {
+                owid_fact: lang === "mn" ? "Хуучин барилга: 280–350 kWh/м²/жил" : "Soviet buildings: 280–350 kWh/m²/yr",
+                owid_src:  "dulaan.mn · tog.mn",
+                arrow_label: lang === "mn" ? "Predictor үүнийг лавлагаа болгон:" : "Predictor benchmarks against this:",
+                our_use:   lang === "mn" ? "Зэрэглэлийн систем A–G нь 50 kWh/m² алхмаар тооцдог (G ≥ 300)" : "Grade A–G system steps at 50 kWh/m² (G ≥ 300)",
+                color: "#3a8fd4",
+                icon: Building2,
+                link: "/predictor",
+                link_label: lang === "mn" ? "Барилга тооцоол" : "Try predictor",
+              },
+              {
+                owid_fact: lang === "mn" ? "Монгол: нэг хүнд 7.5 t CO₂/жил" : "Mongolia: 7.5 t CO₂/person/yr",
+                owid_src:  "Our World in Data",
+                arrow_label: lang === "mn" ? "Dashboard харьцуулалт:" : "Dashboard comparison:",
+                our_use:   lang === "mn" ? "Барилгын нийт CO₂-ийг хотын дундажтай харьцуулж харуулдаг" : "Building CO₂ is shown alongside city & national average",
+                color: "#f4a261",
+                icon: BarChart2,
+                link: "/dashboard",
+                link_label: lang === "mn" ? "Dashboard харах" : "See Dashboard",
+              },
+              {
+                owid_fact: lang === "mn" ? "УБ: 4,500+ HDD/жил (цаг уурын ачаалал)" : "UB: 4,500+ HDD/yr (climate load)",
+                owid_src:  "Open-Meteo · БНТУ 23-02-09",
+                arrow_label: lang === "mn" ? "ML загварт оролт болгон:" : "ML model input:",
+                our_use:   lang === "mn" ? "Predictor нь HDD-ийг автоматаар оруулж дулааны хэрэглээг тооцдог" : "Predictor auto-inputs HDD to estimate heating demand",
+                color: "#2a9d8f",
+                icon: Thermometer,
+                link: "/weather",
+                link_label: lang === "mn" ? "Цаг агаар харах" : "See Weather",
+              },
+            ].map((b, i) => {
+              const BIcon = b.icon;
+              return (
+                <div key={i} className="owid-bridge-card card">
+                  <div className="obc-owid-row">
+                    <span className="obc-src-badge"><Globe size={10} /> {b.owid_src}</span>
+                    <span className="obc-fact" style={{ borderLeftColor: b.color }}>{b.owid_fact}</span>
+                  </div>
+                  <div className="obc-arrow">
+                    <ArrowRight size={14} style={{ color: b.color }} />
+                    <span className="obc-arrow-label">{b.arrow_label}</span>
+                  </div>
+                  <div className="obc-our-row">
+                    <span className="obc-ub-badge"><Brain size={10} /> UBenergy</span>
+                    <span className="obc-use" style={{ borderLeftColor: `${b.color}88` }}>{b.our_use}</span>
+                  </div>
+                  <Link to={b.link} className="obc-cta">
+                    <BIcon size={12} /> {b.link_label} <ArrowRight size={11} />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="card owid-facts mt-3">

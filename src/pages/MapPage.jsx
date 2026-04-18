@@ -11,9 +11,9 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
   Database, Calculator, Leaf, BarChart2, Award, Lightbulb,
-  ThermometerSnowflake, Layers,
+  ThermometerSnowflake, Layers, MapPin, FlaskConical, Info,
 } from "lucide-react";
-import { monthlyEnergyData, buildingsData } from "../data/mockData";
+import { monthlyEnergyData, buildingsData, ulaanbaatarDistricts } from "../data/mockData";
 import { predict } from "../ml/model";
 import "leaflet/dist/leaflet.css";
 import "./MapPage.css";
@@ -668,6 +668,66 @@ function BuildingPanel({ building, lang, t }) {
           <div className="tab-section">
             <SectionHeader icon={Zap} color="#f4a261" title={t.map.sec_energy} />
 
+            {/* ── Estimate / Actual source badge ── */}
+            <div className="popup-source-badge">
+              {calc.hasActualData
+                ? <><span className="psb-dot actual" /><span className="psb-text">{mn ? "Бодит нэхэмжлэлийн өгөгдөл" : "Actual bill data"}</span></>
+                : <><span className="psb-dot estimate" /><span className="psb-text">{mn ? "ML загварын таамаглал" : "ML model estimate"}</span></>
+              }
+            </div>
+
+            {/* ── Quick-summary property grid ── */}
+            <div className="popup-props-grid">
+              <div className="pp-item">
+                <span className="pp-key">{mn ? "Баригдсан он" : "Year built"}</span>
+                <span className="pp-val">
+                  {building.year}
+                  {!building.yearKnown && building.source === "osm" && <em className="pp-approx">~</em>}
+                </span>
+              </div>
+              <div className="pp-item">
+                <span className="pp-key">{mn ? "Халаалтын төрөл" : "Heating type"}</span>
+                <span className="pp-val">
+                  {{central: mn?"Дүүргийн":"District", local: mn?"Орон нутаг":"Local", electric: mn?"Цахилгаан":"Electric"}[building.heating_type||"central"] || (building.heating_type || "—")}
+                </span>
+              </div>
+              <div className="pp-item">
+                <span className="pp-key">{mn ? "Дулаалга" : "Insulation"}</span>
+                <span className="pp-val" style={{ color: {poor:"#e63946",medium:"#f4a261",good:"#2a9d8f"}[building.insulation_quality||"medium"] }}>
+                  {{poor:mn?"Муу":"Poor", medium:mn?"Дунд":"Medium", good:mn?"Сайн":"Good"}[building.insulation_quality||"medium"]}
+                </span>
+              </div>
+              <div className="pp-item">
+                <span className="pp-key">{mn ? "Жилийн эрчим хүч" : "Annual energy"}</span>
+                <span className="pp-val" style={{ color: "#f4a261", fontWeight: 800 }}>
+                  {calc.total.toLocaleString()} kWh
+                </span>
+              </div>
+              <div className="pp-item">
+                <span className="pp-key">CO₂</span>
+                <span className="pp-val" style={{ color: calc.impactColor, fontWeight: 700 }}>
+                  {calc.co2} t/жил
+                </span>
+              </div>
+              <div className="pp-item">
+                <span className="pp-key">{mn ? "Эрсдлийн түвшин" : "Risk level"}</span>
+                <span className="pp-val" style={{ color: calc.impactColor, fontWeight: 700 }}>
+                  {{high: mn?"Өндөр":"High", medium: mn?"Дунд":"Medium", low: mn?"Бага":"Low"}[calc.impactLabel]}
+                </span>
+              </div>
+            </div>
+
+            {/* ── Risk explanation ── */}
+            <div className="popup-risk-box" style={{ borderColor: `${calc.impactColor}44`, background: `${calc.impactColor}0d` }}>
+              <span style={{ color: calc.impactColor, fontWeight: 700, fontSize: "0.72rem" }}>
+                {calc.impactLabel === "high"
+                  ? (mn ? "Өндөр CO₂ ялгаруулалт — эрчим хүчний аудит зайлшгүй шаардлагатай" : "High CO₂ output — energy audit strongly recommended")
+                  : calc.impactLabel === "medium"
+                  ? (mn ? "Дунд зэргийн эрсдэл — дулаалга, цонхны шинэчлэл хэрэгтэй" : "Moderate risk — insulation or window upgrades would help")
+                  : (mn ? "Бага эрсдэл — барилга харьцангуй үр ашигтай" : "Low risk — building is relatively efficient")}
+              </span>
+            </div>
+
             {/* ML prediction hero */}
             <div className="ml-hero">
               <div className="ml-hero-badge">ML</div>
@@ -1103,9 +1163,10 @@ export default function MapPage() {
   const [buildings,   setBuildings]  = useState([...buildingCache.current.values()]);
   const [loading,     setLoading]    = useState(true);
   const [selected,    setSelected]   = useState(null);
-  const [typeFilter,  setTypeFilter] = useState("all");
-  const [layer,       setLayer]      = useState("dark");
-  const [colorMode,   setColorMode]  = useState("type"); // "type" | "grade" | "pm25"
+  const [typeFilter,     setTypeFilter]     = useState("all");
+  const [districtFilter, setDistrictFilter] = useState("all");
+  const [layer,          setLayer]          = useState("dark");
+  const [colorMode,      setColorMode]      = useState("type"); // "type" | "energy" | "grade" | "pm25"
 
   // Called by BuildingFetcher with each batch of OSM buildings
   const addBuildings = useCallback((newBs) => {
@@ -1122,10 +1183,22 @@ export default function MapPage() {
   }, []);
 
   const typeLabels = t.predictor.building_types;
-  const filtered   = useMemo(
-    () => typeFilter === "all" ? buildings : buildings.filter(b => b.type === typeFilter),
-    [buildings, typeFilter]
-  );
+  const filtered   = useMemo(() => {
+    let bs = buildings;
+    if (typeFilter !== "all")     bs = bs.filter(b => b.type === typeFilter);
+    if (districtFilter !== "all") bs = bs.filter(b => (b.district || "").includes(districtFilter));
+    return bs;
+  }, [buildings, typeFilter, districtFilter]);
+
+  // Districts present in loaded buildings (deduplicated)
+  const availableDistricts = useMemo(() => {
+    const seen = new Set();
+    buildings.forEach(b => {
+      const d = b.district || "";
+      ulaanbaatarDistricts.forEach(ud => { if (d.includes(ud)) seen.add(ud); });
+    });
+    return [...seen].sort();
+  }, [buildings]);
 
   const tile = TILES[layer];
 
@@ -1133,6 +1206,28 @@ export default function MapPage() {
   const osmCount  = buildings.filter(b => b.source === "osm").length;
   const mockCount = buildings.filter(b => b.source === "mock").length;
   const userCount = buildings.filter(b => b.source === "user" || b.source === "predictor").length;
+
+  // District comparison stats
+  const districtStats = useMemo(() => {
+    const groups = {};
+    buildings.forEach(b => {
+      let d = "Бусад";
+      ulaanbaatarDistricts.forEach(ud => { if ((b.district || "").includes(ud)) d = ud; });
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(b);
+    });
+    return Object.entries(groups)
+      .map(([district, bs]) => {
+        const calcs = bs.map(b => calcBuilding(b));
+        const avgIntens = Math.round(calcs.reduce((s, c) => s + c.intensity, 0) / calcs.length);
+        const counts = {};
+        calcs.forEach(c => { counts[c.grade] = (counts[c.grade] || 0) + 1; });
+        const topGrade = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "C";
+        return { district, count: bs.length, avgIntens, topGrade };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [buildings]);
 
   // Stats for analysis strip — computed from all loaded buildings
   const analysisStats = useMemo(() => {
@@ -1178,6 +1273,24 @@ export default function MapPage() {
                 if (colorMode === "grade") {
                   const calc = calcBuilding(b);
                   return GRADE_COLORS[calc.grade] || typeColor;
+                }
+                if (colorMode === "energy") {
+                  const calc = calcBuilding(b);
+                  // continuous gradient green→yellow→red based on kWh/m² (0–300)
+                  const t = Math.min(1, calc.intensity / 300);
+                  if (t < 0.5) {
+                    const tt = t * 2;
+                    const r = Math.round(42  + (244 - 42)  * tt);
+                    const g = Math.round(157 + (162 - 157) * tt);
+                    const bv= Math.round(143 + (97  - 143) * tt);
+                    return `rgb(${r},${g},${bv})`;
+                  } else {
+                    const tt = (t - 0.5) * 2;
+                    const r = Math.round(244 + (230 - 244) * tt);
+                    const g = Math.round(162 + (57  - 162) * tt);
+                    const bv= Math.round(97  + (70  - 97)  * tt);
+                    return `rgb(${r},${g},${bv})`;
+                  }
                 }
                 if (colorMode === "pm25") {
                   const calc = calcBuilding(b);
@@ -1257,17 +1370,37 @@ export default function MapPage() {
                 ))}
               </select>
             </div>
+            {availableDistricts.length > 0 && (
+              <div className="ctrl-pill">
+                <MapPin size={12} style={{ color: "#8899aa" }} />
+                <select className="ctrl-sel" value={districtFilter}
+                  onChange={e => { setDistrictFilter(e.target.value); setSelected(null); }}>
+                  <option value="all">{lang === "mn" ? "Бүх дүүрэг" : "All districts"}</option>
+                  {availableDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            )}
+            {/* Primary layer toggle: Energy / Grade */}
+            <div className="layer-group">
+              <button className={`layer-btn${colorMode === "energy" ? " active" : ""}`}
+                onClick={() => setColorMode("energy")}
+                title={lang === "mn" ? "kWh/m² эрчим хүч (ногоон→улаан)" : "Energy kWh/m² (green→red)"}>
+                {lang === "mn" ? "Энерги" : "Energy"}
+              </button>
+              <button className={`layer-btn${colorMode === "grade" ? " active" : ""}`}
+                onClick={() => setColorMode("grade")}
+                title={lang === "mn" ? "A–G зэрэглэлээр өнгө" : "Color by A–G grade"}>
+                {lang === "mn" ? "Зэрэглэл" : "Grade"}
+              </button>
+            </div>
+            {/* Secondary: Type / PM2.5 / base map */}
             <div className="layer-group">
               <button className={`layer-btn${colorMode === "type" ? " active" : ""}`}
                 onClick={() => setColorMode("type")} title={lang === "mn" ? "Төрлөөр өнгө" : "Color by type"}>
                 {lang === "mn" ? "Төрөл" : "Type"}
               </button>
-              <button className={`layer-btn${colorMode === "grade" ? " active" : ""}`}
-                onClick={() => setColorMode("grade")} title={lang === "mn" ? "Зэрэглэлээр өнгө (A–G)" : "Color by grade (A–G)"}>
-                {lang === "mn" ? "Зэрэглэл" : "Grade"}
-              </button>
               <button className={`layer-btn${colorMode === "pm25" ? " active" : ""}`}
-                onClick={() => setColorMode("pm25")} title={lang === "mn" ? "PM2.5 бохирдол (ногоон→улаан)" : "PM2.5 pollution (green→red)"}>
+                onClick={() => setColorMode("pm25")} title={lang === "mn" ? "PM2.5 бохирдол" : "PM2.5 pollution"}>
                 PM2.5
               </button>
             </div>
@@ -1291,12 +1424,31 @@ export default function MapPage() {
                   </div>
                 ))
               : colorMode === "grade"
-              ? ["A","B","C","D","E","F","G"].map(g => (
-                  <div key={g} className="lgd-row">
-                    <span className="lgd-dot" style={{ background: GRADE_COLORS[g] }} />
-                    <span>{g}</span>
+              ? (<>
+                  {[
+                    ["A","<50 kWh/m²"],["B","50–100"],["C","100–150"],
+                    ["D","150–200"],["E","200–250"],["F","250–300"],["G","≥300"],
+                  ].map(([g, range]) => (
+                    <div key={g} className="lgd-row">
+                      <span className="lgd-dot" style={{ background: GRADE_COLORS[g] }} />
+                      <span>{g}</span>
+                      <span className="lgd-range">{range}</span>
+                    </div>
+                  ))}
+                  <div className="lgd-unit-note">{lang === "mn" ? "kWh/м²/жил" : "kWh/m²/yr"}</div>
+                </>)
+              : colorMode === "energy"
+              ? (<>
+                  <div className="lgd-pm25">
+                    <div className="lgd-pm25-bar" />
+                    <div className="lgd-pm25-lbls">
+                      <span style={{ color: "#2a9d8f" }}>0</span>
+                      <span style={{ color: "#e63946" }}>300+</span>
+                    </div>
+                    <div style={{ fontSize: "0.64rem", color: "var(--text3)", marginTop: 3 }}>kWh/m²/yr</div>
                   </div>
-                ))
+                  <div className="lgd-unit-note">{lang === "mn" ? "Бага → Өндөр эрчим" : "Low → High energy"}</div>
+                </>)
               : (
                 <div className="lgd-pm25">
                   <div className="lgd-pm25-bar" />
@@ -1308,6 +1460,21 @@ export default function MapPage() {
                 </div>
               )
             }
+            {/* Data source clarity */}
+            <div className="lgd-src-note">
+              <div className="lgd-src-row">
+                <span className="lgd-src-dot" style={{ background: "#3a8fd4" }} />
+                <span>{lang === "mn" ? "ML таамаглал" : "ML estimate"}</span>
+              </div>
+              <div className="lgd-src-row">
+                <span className="lgd-src-dot lgd-src-dashed" style={{ borderColor: "#f4c842" }} />
+                <span>{lang === "mn" ? "Бодит нэхэмжлэл" : "Actual bill"}</span>
+              </div>
+              <div className="lgd-src-row">
+                <span className="lgd-src-dot" style={{ background: "#667788" }} />
+                <span>Demo</span>
+              </div>
+            </div>
           </div>
 
           {/* Weather widget */}
@@ -1332,6 +1499,10 @@ export default function MapPage() {
               {lang === "mn"
                 ? `Ачаалсан ${analysisStats.count} барилгын дүн шинжилгээ`
                 : `Analysis of ${analysisStats.count} loaded buildings`}
+              <span className="analysis-est-badge">
+                <FlaskConical size={11} />
+                {lang === "mn" ? "ML таамаглал · бодит өгөгдөл биш" : "ML estimates · not measured data"}
+              </span>
             </div>
             <div className="analysis-cards">
               {/* Total energy */}
@@ -1417,6 +1588,70 @@ export default function MapPage() {
                     <span className="an-top-val">{b.intensity.toLocaleString()} kWh/m²</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* District comparison */}
+            {districtStats.length > 1 && (
+              <div className="district-comparison">
+                <div className="dc-title">
+                  <MapPin size={13} style={{ color: "#9b72cf" }} />
+                  {lang === "mn" ? "Дүүргийн харьцуулалт (ML таамаглал)" : "District comparison (ML estimates)"}
+                  <span className="dc-est-badge">
+                    <FlaskConical size={10} />
+                    {lang === "mn" ? "Таамаглал" : "Estimated"}
+                  </span>
+                </div>
+                <div className="dc-table-wrap">
+                  <table className="dc-table">
+                    <thead>
+                      <tr>
+                        <th>{lang === "mn" ? "Дүүрэг" : "District"}</th>
+                        <th>{lang === "mn" ? "Барилга" : "Buildings"}</th>
+                        <th>{lang === "mn" ? "Дунд эрч" : "Avg intensity"}</th>
+                        <th>{lang === "mn" ? "Зэрэглэл" : "Top grade"}</th>
+                        <th>{lang === "mn" ? "Харьцуулалт" : "vs avg"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const overallAvg = Math.round(districtStats.reduce((s, d) => s + d.avgIntens, 0) / districtStats.length);
+                        return districtStats.map(d => {
+                          const diff = d.avgIntens - overallAvg;
+                          const diffColor = diff > 15 ? "#e63946" : diff < -15 ? "#2a9d8f" : "var(--text3)";
+                          const barPct = Math.min(100, (d.avgIntens / 350) * 100);
+                          return (
+                            <tr key={d.district}
+                              className={districtFilter === d.district ? "dc-row-active" : ""}
+                              onClick={() => setDistrictFilter(districtFilter === d.district ? "all" : d.district)}
+                              style={{ cursor: "pointer" }}>
+                              <td className="dc-district">{d.district}</td>
+                              <td className="dc-count">{d.count}</td>
+                              <td className="dc-intens">
+                                <div className="dc-bar-wrap">
+                                  <div className="dc-bar" style={{ width: `${barPct}%`, background: GRADE_COLORS[d.topGrade] }} />
+                                </div>
+                                <span>{d.avgIntens}</span>
+                              </td>
+                              <td>
+                                <span className="dc-grade" style={{ background: GRADE_COLORS[d.topGrade] }}>{d.topGrade}</span>
+                              </td>
+                              <td style={{ color: diffColor, fontWeight: 700, fontSize: "0.74rem" }}>
+                                {diff > 0 ? `+${diff}` : diff}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="dc-note">
+                  <Info size={11} />
+                  {lang === "mn"
+                    ? "Дүүрэг дэх барилгуудын OSM тэгийн дагуу бүлэглэсэн. Дүүрэг дарахад шүүнэ. ML таамаглал — бодит хэмжилт биш."
+                    : "Grouped by OSM address district tags. Click row to filter. ML estimates only — not actual measurements."}
+                </div>
               </div>
             )}
 

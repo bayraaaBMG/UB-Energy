@@ -155,19 +155,68 @@
   letter-spacing: 0.02em;
 }
 
-/* ── Hero purpose line ── */
-.hero-purpose {
+/* ── Hero sentence (1-liner) ── */
+.hero-sentence {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text1);
-  max-width: 600px;
-  line-height: 1.6;
-  margin: 0 auto 0.5rem;
-  background: rgba(58,143,212,0.07);
-  border: 1px solid rgba(58,143,212,0.2);
-  border-radius: 10px;
-  padding: 0.65rem 1rem;
+  color: var(--text);
+  max-width: 560px;
+  line-height: 1.55;
+  margin: 0 auto;
+  letter-spacing: -0.01em;
 }
+
+/* ── Disclaimer / Data source block ── */
+.disclaimer-section { padding: 0 0 0.5rem; }
+
+.disclaimer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.9rem 1.1rem;
+  background: rgba(230,57,70,0.04);
+  border: 1px solid rgba(230,57,70,0.15);
+  border-left: 3px solid rgba(230,57,70,0.5);
+  border-radius: var(--radius-sm);
+}
+
+.disclaimer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--warning);
+}
+
+.disclaimer-icon { color: var(--warning); flex-shrink: 0; }
+
+.disclaimer-text {
+  font-size: 0.78rem;
+  color: var(--text3);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.disclaimer-sources {
+  font-size: 0.73rem;
+  color: var(--text3);
+  font-style: italic;
+  margin: 0;
+}
+
+.disclaimer-updated {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin: 0;
+}
+
+.disclaimer-updated time { font-weight: 600; color: var(--text2); }
 
 /* ── Stats source box ── */
 .stats-source-box {

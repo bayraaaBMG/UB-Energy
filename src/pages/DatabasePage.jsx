@@ -7,6 +7,7 @@ import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
   CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown, X, Star,
+  History, Clock, Info, ChevronRight, AlertCircle,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -220,7 +221,7 @@ function ResultsModal({ building, lang, t, onClose }) {
                 </div>
                 <div className="res-compare-box pred">
                   <div className="rcb-label">{t.database.modal_pred_model}</div>
-                  <div className="rcb-value">{calc.monthlyPred.toLocaleString()}</div>
+                  <div className="rcb-value">{monthlyPred.toLocaleString()}</div>
                   <div className="rcb-unit">{t.database.modal_kwh_mo}</div>
                 </div>
               </div>
@@ -359,6 +360,21 @@ function ResultsModal({ building, lang, t, onClose }) {
   );
 }
 
+// ─── Activity log helpers ─────────────────────────────────────────────────────
+const LOG_KEY = (uid) => `ubenergy_log_${uid || "anon"}`;
+const MAX_LOG = 50;
+
+function readLog(uid) {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY(uid)) || "[]"); } catch { return []; }
+}
+function appendLog(uid, entry) {
+  const log = [entry, ...readLog(uid)].slice(0, MAX_LOG);
+  try { localStorage.setItem(LOG_KEY(uid), JSON.stringify(log)); } catch {}
+}
+
+// ─── Pagination helper ────────────────────────────────────────────────────────
+const PAGE_SIZES = [10, 25, 50, 100];
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DatabasePage() {
   const { t, lang } = useLang();
@@ -375,6 +391,11 @@ export default function DatabasePage() {
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [favorites, setFavorites] = useState(() => user ? getFavorites(user.id) : []);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showNote, setShowNote] = useState(true);
+  const [activityLog, setActivityLog] = useState(() => readLog(user?.id));
   const favIds = new Set(favorites.map(f => f.id));
 
   const handleToggleFav = (b) => {
@@ -410,12 +431,18 @@ export default function DatabasePage() {
     year:          (a, b) => (a.year || 0) - (b.year || 0),
     district:      (a, b) => (a.district || "").localeCompare(b.district || ""),
     floors:        (a, b) => (a.floors || 0) - (b.floors || 0),
+    submittedAt:   (a, b) => new Date(a.submittedAt || 0) - new Date(b.submittedAt || 0),
   };
 
-  const filtered = allBuildingsState
+  const q = search.toLowerCase().trim();
+  const allFiltered = allBuildingsState
     .filter(b => {
-      const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) ||
-        (b.district || "").toLowerCase().includes(search.toLowerCase());
+      const matchSearch = !q
+        || b.name.toLowerCase().includes(q)
+        || (b.district || "").toLowerCase().includes(q)
+        || (b.type || "").toLowerCase().includes(q)
+        || String(b.year || "").includes(q)
+        || (typeLabels[b.type] || "").toLowerCase().includes(q);
       const matchType   = typeFilter === "all" || b.type === typeFilter;
       const matchGrade  = gradeFilter === "all" || b.grade === gradeFilter;
       const isUserRecord = b.source === "user" || b.source === "predictor";
@@ -429,18 +456,120 @@ export default function DatabasePage() {
       return sortDir === "asc" ? cmp : -cmp;
     });
 
+  const totalPages = Math.max(1, Math.ceil(allFiltered.length / pageSize));
+  const safePage   = Math.min(currentPage, totalPages);
+  const filtered   = allFiltered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   const handleDelete = (id) => {
+    const b = allBuildingsState.find(x => x.id === id);
     deleteUserBuilding(id);
+    if (b) {
+      const entry = { action: "delete", buildingName: b.name, buildingId: id, timestamp: new Date().toISOString() };
+      appendLog(user?.id, entry);
+      setActivityLog(readLog(user?.id));
+    }
     setAllBuildingsState(getAllBuildings(isAdmin ? null : user?.id));
+    setCurrentPage(1);
   };
+
+  const clearFilters = () => {
+    setSearch(""); setTypeFilter("all"); setSourceFilter("all"); setGradeFilter("all"); setCurrentPage(1);
+  };
+  const activeFilterCount = [typeFilter !== "all", sourceFilter !== "all", gradeFilter !== "all", search.trim() !== ""].filter(Boolean).length;
 
   return (
     <div className="database-page">
       <div className="container">
-        <div className="page-header">
-          <h1><Database size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.database.title}</h1>
-          <p>{t.database.subtitle}</p>
+        <div className="page-header flex-between" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
+          <div>
+            <h1><Database size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.database.title}</h1>
+            <p>{t.database.subtitle}</p>
+          </div>
+          <button className={`db-history-toggle ${showHistory ? "active" : ""}`} onClick={() => setShowHistory(s => !s)}>
+            <History size={15} />
+            {lang === "mn" ? "Түүх" : "History"}
+            {activityLog.length > 0 && <span className="db-history-count">{activityLog.length}</span>}
+          </button>
         </div>
+
+        {/* Backend note */}
+        {showNote && (
+          <div className="db-backend-note mb-3">
+            <Info size={14} className="dbn-i" />
+            <span>
+              {lang === "mn"
+                ? "Өгөгдөл localStorage-д хадгалагдаж байна — жинхэнэ аналитик хийхийн тулд backend интеграци шаардлагатай."
+                : "Data is stored in localStorage — real analytics requires backend integration."}
+            </span>
+            <button className="dbn-x" onClick={() => setShowNote(false)}><X size={12} /></button>
+          </div>
+        )}
+
+        {/* History panel */}
+        {showHistory && (
+          <div className="db-history-panel card mb-3 animate-fade">
+            <div className="dhp-header">
+              <History size={14} />
+              <span>{lang === "mn" ? "Идэвхийн түүх" : "Activity Log"}</span>
+              <span className="dhp-sub">
+                {lang === "mn" ? "Барилга нэмсэн / устгасан бүртгэл" : "Building add / delete events"}
+              </span>
+            </div>
+
+            {/* Per-building "added" list from submittedAt */}
+            {allBuildingsState.filter(b => b.submittedAt).length > 0 && (
+              <div className="dhp-section">
+                <div className="dhp-section-title">
+                  {lang === "mn" ? "Оруулсан барилгууд" : "Saved buildings"}
+                </div>
+                <div className="dhp-list">
+                  {[...allBuildingsState]
+                    .filter(b => b.submittedAt)
+                    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+                    .slice(0, 10)
+                    .map(b => (
+                      <div key={b.id} className="dhp-row">
+                        <span className="dhp-action add">{lang === "mn" ? "Нэмэгдсэн" : "Added"}</span>
+                        <span className="dhp-name">{b.name}</span>
+                        <span className="dhp-time">
+                          <Clock size={10} />
+                          {new Date(b.submittedAt).toLocaleString(lang === "mn" ? "mn-MN" : "en-US", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Deletion log */}
+            {activityLog.length > 0 && (
+              <div className="dhp-section">
+                <div className="dhp-section-title">
+                  {lang === "mn" ? "Устгасан бүртгэл" : "Deletion log"}
+                </div>
+                <div className="dhp-list">
+                  {activityLog.map((e, i) => (
+                    <div key={i} className="dhp-row">
+                      <span className="dhp-action del">{lang === "mn" ? "Устгагдсан" : "Deleted"}</span>
+                      <span className="dhp-name">{e.buildingName}</span>
+                      <span className="dhp-time">
+                        <Clock size={10} />
+                        {new Date(e.timestamp).toLocaleString(lang === "mn" ? "mn-MN" : "en-US", { dateStyle: "short", timeStyle: "short" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activityLog.length === 0 && allBuildingsState.filter(b => b.submittedAt).length === 0 && (
+              <div className="dhp-empty">
+                <AlertCircle size={16} opacity={0.3} />
+                <span>{lang === "mn" ? "Бүртгэл байхгүй" : "No activity yet"}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Controls */}
         <div className="db-controls card mb-3">
@@ -449,12 +578,17 @@ export default function DatabasePage() {
               <Search size={16} className="search-icon" />
               <input className="search-input" placeholder={t.database.search}
                 aria-label={t.database.search}
-                value={search} onChange={e => setSearch(e.target.value)} />
+                value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
+              {search && (
+                <button className="search-clear" onClick={() => { setSearch(""); setCurrentPage(1); }} aria-label="Clear search">
+                  <X size={13} />
+                </button>
+              )}
             </div>
             <div className="type-filter">
               <Filter size={14} />
               <select className="form-select" style={{ width: "auto" }}
-                value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setCurrentPage(1); }}>
                 <option value="all">{t.database.all_types}</option>
                 {Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
@@ -462,7 +596,7 @@ export default function DatabasePage() {
             <div className="type-filter">
               <UserCheck size={14} />
               <select className="form-select" style={{ width: "auto" }}
-                value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
+                value={sourceFilter} onChange={e => { setSourceFilter(e.target.value); setCurrentPage(1); }}>
                 <option value="all">{t.database.filter_all}</option>
                 <option value="mock">{t.database.filter_sample}</option>
                 <option value="mine">{isAdmin ? t.database.filter_user_all : t.database.filter_mine}</option>
@@ -471,43 +605,56 @@ export default function DatabasePage() {
             <div className="type-filter">
               <BarChart2 size={14} />
               <select className="form-select" style={{ width: "auto" }}
-                value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}>
+                value={gradeFilter} onChange={e => { setGradeFilter(e.target.value); setCurrentPage(1); }}>
                 <option value="all">{lang === "mn" ? "Бүх зэрэглэл" : "All grades"}</option>
                 {["A","B","C","D","E","F","G"].map(g => (
                   <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
+            {activeFilterCount > 0 && (
+              <button className="db-clear-filters" onClick={clearFilters}>
+                <X size={12} />
+                {lang === "mn" ? `${activeFilterCount} шүүлт арилгах` : `Clear ${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""}`}
+              </button>
+            )}
           </div>
           <div className="db-download-btns">
-            <button className="btn btn-secondary" onClick={() => downloadCSV(filtered, typeLabels, csvHeaders)}>
+            <button className="btn btn-secondary" onClick={() => downloadCSV(allFiltered, typeLabels, csvHeaders)}>
               <Download size={16} />{t.database.download_csv}
             </button>
-            <button className="btn btn-secondary" onClick={() => downloadJSON(filtered)}>
+            <button className="btn btn-secondary" onClick={() => downloadJSON(allFiltered)}>
               <Download size={16} />{t.database.download_json}
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="db-stats mb-3">
-          <span className="db-stat-badge">{t.database.total_buildings}: <strong>{filtered.length}</strong> {t.database.buildings_unit}</span>
-          <span className="db-stat-badge">
-            {t.database.total_area}: <strong>{filtered.reduce((s, b) => s + (b.area || 0), 0).toLocaleString()}</strong> {t.common.units_sqm}
-          </span>
-          <span className="db-stat-badge">
-            {t.database.total_usage}: <strong>{Math.round(filtered.reduce((s, b) => s + (b.predicted_kwh || 0), 0) / 1000).toLocaleString()}</strong> MWh
-          </span>
-          {userRecords.length > 0 && (
-            <span className="db-stat-badge user-badge">
-              <UserCheck size={13} />
-              {isAdmin ? t.database.user_records_label : t.database.my_records_label}: <strong>{userRecords.length} {t.admin.buildings_unit}</strong>
-              {userRecords.filter(b => b.source === "predictor").length > 0 && (
-                <span style={{ opacity: 0.7, fontWeight: 400, fontSize: "0.75rem" }}>
-                  {" "}({userRecords.filter(b => b.source === "predictor").length} {t.database.predicted_tag})
-                </span>
-              )}
+        {/* Stats + active filter chips */}
+        <div className="db-stats-row mb-3">
+          <div className="db-stats">
+            <span className="db-stat-badge">{t.database.total_buildings}: <strong>{allFiltered.length}</strong> {t.database.buildings_unit}</span>
+            <span className="db-stat-badge">
+              {t.database.total_area}: <strong>{allFiltered.reduce((s, b) => s + (b.area || 0), 0).toLocaleString()}</strong> {t.common.units_sqm}
             </span>
+            <span className="db-stat-badge">
+              {t.database.total_usage}: <strong>{Math.round(allFiltered.reduce((s, b) => s + (b.predicted_kwh || 0), 0) / 1000).toLocaleString()}</strong> MWh
+            </span>
+            {userRecords.length > 0 && (
+              <span className="db-stat-badge user-badge">
+                <UserCheck size={13} />
+                {isAdmin ? t.database.user_records_label : t.database.my_records_label}: <strong>{userRecords.length} {t.admin.buildings_unit}</strong>
+              </span>
+            )}
+          </div>
+
+          {/* Active filter chips */}
+          {activeFilterCount > 0 && (
+            <div className="db-filter-chips">
+              {search && <span className="db-chip">{lang === "mn" ? "Хайлт" : "Search"}: "{search}" <button onClick={() => { setSearch(""); setCurrentPage(1); }}><X size={10}/></button></span>}
+              {typeFilter !== "all" && <span className="db-chip">{typeLabels[typeFilter]} <button onClick={() => { setTypeFilter("all"); setCurrentPage(1); }}><X size={10}/></button></span>}
+              {gradeFilter !== "all" && <span className="db-chip">{lang === "mn" ? "Зэрэглэл" : "Grade"}: {gradeFilter} <button onClick={() => { setGradeFilter("all"); setCurrentPage(1); }}><X size={10}/></button></span>}
+              {sourceFilter !== "all" && <span className="db-chip">{sourceFilter === "mine" ? (lang === "mn" ? "Миний" : "Mine") : (lang === "mn" ? "Жишээ" : "Sample")} <button onClick={() => { setSourceFilter("all"); setCurrentPage(1); }}><X size={10}/></button></span>}
+            </div>
           )}
         </div>
 
@@ -526,6 +673,7 @@ export default function DatabasePage() {
                   { key: "year",          label: t.database.year },
                   { key: "district",      label: t.database.district },
                   { key: "floors",        label: t.database.floors },
+                  { key: "submittedAt",  label: lang === "mn" ? "Нэмэгдсэн" : "Added" },
                 ].map(({ key, label }) => (
                   <th
                     key={key}
@@ -589,6 +737,14 @@ export default function DatabasePage() {
                   <td>{b.year}</td>
                   <td>{b.district}</td>
                   <td>{b.floors != null ? `${b.floors} ${t.database.floors_display}` : "—"}</td>
+                  <td className="db-added-cell">
+                    {b.submittedAt
+                      ? <span className="db-added-time" title={new Date(b.submittedAt).toLocaleString()}>
+                          <Clock size={10} />
+                          {new Date(b.submittedAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", day: "numeric", year: "2-digit" })}
+                        </span>
+                      : <span className="text-muted">—</span>}
+                  </td>
                   <td>
                     <div className="table-actions">
                       <button
@@ -632,13 +788,42 @@ export default function DatabasePage() {
             </tbody>
           </table>
 
-          {filtered.length === 0 && (
+          {allFiltered.length === 0 && (
             <div className="empty-state">
               <Database size={40} opacity={0.3} />
               <p>{t.database.no_data}</p>
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {allFiltered.length > 0 && (
+          <div className="db-pagination">
+            <div className="dbp-left">
+              <span className="dbp-info">
+                {lang === "mn"
+                  ? `${allFiltered.length}-аас ${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, allFiltered.length)} харуулж байна`
+                  : `Showing ${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, allFiltered.length)} of ${allFiltered.length}`}
+              </span>
+              <select className="dbp-size-select" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}>
+                {PAGE_SIZES.map(s => <option key={s} value={s}>{s} {lang === "mn" ? "мөр" : "rows"}</option>)}
+              </select>
+            </div>
+            <div className="dbp-pages">
+              <button className="dbp-btn" disabled={safePage <= 1} onClick={() => setCurrentPage(1)}>«</button>
+              <button className="dbp-btn" disabled={safePage <= 1} onClick={() => setCurrentPage(p => p - 1)}>‹</button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const start = Math.max(1, Math.min(safePage - 2, totalPages - 4));
+                const pg = start + i;
+                return pg <= totalPages ? (
+                  <button key={pg} className={`dbp-btn ${pg === safePage ? "active" : ""}`} onClick={() => setCurrentPage(pg)}>{pg}</button>
+                ) : null;
+              })}
+              <button className="dbp-btn" disabled={safePage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>›</button>
+              <button className="dbp-btn" disabled={safePage >= totalPages} onClick={() => setCurrentPage(totalPages)}>»</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {resultsBuilding && (

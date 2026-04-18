@@ -45,6 +45,10 @@ function AppLayout({ children }) {
   const { lang } = useLang();
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      {/* Skip to content — first focusable element, visible on keyboard focus */}
+      <a href="#main-content" className="skip-link">
+        {lang === "mn" ? "Үндсэн агуулга руу шилжих" : "Skip to main content"}
+      </a>
       <Navbar />
       <main id="main-content" style={{ flex: 1, paddingTop: "1rem" }}>
         <ErrorBoundary lang={lang}>

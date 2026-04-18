@@ -64,18 +64,22 @@ export default function Navbar() {
         </Link>
 
         <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
-          {items.map(({ path, label, icon: Icon, badge }) => (
-            <Link
-              key={path}
-              to={path}
-              className={`nav-link ${location.pathname === path ? "active" : ""}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              <Icon size={16} />
-              <span>{label}</span>
-              {badge && <span className="nav-badge">{badge}</span>}
-            </Link>
-          ))}
+          {items.map(({ path, label, icon: Icon, badge }) => {
+            const isActive = location.pathname === path;
+            return (
+              <Link
+                key={path}
+                to={path}
+                className={`nav-link ${isActive ? "active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => setMenuOpen(false)}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
+                {badge && <span className="nav-badge" aria-label={`(${badge})`}>{badge}</span>}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="navbar-actions">

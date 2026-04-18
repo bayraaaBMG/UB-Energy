@@ -30,56 +30,103 @@ const BUILDING_COLORS = {
   hospital: "#e63946", warehouse: "#a8c5e0", commercial: "#f4a261"
 };
 
-// ─── 2D Floor Plan SVG ────────────────────────────────────────────────────────
-function FloorPlan({ floors, area, buildingType, rooms, floorsUnit, roomsUnit, sqmUnit }) {
-  const width = Math.min(280, Math.sqrt(area) * 3);
-  const height = Math.min(180, (area / (floors || 1)) * 0.15);
+// ─── CSS 3D Building ──────────────────────────────────────────────────────────
+function Building3D({ floors, area, buildingType }) {
   const color = BUILDING_COLORS[buildingType] || "#3a8fd4";
-  const windows = Math.min(10, Math.max(2, Math.floor(width / 30)));
+  const W = 130, D = 70;
+  const H = Math.min(Math.max(Math.round(floors * 16), 70), 210);
+  const nFloors = Math.min(floors, 10);
+  const floorH = H / nFloors;
+  const winCols = Math.min(4, Math.max(2, Math.floor(W / 35)));
+  const winW = (W - (winCols + 1) * 8) / winCols;
+  const winH = Math.max(7, floorH * 0.42);
 
   return (
-    <svg viewBox="0 0 320 240" className="floor-plan-svg">
-      <rect x={160 - width/2} y={15} width={width} height={height}
-        fill={`${color}33`} stroke={color} strokeWidth={2} rx={4} />
-      {Array.from({ length: Math.min(floors - 1, 8) }, (_, i) => (
-        <line key={i}
-          x1={160 - width/2} y1={15 + (height / (floors || 1)) * (i + 1)}
-          x2={160 + width/2} y2={15 + (height / (floors || 1)) * (i + 1)}
-          stroke={`${color}55`} strokeWidth={1} strokeDasharray="4 2"
-        />
-      ))}
-      {Array.from({ length: windows }, (_, i) => (
-        <rect key={i}
-          x={160 - width/2 + 12 + i * ((width - 24) / windows)}
-          y={21}
-          width={Math.max(8, (width - 24) / windows - 8)}
-          height={height * 0.28}
-          fill={`${color}55`} stroke={color} strokeWidth={1.5} rx={2}
-        />
-      ))}
-      <rect x={155} y={15 + height - 22} width={10} height={22}
-        fill={`${color}88`} stroke={color} strokeWidth={1.5} rx={2} />
-      <polygon
-        points={`${160 - width/2 - 10},15 ${160},${15 - height * 0.18} ${160 + width/2 + 10},15`}
-        fill={`${color}44`} stroke={color} strokeWidth={1.5}
-      />
-      {/* Room divisions on ground floor */}
-      {rooms > 1 && Array.from({ length: Math.min(rooms - 1, 4) }, (_, i) => (
-        <line key={`r${i}`}
-          x1={160 - width/2 + (width / rooms) * (i + 1)}
-          y1={15 + height - 22}
-          x2={160 - width/2 + (width / rooms) * (i + 1)}
-          y2={15 + height}
-          stroke={`${color}88`} strokeWidth={1} strokeDasharray="3 2"
-        />
-      ))}
-      <text x="160" y={15 + height + 22} textAnchor="middle" fill={color} fontSize="12" fontWeight="600">
-        {Math.round(area)} {sqmUnit}
-      </text>
-      <text x="160" y={15 + height + 38} textAnchor="middle" fill="#6a9bbf" fontSize="11">
-        {floors} {floorsUnit} · {rooms} {roomsUnit}
-      </text>
-    </svg>
+    <div className="b3d-scene">
+      <div className="b3d-box" style={{ width: W, height: H }}>
+        {/* Front face */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, width: W, height: H,
+          background: `linear-gradient(175deg, ${color}cc 0%, ${color} 100%)`,
+          overflow: "hidden", borderRadius: "3px 3px 0 0",
+        }}>
+          {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => (
+            <div key={i} style={{
+              position: "absolute", left: 0, right: 0,
+              top: `${((i + 1) / nFloors) * 100}%`,
+              height: 1, background: "rgba(255,255,255,0.2)",
+            }} />
+          ))}
+          {Array.from({ length: nFloors }, (_, row) =>
+            Array.from({ length: winCols }, (_, col) => (
+              <div key={`${row}-${col}`} style={{
+                position: "absolute",
+                width: winW, height: winH,
+                left: 8 + col * (winW + 8),
+                top: row * floorH + (floorH - winH) * 0.28,
+                background: "rgba(200,235,255,0.5)",
+                border: "1px solid rgba(255,255,255,0.35)",
+                borderRadius: 2,
+              }} />
+            ))
+          )}
+          <div style={{
+            position: "absolute", bottom: 0, left: "50%",
+            transform: "translateX(-50%)",
+            width: 18, height: Math.max(22, floorH * 0.65),
+            background: "rgba(0,0,0,0.28)", borderRadius: "3px 3px 0 0",
+          }} />
+          <div style={{
+            position: "absolute", bottom: 5, right: 7,
+            fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.65)",
+          }}>{Math.round(area)}m²</div>
+        </div>
+
+        {/* Right side face */}
+        <div style={{
+          position: "absolute", top: 0, left: W,
+          width: D, height: H,
+          background: "rgba(0,0,0,0.3)",
+          transformOrigin: "left center",
+          transform: "rotateY(-90deg)",
+          overflow: "hidden",
+        }}>
+          {Array.from({ length: nFloors }, (_, row) => (
+            <div key={row} style={{
+              position: "absolute",
+              width: D * 0.35, height: winH,
+              left: D * 0.15,
+              top: row * floorH + (floorH - winH) * 0.28,
+              background: "rgba(200,235,255,0.2)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 2,
+            }} />
+          ))}
+        </div>
+
+        {/* Roof face */}
+        <div style={{
+          position: "absolute", top: 0, left: 0,
+          width: W, height: D,
+          background: "rgba(255,255,255,0.18)",
+          transformOrigin: "top center",
+          transform: "rotateX(-90deg)",
+        }}>
+          <div style={{
+            position: "absolute", top: "25%", left: "15%",
+            width: "22%", height: "45%",
+            background: "rgba(255,255,255,0.15)",
+            borderRadius: 3, border: "1px solid rgba(255,255,255,0.2)",
+          }} />
+          <div style={{
+            position: "absolute", top: "20%", right: "18%",
+            width: "18%", height: "50%",
+            background: "rgba(255,255,255,0.1)",
+            borderRadius: 2, border: "1px solid rgba(255,255,255,0.12)",
+          }} />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -169,6 +216,7 @@ export default function PredictorPage() {
   const [scenLabel, setScenLabel] = useState("");
   const [showScenModal, setShowScenModal] = useState(false);
   const [scenSaved, setScenSaved] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // Load scenario from My Space
   useEffect(() => {
@@ -182,9 +230,44 @@ export default function PredictorPage() {
     const val = e.target.type === "number" || e.target.type === "range"
       ? Number(e.target.value) : e.target.value;
     setForm({ ...form, [e.target.name]: val });
+    if (errors[e.target.name]) setErrors(prev => { const n = { ...prev }; delete n[e.target.name]; return n; });
+  };
+
+  const validate = () => {
+    const e = {};
+    if (!form.area || form.area < 50) e.area = lang === "mn" ? "Талбай 50м²-аас их байх ёстой" : "Area must be at least 50m²";
+    else if (form.area > 50000) e.area = lang === "mn" ? "Талбай 50,000м²-аас хэтрэхгүй" : "Area must be under 50,000m²";
+    if (!form.year || form.year < 1940) e.year = lang === "mn" ? "Барилгын жил 1940-өөс их байх ёстой" : "Year must be after 1940";
+    else if (form.year > 2026) e.year = lang === "mn" ? "Барилгын жил 2026-аас хэтрэхгүй" : "Year must not exceed 2026";
+    if (!form.floors || form.floors < 1) e.floors = lang === "mn" ? "Давхрын тоо 1-ээс их байх ёстой" : "At least 1 floor required";
+    else if (form.floors > 50) e.floors = lang === "mn" ? "Давхрын тоо 50-аас хэтрэхгүй" : "Floors must not exceed 50";
+    if (!form.rooms || form.rooms < 1) e.rooms = lang === "mn" ? "Өрөөний тоо 1-ээс их байх ёстой" : "At least 1 room required";
+    return e;
+  };
+
+  const fillExample = () => {
+    setForm(prev => ({
+      ...prev,
+      building_name: lang === "mn" ? "Жишиг орон сууц" : "Example Apartment",
+      district: "Сүхбаатар",
+      area: 1200,
+      building_type: "apartment",
+      year: 1985,
+      floors: 9,
+      rooms: 3,
+      window_ratio: 30,
+      wall_material: "panel",
+      heating_type: "central",
+      insulation_quality: "medium",
+      window_type: "double",
+    }));
+    setErrors({});
   };
 
   const runModel = () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setErrors({});
     setLoading(true);
     setSaved(false);
     setResultTab("elec");
@@ -269,7 +352,8 @@ export default function PredictorPage() {
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-area">{t.predictor.area}</label>
                   <input id="pred-area" type="number" name="area" value={form.area} onChange={handleChange}
-                    className="form-input" min={50} max={50000} step={10} />
+                    className={`form-input${errors.area ? " input-error" : ""}`} min={50} max={50000} step={10} />
+                  {errors.area && <span className="field-error">{errors.area}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-building_type">{t.predictor.building_type}</label>
@@ -280,17 +364,20 @@ export default function PredictorPage() {
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-year">{t.predictor.year}</label>
                   <input id="pred-year" type="number" name="year" value={form.year} onChange={handleChange}
-                    className="form-input" min={1950} max={2026} />
+                    className={`form-input${errors.year ? " input-error" : ""}`} min={1940} max={2026} />
+                  {errors.year && <span className="field-error">{errors.year}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-floors">{t.predictor.floors}</label>
                   <input id="pred-floors" type="number" name="floors" value={form.floors} onChange={handleChange}
-                    className="form-input" min={1} max={40} />
+                    className={`form-input${errors.floors ? " input-error" : ""}`} min={1} max={50} />
+                  {errors.floors && <span className="field-error">{errors.floors}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-rooms">{t.predictor.rooms}</label>
                   <input id="pred-rooms" type="number" name="rooms" value={form.rooms} onChange={handleChange}
-                    className="form-input" min={1} max={20} />
+                    className={`form-input${errors.rooms ? " input-error" : ""}`} min={1} max={20} />
+                  {errors.rooms && <span className="field-error">{errors.rooms}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="pred-wall_material">{t.predictor.wall_material}</label>
@@ -411,6 +498,12 @@ export default function PredictorPage() {
               )}
             </Section>
 
+            {Object.keys(errors).length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 0.9rem", background: "rgba(230,57,70,0.08)", border: "1px solid rgba(230,57,70,0.3)", borderRadius: 8, marginBottom: "0.5rem", fontSize: "0.82rem", color: "#e63946" }}>
+                <AlertTriangle size={14} />
+                {lang === "mn" ? "Оруулсан утгуудыг шалгана уу" : "Please fix the errors above before predicting"}
+              </div>
+            )}
             <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
               <button
                 className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
@@ -424,6 +517,15 @@ export default function PredictorPage() {
                 ) : (
                   <><Brain size={18} />{t.predictor.predict_btn}<ChevronRight size={16} /></>
                 )}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={fillExample}
+                title={lang === "mn" ? "Жишиг барилгын мэдээллээр дүүргэх" : "Fill with a sample building to try the predictor"}
+                style={{ flexShrink: 0 }}
+              >
+                <Lightbulb size={14} />
+                {lang === "mn" ? "Жишээ" : "Example"}
               </button>
               {result && (
                 <button
@@ -447,14 +549,10 @@ export default function PredictorPage() {
                 {t.predictor.floor_plan}
               </h3>
               <div className="floor-plan-container">
-                <FloorPlan
+                <Building3D
                   floors={form.floors}
                   area={form.area}
                   buildingType={form.building_type}
-                  rooms={form.rooms}
-                  floorsUnit={t.common.floors_unit}
-                  roomsUnit={t.common.rooms_unit}
-                  sqmUnit={t.common.units_sqm}
                 />
               </div>
               <div className="building-info-tags">
@@ -470,6 +568,24 @@ export default function PredictorPage() {
                   <Zap size={16} style={{ marginLeft: 8 }} />
                   {t.predictor.result_title}
                 </h3>
+
+                {/* Estimate disclaimer */}
+                <div className="pred-estimate-badge">
+                  <Info size={12} style={{ flexShrink: 0 }} />
+                  <span>{lang === "mn" ? "Энэ бол загварын тооцоолол — бодит тооцооны мэдээлэл биш" : "This is a model estimate — not actual billing data"}</span>
+                </div>
+
+                {/* Accuracy + Confidence mini cards */}
+                <div className="pred-accuracy-row">
+                  <div className="pred-acc-card">
+                    <div className="pred-acc-val">{Math.round(METRICS.r2 * 100)}%</div>
+                    <div className="pred-acc-label">{lang === "mn" ? "Загварын нарийвчлал" : "Model accuracy"} (R²)</div>
+                  </div>
+                  <div className="pred-acc-card pred-acc-card--green">
+                    <div className="pred-acc-val" style={{ color: "#2a9d8f" }}>{METRICS.confidence}%</div>
+                    <div className="pred-acc-label">{lang === "mn" ? "Итгэх түвшин" : "Confidence"} (±15%)</div>
+                  </div>
+                </div>
 
                 {/* Result Tabs */}
                 <div className="result-tabs" style={{ display: "flex", gap: "0.3rem", marginBottom: "1.1rem", background: "var(--bg3)", padding: "0.3rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
@@ -552,44 +668,60 @@ export default function PredictorPage() {
                 })()}
 
                 {/* Scenario comparison */}
-                {baseline && (
-                  <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10 }}>
-                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text2)", marginBottom: "0.65rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                        <FlaskConical size={13} style={{ color: "#e9c46a" }} />
-                        {lang === "mn" ? "Хувилбар харьцуулалт" : "Scenario comparison"}
-                      </span>
-                      <button onClick={() => setBaseline(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: "0.2rem" }}>
-                        <X size={13} />
-                      </button>
+                {baseline && (() => {
+                  const diff = result.annual - baseline.result.annual;
+                  const pct = ((diff / baseline.result.annual) * 100).toFixed(1);
+                  const diffColor = diff > 0 ? "#e63946" : diff < 0 ? "#2a9d8f" : "#a8c5e0";
+                  const maxVal = Math.max(result.annual, baseline.result.annual);
+                  return (
+                    <div className="pred-scenario-block">
+                      <div className="pred-scenario-header">
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                          <FlaskConical size={13} style={{ color: "#e9c46a" }} />
+                          {lang === "mn" ? "Хувилбар харьцуулалт" : "Scenario comparison"}
+                        </span>
+                        <button onClick={() => setBaseline(null)} className="pred-scenario-close"><X size={13} /></button>
+                      </div>
+                      <div className="pred-scenario-cols">
+                        <div className="pred-scenario-col">
+                          <div className="pred-scen-tag">{lang === "mn" ? "Суурь" : "Baseline"}</div>
+                          <div className="pred-scen-name">{baseline.label}</div>
+                          <div className="pred-scen-val" style={{ color: GRADE_COLORS[baseline.result.grade] }}>
+                            {baseline.result.annual.toLocaleString()} kWh
+                          </div>
+                          <div className="pred-scen-grade">
+                            <span style={{ background: GRADE_COLORS[baseline.result.grade], color: "#fff", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontSize: "0.8rem" }}>{baseline.result.grade}</span>
+                            <span style={{ fontSize: "0.7rem", color: "var(--text3)" }}>{baseline.result.intensity} kWh/m²</span>
+                          </div>
+                          <div className="pred-scen-bar-track">
+                            <div className="pred-scen-bar-fill" style={{ width: `${(baseline.result.annual / maxVal) * 100}%`, background: GRADE_COLORS[baseline.result.grade] }} />
+                          </div>
+                        </div>
+                        <div className="pred-scenario-diff" style={{ color: diffColor }}>
+                          <div style={{ fontSize: "1rem", fontWeight: 800 }}>{diff > 0 ? "+" : ""}{diff.toLocaleString()}</div>
+                          <div style={{ fontSize: "0.72rem" }}>kWh</div>
+                          <div style={{ fontSize: "0.75rem", marginTop: 2 }}>({diff > 0 ? "+" : ""}{pct}%)</div>
+                        </div>
+                        <div className="pred-scenario-col">
+                          <div className="pred-scen-tag">{lang === "mn" ? "Одоогийн" : "Current"}</div>
+                          <div className="pred-scen-name" style={{ color: "var(--primary-light)" }}>
+                            {form.building_name || `${form.area}m² ${form.building_type}`}
+                          </div>
+                          <div className="pred-scen-val" style={{ color: GRADE_COLORS[result.grade] }}>
+                            {result.annual.toLocaleString()} kWh
+                          </div>
+                          <div className="pred-scen-grade">
+                            <span style={{ background: GRADE_COLORS[result.grade], color: "#fff", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontSize: "0.8rem" }}>{result.grade}</span>
+                            <span style={{ fontSize: "0.7rem", color: "var(--text3)" }}>{result.intensity} kWh/m²</span>
+                          </div>
+                          <div className="pred-scen-bar-track">
+                            <div className="pred-scen-bar-fill" style={{ width: `${(result.annual / maxVal) * 100}%`, background: GRADE_COLORS[result.grade] }} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "0.5rem", alignItems: "center" }}>
-                      <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "0.65rem 0.75rem" }}>
-                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginBottom: 3 }}>{lang === "mn" ? "Суурь" : "Baseline"}: {baseline.label}</div>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: GRADE_COLORS[baseline.result.grade] }}>{baseline.result.annual.toLocaleString()} kWh</div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--text3)" }}>{lang === "mn" ? "Зэрэглэл" : "Grade"}: {baseline.result.grade} · {baseline.result.intensity} kWh/m²</div>
-                      </div>
-                      <div style={{ textAlign: "center", padding: "0 0.25rem" }}>
-                        {(() => {
-                          const diff = result.annual - baseline.result.annual;
-                          const pct = ((diff / baseline.result.annual) * 100).toFixed(1);
-                          const color = diff > 0 ? "#e63946" : diff < 0 ? "#2a9d8f" : "#a8c5e0";
-                          return (
-                            <div style={{ color, fontWeight: 800, fontSize: "0.85rem" }}>
-                              {diff > 0 ? "+" : ""}{diff.toLocaleString()} kWh
-                              <div style={{ fontSize: "0.7rem" }}>({diff > 0 ? "+" : ""}{pct}%)</div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div style={{ background: "var(--bg3)", borderRadius: 8, padding: "0.65rem 0.75rem" }}>
-                        <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginBottom: 3 }}>{lang === "mn" ? "Одоогийн" : "Current"}</div>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: GRADE_COLORS[result.grade] }}>{result.annual.toLocaleString()} kWh</div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--text3)" }}>{lang === "mn" ? "Зэрэглэл" : "Grade"}: {result.grade} · {result.intensity} kWh/m²</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Monthly chart */}
                 <h4 className="chart-sub-title">{t.predictor.monthly_breakdown}</h4>
@@ -608,6 +740,26 @@ export default function PredictorPage() {
                   </ResponsiveContainer>
                 </div>
 
+                {/* Top 3 Factors */}
+                <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
+                  {lang === "mn" ? "Хамгийн нөлөөлсөн 3 хүчин зүйл" : "Top 3 influencing factors"}
+                </h4>
+                <div className="pred-top3-grid">
+                  {result.features.slice(0, 3).map((f, i) => (
+                    <div key={f.key} className="pred-top3-card">
+                      <div className="pred-top3-rank" style={{ color: FEAT_COLORS[i] }}>#{i + 1}</div>
+                      <div className="pred-top3-name">{FEAT_LABELS[f.key] || f.key}</div>
+                      <div className="pred-top3-pct" style={{ color: FEAT_COLORS[i] }}>{f.pct}%</div>
+                      <div className="pred-top3-bar-track">
+                        <div className="pred-top3-bar-fill" style={{
+                          width: `${(f.pct / result.features[0].pct) * 100}%`,
+                          background: FEAT_COLORS[i],
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Feature importance */}
                 <h4 className="chart-sub-title" style={{ marginTop: "1rem" }}>{t.predictor.feature_importance}</h4>
                 <div className="feature-bars">
@@ -621,6 +773,37 @@ export default function PredictorPage() {
                     />
                   ))}
                 </div>
+
+                {/* Why this result */}
+                {(() => {
+                  const top = result.features.slice(0, 3);
+                  const gradeDesc = {
+                    A: lang === "mn" ? "маш үр ашигтай (50 кВт·цаг/м²-аас доош)" : "very efficient (below 50 kWh/m²)",
+                    B: lang === "mn" ? "үр ашигтай (50–100 кВт·цаг/м²)" : "efficient (50–100 kWh/m²)",
+                    C: lang === "mn" ? "дундаж (100–150 кВт·цаг/м²)" : "average (100–150 kWh/m²)",
+                    D: lang === "mn" ? "дунджаас доогуур (150–200 кВт·цаг/м²)" : "below average (150–200 kWh/m²)",
+                    E: lang === "mn" ? "үр ашиг муу (200–250 кВт·цаг/м²)" : "poor efficiency (200–250 kWh/m²)",
+                    F: lang === "mn" ? "маш үр ашиг муу (250–300 кВт·цаг/м²)" : "very poor efficiency (250–300 kWh/m²)",
+                    G: lang === "mn" ? "хэт их хэрэглэгч (300+ кВт·цаг/м²)" : "excessive consumption (300+ kWh/m²)",
+                  };
+                  const parts = top.map(f => `${FEAT_LABELS[f.key] || f.key} (${f.pct}%)`);
+                  const improvable = result.features.filter(f =>
+                    ["ins_poor","win_single","mat_wood","age"].includes(f.key)
+                  ).slice(0, 1);
+                  return (
+                    <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "rgba(58,143,212,0.06)", border: "1px solid rgba(58,143,212,0.18)", borderRadius: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 700, fontSize: "0.82rem", color: "var(--primary-light)", marginBottom: "0.5rem" }}>
+                        <Info size={13} />
+                        {lang === "mn" ? "Яагаад ийм дүн гарав?" : "Why this result?"}
+                      </div>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text2)", lineHeight: 1.65, margin: 0 }}>
+                        {lang === "mn"
+                          ? `Хамгийн их нөлөөлсөн хүчин зүйлүүд: ${parts.join(", ")}. Барилгын зэрэглэл ${result.grade} — ${gradeDesc[result.grade] || ""}. Эрчим хүчний эрчмийн утга ${result.intensity} кВт·цаг/м² байна.${improvable.length > 0 ? ` Сайжруулах боломжтой: ${FEAT_LABELS[improvable[0].key] || improvable[0].key}.` : ""}`
+                          : `Top drivers: ${parts.join(", ")}. Grade ${result.grade} means ${gradeDesc[result.grade] || ""}. Energy intensity is ${result.intensity} kWh/m².${improvable.length > 0 ? ` Improvement opportunity: ${FEAT_LABELS[improvable[0].key] || improvable[0].key}.` : ""}`}
+                      </p>
+                    </div>
+                  );
+                })()}
 
                 </div>)}
 

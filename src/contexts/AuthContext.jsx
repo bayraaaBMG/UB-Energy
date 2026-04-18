@@ -8,15 +8,42 @@ const AuthContext = createContext();
 const USERS_KEY   = STORAGE_KEYS.users;
 const SESSION_KEY = STORAGE_KEYS.session;
 
-// ─── Pre-seeded admin (always available) ─────────────────────────────────────
+// ─── PBKDF2 password hashing (Web Crypto API) ─────────────────────────────────
+// Passwords for localStorage users are hashed; admin is in-memory demo only.
+const PBKDF2_ITER = 150_000;
+
+function genSalt() {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b).map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+async function hashPw(password, salt) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: enc.encode(salt), iterations: PBKDF2_ITER, hash: "SHA-256" },
+    key, 256
+  );
+  return Array.from(new Uint8Array(bits)).map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+async function verifyPw(plain, storedHash, salt) {
+  return (await hashPw(plain, salt)) === storedHash;
+}
+
+// ─── Pre-seeded demo admin (in-memory only, plaintext — intentional demo) ────
 const ADMIN = {
   id: "admin_1",
   name: "Админ",
-  email: "admin@test.mn",
-  password: "admin123",
+  email: "admin@ubenergy.mn",
+  password: "demo_admin_only",  // plaintext, in-memory, demo-only
   type: "official",
-  org: "UB Energy",
+  org: "UBenergy",
   role: "admin",
+  isDemo: true,
   createdAt: new Date("2024-01-01").toISOString(),
 };
 
@@ -68,36 +95,59 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   // ── login ──
-  const login = (email, password) => {
-    const found = getAllUsers().find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase()
-        && u.password === password
-    );
+  const login = async (email, password) => {
+    const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
     if (!found) return false;
-    const { password: _pw, ...session } = found;
+
+    let ok = false;
+    if (found.isDemo) {
+      // Demo admin: plaintext comparison (in-memory only, never stored)
+      ok = found.password === password;
+    } else if (found.pwHash && found.pwSalt) {
+      // Hashed password (new users)
+      ok = await verifyPw(password, found.pwHash, found.pwSalt);
+    } else if (found.password) {
+      // Legacy plaintext — verify then migrate to hashed
+      ok = found.password === password;
+      if (ok) {
+        const pwSalt = genSalt();
+        const pwHash = await hashPw(password, pwSalt);
+        const stored = loadUsers();
+        saveUsers(stored.map(u =>
+          u.id === found.id ? { ...u, pwHash, pwSalt, password: undefined } : u
+        ));
+      }
+    }
+
+    if (!ok) return false;
+    const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = found;
     setUser(session);
     return true;
   };
 
   // ── register ──
-  const register = ({ name, email, password, type, org }) => {
-    const users = loadUsers();
-    // Check duplicate email
+  const register = async ({ name, email, password, type, org }) => {
     if (getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
       return { ok: false, error: "email_taken" };
     }
+    if (password.length < 8) return { ok: false, error: "too_short" };
+
+    const pwSalt = genSalt();
+    const pwHash = await hashPw(password, pwSalt);
+
     const newUser = {
       id: `user_${Date.now()}`,
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      password,
+      pwHash,
+      pwSalt,
       type,
       org: org || "",
       role: "user",
       createdAt: new Date().toISOString(),
     };
-    saveUsers([...users, newUser]);
-    const { password: _pw, ...session } = newUser;
+    saveUsers([...loadUsers(), newUser]);
+    const { pwHash: _h, pwSalt: _s, ...session } = newUser;
     setUser(session);
     return { ok: true };
   };
@@ -114,46 +164,61 @@ export function AuthProvider({ children }) {
   };
 
   // ── resetPassword — step 2: set new password for verified email ──
-  const resetPassword = (email, newPassword) => {
-    if (newPassword.length < 6) return { ok: false, error: "too_short" };
+  const resetPassword = async (email, newPassword) => {
+    if (newPassword.length < 8) return { ok: false, error: "too_short" };
     const stored = loadUsers();
     const exists = stored.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
     if (!exists) return { ok: false, error: "email_not_found" };
+    const pwSalt = genSalt();
+    const pwHash = await hashPw(newPassword, pwSalt);
     saveUsers(stored.map(u =>
       u.email.toLowerCase() === email.trim().toLowerCase()
-        ? { ...u, password: newPassword }
+        ? { ...u, pwHash, pwSalt, password: undefined }
         : u
     ));
     return { ok: true };
   };
 
   // ── updateUser ──
-  const updateUser = ({ name, currentPassword, newPassword, avatar }) => {
+  const updateUser = async ({ name, currentPassword, newPassword, avatar }) => {
     const allUsers = getAllUsers();
     const full = allUsers.find(u => u.id === user.id);
     if (!full) return { ok: false, error: "not_found" };
 
     // Password change requested
     if (newPassword !== undefined) {
-      if (full.password !== currentPassword) return { ok: false, error: "wrong_password" };
-      if (newPassword.length < 6) return { ok: false, error: "too_short" };
+      let currentOk = false;
+      if (full.isDemo) {
+        currentOk = full.password === currentPassword;
+      } else if (full.pwHash && full.pwSalt) {
+        currentOk = await verifyPw(currentPassword, full.pwHash, full.pwSalt);
+      } else {
+        currentOk = full.password === currentPassword;
+      }
+      if (!currentOk) return { ok: false, error: "wrong_password" };
+      if (newPassword.length < 8) return { ok: false, error: "too_short" };
+    }
+
+    let updatedPwFields = {};
+    if (newPassword !== undefined && !full.isDemo) {
+      const pwSalt = genSalt();
+      const pwHash = await hashPw(newPassword, pwSalt);
+      updatedPwFields = { pwHash, pwSalt, password: undefined };
     }
 
     const updated = {
       ...full,
       name: name ?? full.name,
-      password: newPassword ?? full.password,
       avatar: avatar !== undefined ? avatar : full.avatar,
+      ...updatedPwFields,
     };
 
-    if (full.id === ADMIN.id) {
-      // Admin lives in memory only — just update session
-    } else {
+    if (!full.isDemo) {
       const stored = loadUsers();
       saveUsers(stored.map(u => u.id === user.id ? updated : u));
     }
 
-    const { password: _pw, ...session } = updated;
+    const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = updated;
     setUser(session);
     return { ok: true };
   };

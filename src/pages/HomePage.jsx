@@ -6,7 +6,8 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Users, Target, Info, LogIn, FlaskConical, CheckCircle,
+  Building2, Zap, Users, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
+  ShieldAlert, Clock,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -84,20 +85,20 @@ export default function HomePage() {
             </div>
           )}
           <h1 className="hero-title">{t.home.hero_title}</h1>
-          <p className="hero-purpose">
-            {lang === "mn"
-              ? "Монголын барилгуудын эрчим хүчний хэрэглээг ML загвараар таамаглаж, дүн шинжилгээ хийж, хэмнэлтийн зөвлөмж өгдөг нэгдсэн систем."
-              : "An integrated system that predicts, analyzes, and provides energy-saving recommendations for Mongolian buildings using ML models."}
-          </p>
+          <p className="hero-sentence">{t.home.hero_sentence}</p>
           <p className="hero-subtitle">{t.home.hero_subtitle}</p>
           <div className="hero-actions">
             <Link to="/predictor" className="btn btn-accent">
               <Brain size={18} />
               {t.home.hero_btn}
             </Link>
+            <Link to="/map" className="btn btn-secondary">
+              <Map size={18} />
+              {t.home.hero_btn2}
+            </Link>
             <Link to="/dashboard" className="btn btn-secondary">
               <BarChart2 size={18} />
-              {t.home.hero_btn2}
+              {t.home.hero_btn3}
             </Link>
           </div>
           {!user && (
@@ -151,6 +152,24 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Disclaimer / Data source ── */}
+      <section className="disclaimer-section">
+        <div className="container">
+          <div className="disclaimer-block">
+            <div className="disclaimer-left">
+              <ShieldAlert size={16} className="disclaimer-icon" aria-hidden="true" />
+              <strong>{t.home.disclaimer_title}</strong>
+            </div>
+            <p className="disclaimer-text">{t.home.disclaimer_text}</p>
+            <p className="disclaimer-sources">{t.home.disclaimer_sources}</p>
+            <p className="disclaimer-updated">
+              <Clock size={11} aria-hidden="true" />
+              {t.home.last_updated}: <time dateTime="2026-04-18">2026-04-18</time>
+            </p>
           </div>
         </div>
       </section>

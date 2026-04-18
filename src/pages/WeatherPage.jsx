@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 
@@ -6,10 +7,11 @@ import {
   Cloud, Wind, Droplets, Thermometer,
   Eye, Gauge, Snowflake, AlertTriangle,
   TrendingDown, TrendingUp, Clock, CalendarDays, Zap, RefreshCw, MapPin, Sunrise, Sunset,
+  Brain, ArrowRight, Building2, Home, Warehouse,
 } from "lucide-react";
 import {
-  ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Line, Legend,
+  ComposedChart, AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Line, Legend, ReferenceLine,
 } from "recharts";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
@@ -255,6 +257,47 @@ function DayCard({ day, active, onClick, t }) {
   );
 }
 
+// ─── Insight helpers ──────────────────────────────────────────────────────────
+const REF_HDD = 8; // mild reference day HDD
+
+const BUILDING_IMPACTS = [
+  { icon: Home,      keyMn: "Орон сууц",  keyEn: "Apartments",  sensitivity: 1.0 },
+  { icon: Building2, keyMn: "Оффис",      keyEn: "Offices",     sensitivity: 0.7 },
+  { icon: Brain,     keyMn: "Сургууль",   keyEn: "Schools",     sensitivity: 1.1 },
+  { icon: Warehouse, keyMn: "Агуулах",    keyEn: "Warehouses",  sensitivity: 1.4 },
+];
+
+function getImpactPct(hdd, sensitivity) {
+  if (hdd <= REF_HDD) return 0;
+  return Math.round(((hdd - REF_HDD) / REF_HDD) * 100 * sensitivity);
+}
+
+function getInsightText(data, lang) {
+  const { hdd, temp } = data;
+  const tempStr = `${temp > 0 ? "+" : ""}${temp}°C`;
+  if (hdd === 0) {
+    return lang === "mn"
+      ? `Өнөөдөр дулаан (${tempStr}). Халаалтын хэрэглэгдэхгүй — цахилгааны хэрэглээ хэвийн суурь түвшинд байна.`
+      : `Warm today (${tempStr}). No heating demand — electricity use stays at normal baseline.`;
+  }
+  const pct = Math.round(((hdd - REF_HDD) / Math.max(REF_HDD, 1)) * 100);
+  const pctStr = pct > 0 ? `${pct}%-иар их` : pct < 0 ? `${Math.abs(pct)}%-иар бага` : "ижил";
+  const pctStrEn = pct > 0 ? `${pct}% above` : pct < 0 ? `${Math.abs(pct)}% below` : "equal to";
+  if (hdd > 25) {
+    return lang === "mn"
+      ? `Өнөөдөр маш хүйтэн (${tempStr}, HDD ${hdd}). Ердийн намрын өдрөөс дулааны хэрэглээ ${pctStr} байна. Халаалтын систем оргил ачааллаар ажиллах тул алдагдал багасгах нь чухал.`
+      : `Very cold today (${tempStr}, HDD ${hdd}). Heating demand is ~${pctStrEn} a mild autumn day. Systems run near peak — reducing heat loss now saves the most.`;
+  }
+  if (hdd > 15) {
+    return lang === "mn"
+      ? `Өнөөдөр хүйтэн (${tempStr}, HDD ${hdd}). Дулааны хэрэглээ ердийн өдрөөс ${pctStr} байна. Дулаалга сул барилгуудад нөлөөлөл мэдэгдэхүйц.`
+      : `Cold today (${tempStr}, HDD ${hdd}). Heating demand is ${pctStrEn} a mild day. Poorly insulated buildings will see the biggest impact.`;
+  }
+  return lang === "mn"
+    ? `Өнөөдрийн температур (${tempStr}, HDD ${hdd}) дундаж халаалтын нөхцөлд тохирно. Нэмэлт ачаалал бага — энэ нь хэмнэлт хийх тохиромжтой өдөр.`
+    : `Today's temperature (${tempStr}, HDD ${hdd}) is near average heating conditions. Extra load is minimal — a good day to assess insulation needs.`;
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WeatherPage() {
   const { t, lang } = useLang();
@@ -480,6 +523,84 @@ export default function WeatherPage() {
           </div>
         </div>
 
+        {/* ─── Extreme Cold Warning ─── */}
+        {data.temp <= -20 && (
+          <div className="cold-warning-card card mb-3 animate-fade">
+            <div className="cwc-icon-col">
+              <Snowflake size={40} className="cwc-flake" />
+            </div>
+            <div className="cwc-content">
+              <div className="cwc-header">
+                <AlertTriangle size={15} style={{ color: "#e63946" }} />
+                <h3 className="cwc-title">
+                  {lang === "mn" ? "Хүйтний аюулын анхааруулга" : "Extreme Cold Warning"}
+                </h3>
+              </div>
+              <div className="cwc-temp">{data.temp}°C</div>
+              <p className="cwc-desc">
+                {lang === "mn"
+                  ? `Температур ${data.temp}°C хүрсэн. Халаалтын систем оргил ачааллаар ажиллаж байна. Дулаалга муутай барилгуудад хоолой хөлдөх болон дулааны их алдагдал үүсэх эрсдэлтэй.`
+                  : `Temperature at ${data.temp}°C. Heating systems at peak load. Poorly insulated buildings face frozen pipe risk and severe heat loss.`}
+              </p>
+              <div className="cwc-tags">
+                <span className="cwc-tag cwc-tag--blue">HDD {data.hdd}</span>
+                <span className="cwc-tag cwc-tag--red">
+                  {lang === "mn" ? "Хоолой хөлдөх эрсдэл" : "Frozen pipe risk"}
+                </span>
+                <span className="cwc-tag cwc-tag--orange">
+                  +{data.energy_val.toLocaleString()} {lang === "mn" ? "кВт·цаг/хот" : "kWh/city"}
+                </span>
+                <span className="cwc-tag cwc-tag--gray">
+                  {lang === "mn" ? "Дулаан хадгалах арга хэмжээ авна уу" : "Take insulation precautions"}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Weather → Energy Actionable Insight ─── */}
+        <div className="card weather-insight-card mb-3 animate-fade">
+          <div className="wi-header">
+            <Zap size={18} style={{ color: impactColor }} />
+            <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "var(--text)" }}>
+              {lang === "mn" ? "Өнөөдрийн цаг агаарын нөлөөлөл" : "Today's weather energy impact"}
+            </h3>
+          </div>
+
+          <div className="wi-insight-box" style={{ borderLeftColor: impactColor }}>
+            <p className="wi-insight-text">{getInsightText(data, lang)}</p>
+          </div>
+
+          <div className="wi-impact-grid">
+            {BUILDING_IMPACTS.map(b => {
+              const pct = getImpactPct(data.hdd, b.sensitivity);
+              const BIcon = b.icon;
+              return (
+                <div className="wi-impact-item" key={b.keyEn}>
+                  <BIcon size={13} style={{ color: "var(--text3)", flexShrink: 0 }} />
+                  <span className="wi-impact-label">{lang === "mn" ? b.keyMn : b.keyEn}</span>
+                  <span className="wi-impact-pct" style={{ color: pct > 0 ? impactColor : "#2a9d8f" }}>
+                    {pct > 0 ? `+${pct}%` : lang === "mn" ? "Хэвийн" : "Normal"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="wi-footer">
+            <span className="wi-footnote">
+              {lang === "mn"
+                ? `Ерөнхий лавлагаа HDD ${REF_HDD} (намрын ердийн өдөр) харьцуулсан.`
+                : `% change vs HDD ${REF_HDD} reference (typical autumn day).`}
+            </span>
+            <Link to="/predictor" className="btn btn-accent wi-pred-btn">
+              <Brain size={14} />
+              {lang === "mn" ? "Миний барилгын хэрэглээг тооцоолох" : "Calculate my building's consumption"}
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+
         {/* Hourly (today only) */}
         {activeDay === "today" && weather.hourlyToday.length > 0 && (
           <div className="card mb-3">
@@ -510,6 +631,98 @@ export default function WeatherPage() {
             {weather.weekForecast.map((d, i) => (
               <DayCard key={i} day={d} active={false} onClick={() => {}} t={t} lang={lang} />
             ))}
+          </div>
+        </div>
+
+        {/* ─── HDD 7-day trend chart ─── */}
+        <div className="card mb-3">
+          <div className="hdd-trend-header">
+            <h3 className="section-title" style={{ margin: 0 }}>
+              <Thermometer size={16} style={{ marginRight: 6, verticalAlign: "middle" }} />
+              {lang === "mn" ? "7 хоногийн HDD трэнд" : "7-Day HDD Trend"}
+            </h3>
+            <span className="hdd-trend-note">
+              {lang === "mn" ? "Халаалтын зэрэглэлийн өдрийн өөрчлөлт · Шар шугам = өнөөдөр" : "Heating degree days over time · Yellow line = today"}
+            </span>
+          </div>
+
+          <ResponsiveContainer width="100%" height={190}>
+            <AreaChart data={weather.historyChart} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+              <defs>
+                <linearGradient id="hddAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3a8fd4" stopOpacity={0.55} />
+                  <stop offset="100%" stopColor="#3a8fd4" stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+              <XAxis dataKey="date" tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} />
+              <YAxis tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={(v) => [`${v} HDD`, lang === "mn" ? "Халаалтын зэрэглэлийн өдөр" : "Heating Degree Days"]}
+              />
+              <ReferenceLine
+                x={weather.historyChart[7]?.date}
+                stroke="#e9c46a"
+                strokeDasharray="4 2"
+                strokeWidth={1.5}
+                label={{ value: lang === "mn" ? "Өнөөдөр" : "Today", fill: "#e9c46a", fontSize: 10, position: "insideTopLeft" }}
+              />
+              <Area
+                type="monotone"
+                dataKey="hdd"
+                stroke="#3a8fd4"
+                strokeWidth={2.5}
+                fill="url(#hddAreaGrad)"
+                dot={{ r: 3, fill: "#3a8fd4", stroke: "#1a6eb5", strokeWidth: 1 }}
+                activeDot={{ r: 5, fill: "#e9c46a", stroke: "#fff", strokeWidth: 1.5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {/* HDD summary stats */}
+          {(() => {
+            const hdds = weather.historyChart.map(d => d.hdd);
+            const peak = Math.max(...hdds);
+            const avg = Math.round(hdds.reduce((a, b) => a + b, 0) / hdds.length);
+            const total = hdds.reduce((a, b) => a + b, 0);
+            return (
+              <div className="hdd-trend-stats">
+                <div className="hts-item">
+                  <span className="hts-val" style={{ color: "#e63946" }}>{peak}</span>
+                  <span className="hts-lbl">{lang === "mn" ? "Оргил HDD" : "Peak HDD"}</span>
+                </div>
+                <div className="hts-item">
+                  <span className="hts-val">{avg}</span>
+                  <span className="hts-lbl">{lang === "mn" ? "Дундаж HDD" : "Avg HDD"}</span>
+                </div>
+                <div className="hts-item">
+                  <span className="hts-val" style={{ color: "#3a8fd4" }}>{total}</span>
+                  <span className="hts-lbl">{lang === "mn" ? "Нийт (9 өдөр)" : "Total (9 days)"}</span>
+                </div>
+                <div className="hts-item">
+                  <span className="hts-val" style={{ color: "#f4a261" }}>{data.hdd}</span>
+                  <span className="hts-lbl">{lang === "mn" ? "Өнөөдөр" : "Today"}</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Use in Predictor CTA */}
+          <div className="hdd-predictor-cta">
+            <div className="hdd-pred-info">
+              <Brain size={14} style={{ color: "var(--primary-light)", flexShrink: 0 }} />
+              <span>
+                {lang === "mn"
+                  ? `Өнөөдрийн HDD (${data.hdd}) дээр үндэслэн барилгынхаа эрчим хүчний хэрэглээг тооцоолоорой`
+                  : `Use today's HDD (${data.hdd}) to estimate your building's energy consumption`}
+              </span>
+            </div>
+            <Link to="/predictor" className="btn btn-accent hdd-pred-btn">
+              <Brain size={15} />
+              {lang === "mn" ? "Предикторт ашиглах" : "Use in Predictor"}
+              <ArrowRight size={13} />
+            </Link>
           </div>
         </div>
 

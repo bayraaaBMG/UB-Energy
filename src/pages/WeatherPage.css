@@ -637,3 +637,259 @@
   .esb-chain { flex-direction: column; }
   .esb-arrow { padding-top: 0; transform: rotate(90deg); align-self: center; }
 }
+
+/* ─── Weather Insight Card ─── */
+.weather-insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.wi-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wi-insight-box {
+  border-left: 3px solid;
+  padding: 0.7rem 1rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 0 8px 8px 0;
+}
+
+.wi-insight-text {
+  font-size: 0.84rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.wi-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.wi-impact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.6rem 0.4rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.wi-impact-label {
+  font-size: 0.68rem;
+  color: var(--text3);
+  font-weight: 600;
+}
+
+.wi-impact-pct {
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.wi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.wi-footnote {
+  font-size: 0.71rem;
+  color: var(--text3);
+  flex: 1;
+  min-width: 0;
+}
+
+.wi-pred-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  padding: 0.5rem 1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .wi-impact-grid { grid-template-columns: repeat(2, 1fr); }
+  .wi-footer { flex-direction: column; align-items: flex-start; }
+  .wi-pred-btn { width: 100%; justify-content: center; }
+}
+
+/* ─── Extreme Cold Warning ─────────────────────────────────────────────────── */
+.cold-warning-card {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(58,143,212,0.12) 0%, rgba(26,110,181,0.06) 100%);
+  border: 1px solid rgba(58,143,212,0.4);
+  border-left: 4px solid #3a8fd4;
+}
+
+.cwc-icon-col {
+  flex-shrink: 0;
+  padding-top: 0.25rem;
+}
+
+.cwc-flake {
+  color: #8ec6f0;
+  animation: cwc-spin 6s linear infinite;
+}
+
+@keyframes cwc-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.cwc-content { flex: 1; }
+
+.cwc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.cwc-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.cwc-temp {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #8ec6f0;
+  line-height: 1;
+  letter-spacing: -1px;
+  margin-bottom: 0.5rem;
+}
+
+.cwc-desc {
+  font-size: 0.82rem;
+  color: var(--text2);
+  line-height: 1.65;
+  margin: 0 0 0.75rem;
+}
+
+.cwc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cwc-tag {
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cwc-tag--blue   { background: rgba(58,143,212,0.15);  color: #3a8fd4;  border: 1px solid rgba(58,143,212,0.3);  }
+.cwc-tag--red    { background: rgba(230,57,70,0.12);   color: #e63946;  border: 1px solid rgba(230,57,70,0.3);   }
+.cwc-tag--orange { background: rgba(244,162,97,0.12);  color: #f4a261;  border: 1px solid rgba(244,162,97,0.3);  }
+.cwc-tag--gray   { background: var(--bg3);             color: var(--text3); border: 1px solid var(--border);    }
+
+/* ─── HDD 7-Day Trend ────────────────────────────────────────────────────────── */
+.hdd-trend-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.hdd-trend-note {
+  font-size: 0.75rem;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.hdd-trend-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.hts-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+}
+
+.hts-val {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.hts-lbl {
+  font-size: 0.68rem;
+  color: var(--text3);
+  font-weight: 600;
+}
+
+/* ─── Use in Predictor CTA ───────────────────────────────────────────────────── */
+.hdd-predictor-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(26,110,181,0.07);
+  border: 1px solid rgba(26,110,181,0.2);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.hdd-pred-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text2);
+  line-height: 1.55;
+  flex: 1;
+  min-width: 0;
+}
+
+.hdd-pred-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  padding: 0.5rem 1.1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .cold-warning-card { flex-direction: column; gap: 0.75rem; }
+  .cwc-temp { font-size: 2rem; }
+  .hdd-trend-stats { grid-template-columns: repeat(2, 1fr); }
+  .hdd-predictor-cta { flex-direction: column; }
+  .hdd-pred-btn { width: 100%; justify-content: center; }
+}

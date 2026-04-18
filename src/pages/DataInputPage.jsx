@@ -7,7 +7,8 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight, Info,
-  Layers, Wind, Flame, Target, Zap,
+  Layers, Wind, Flame, Target, Zap, AlertTriangle, ChevronDown, ChevronRight,
+  CircleCheck, CircleX, Loader2,
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
@@ -166,6 +167,206 @@ function computeQualityScore(form, elecBill, heatBill) {
   else if (form.window_type === "double")                    score += 3;
   if (parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) score += 15;
   return Math.min(100, score);
+}
+
+// ─── CSV / JSON parsers ───────────────────────────────────────────────────────
+const CSV_REQUIRED = ["area"];
+const NAME_KEYS    = ["building_name", "name", "нэр"];
+const COL_SPEC = [
+  { key: "building_name", req: true,  mn: "Барилгын нэр",                         en: "Building name" },
+  { key: "area",          req: true,  mn: "Талбай (м²)",                           en: "Floor area (m²)" },
+  { key: "year",          req: false, mn: "Баригдсан он (1940–2026)",               en: "Year built (1940–2026)" },
+  { key: "floors",        req: false, mn: "Давхрын тоо",                            en: "Number of floors" },
+  { key: "district",      req: false, mn: "Дүүрэг",                                en: "District" },
+  { key: "type",          req: false, mn: "Төрөл: apartment / office / school ...", en: "Type: apartment / office / school ..." },
+  { key: "usage_kwh",     req: false, mn: "Жилийн хэрэглээ (кВт·цаг)",             en: "Annual usage (kWh)" },
+  { key: "insulation_quality", req: false, mn: "Тусгаарлалт: good / medium / poor",en: "Insulation: good / medium / poor" },
+  { key: "wall_material", req: false, mn: "Хана: panel / brick / concrete / wood", en: "Wall: panel / brick / concrete / wood" },
+  { key: "lat",           req: false, mn: "Өргөрөг (latitude)",                    en: "Latitude" },
+  { key: "lng",           req: false, mn: "Уртраг (longitude)",                    en: "Longitude" },
+];
+
+function normalizeRow(obj, idx) {
+  const area = parseFloat(obj.area);
+  const name = NAME_KEYS.map(k => obj[k]).find(Boolean) || `Row ${idx + 2}`;
+  const errs = [];
+  if (!area || isNaN(area) || area < 1) errs.push("area missing/invalid");
+  if (obj.year && (parseInt(obj.year) < 1900 || parseInt(obj.year) > 2030)) errs.push("year out of range");
+  if (errs.length) return { valid: false, row: idx + 2, name, msg: errs.join(", ") };
+  return {
+    valid: true,
+    record: {
+      id:                 `csv_${Date.now()}_${idx}`,
+      name,
+      area,
+      year:               parseInt(obj.year)  || null,
+      floors:             parseInt(obj.floors || obj.total_floors) || null,
+      district:           obj.district        || "Сүхбаатар",
+      type:               obj.type || obj.building_type || "apartment",
+      predicted_kwh:      parseFloat(obj.usage_kwh) || null,
+      insulation_quality: obj.insulation_quality || "medium",
+      wall_material:      obj.wall_material   || "panel",
+      window_type:        obj.window_type     || "double",
+      heating_type:       obj.heating_type    || "central",
+      latitude:           parseFloat(obj.lat  || obj.latitude)  || 47.9184,
+      longitude:          parseFloat(obj.lng  || obj.longitude) || 106.9177,
+      source:      "user",
+      submittedAt: new Date().toISOString(),
+    },
+  };
+}
+
+function parseCSVText(text) {
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+    .split("\n").filter(l => l.trim());
+  if (lines.length < 2) return { headers: [], valid: [], errors: [{ row: 1, name: "", msg: "Empty file or no data rows" }], totalRows: 0 };
+  const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, "").toLowerCase());
+  const nameKey = NAME_KEYS.find(k => headers.includes(k));
+  const valid = [], errors = [];
+  lines.slice(1).forEach((line, idx) => {
+    if (!line.trim()) return;
+    const vals = line.split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+    const obj  = Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]));
+    if (nameKey) obj.building_name = obj[nameKey];
+    const r = normalizeRow(obj, idx);
+    r.valid ? valid.push(r.record) : errors.push(r);
+  });
+  return { headers, valid, errors, totalRows: lines.length - 1 };
+}
+
+function parseJSONText(text) {
+  try {
+    let data = JSON.parse(text);
+    if (!Array.isArray(data)) data = data.buildings || data.data || data.records || [];
+    if (!Array.isArray(data)) return { headers: [], valid: [], errors: [{ row: 0, name: "", msg: "Expected an array of building objects" }], totalRows: 0 };
+    const valid = [], errors = [];
+    data.forEach((obj, idx) => {
+      const r = normalizeRow(obj, idx);
+      r.valid ? valid.push(r.record) : errors.push(r);
+    });
+    return { headers: Object.keys(data[0] || {}), valid, errors, totalRows: data.length };
+  } catch (e) {
+    return { headers: [], valid: [], errors: [{ row: 0, name: "", msg: "Invalid JSON — " + e.message }], totalRows: 0 };
+  }
+}
+
+// ─── Parse result badge ───────────────────────────────────────────────────────
+function FileParseResult({ result, lang }) {
+  if (!result) return null;
+  const [showErrors, setShowErrors] = useState(false);
+  if (result.parsing) return (
+    <div className="fpr fpr-loading">
+      <Loader2 size={13} className="fpr-spin" />
+      <span>{lang === "mn" ? "Уншиж байна..." : "Parsing..."}</span>
+    </div>
+  );
+  const { valid, errors, totalRows } = result;
+  const tone = errors.length === 0 ? "ok" : valid.length > 0 ? "warn" : "err";
+  return (
+    <div className={`fpr fpr-${tone}`}>
+      <div className="fpr-summary">
+        {totalRows > 0 && <span className="fpr-total">{totalRows} {lang === "mn" ? "мөр" : "rows"}</span>}
+        {valid.length > 0 && (
+          <span className="fpr-valid"><CircleCheck size={12}/> {valid.length} {lang === "mn" ? "хүчинтэй барилга" : "valid buildings"}</span>
+        )}
+        {errors.length > 0 && (
+          <button className="fpr-err-toggle" onClick={() => setShowErrors(s => !s)}>
+            <CircleX size={12}/> {errors.length} {lang === "mn" ? "алдаа" : "errors"}
+            {showErrors ? <ChevronDown size={11}/> : <ChevronRight size={11}/>}
+          </button>
+        )}
+      </div>
+      {showErrors && (
+        <div className="fpr-errors">
+          {errors.slice(0, 8).map((e, i) => (
+            <div key={i} className="fpr-err-row">
+              <span className="fpr-row-num">{lang === "mn" ? `Мөр ${e.row}` : `Row ${e.row}`}</span>
+              {e.name && <span className="fpr-row-name">{e.name}</span>}
+              <span className="fpr-row-msg">{e.msg}</span>
+            </div>
+          ))}
+          {errors.length > 8 && <div className="fpr-more">+{errors.length - 8} {lang === "mn" ? "алдаа" : "more"}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── "Ямар формат зөв вэ?" accordion ─────────────────────────────────────────
+function FormatGuideAccordion({ lang }) {
+  const [open, setOpen] = useState(false);
+  const CSV_EXAMPLE = `building_name,area,year,floors,district,type,usage_kwh
+Сансар 15-р байр,2400,1992,9,Чингэлтэй,apartment,38500
+Монгол Цахилгаан ХК,3200,2005,8,Сүхбаатар,office,52000`;
+  const JSON_EXAMPLE = `[
+  {
+    "building_name": "Сансар 15-р байр",
+    "area": 2400,
+    "year": 1992,
+    "district": "Чингэлтэй",
+    "type": "apartment"
+  }
+]`;
+  return (
+    <div className="fmt-guide-accordion card">
+      <button className="fga-toggle" onClick={() => setOpen(o => !o)}>
+        <Info size={14} style={{ color: "#3a8fd4" }} />
+        <span>{lang === "mn" ? "Ямар формат зөв вэ?" : "What format is accepted?"}</span>
+        {open ? <ChevronDown size={15} style={{ marginLeft: "auto" }} /> : <ChevronRight size={15} style={{ marginLeft: "auto" }} />}
+      </button>
+
+      {open && (
+        <div className="fga-body animate-fade">
+          {/* Column spec */}
+          <div className="fga-section-label">
+            {lang === "mn" ? "CSV / Excel баганы жагсаалт" : "CSV / Excel column list"}
+          </div>
+          <div className="fga-col-list">
+            {COL_SPEC.map(c => (
+              <div key={c.key} className="fga-col-row">
+                <code className="fga-col-key">{c.key}</code>
+                <span className={`fga-req-badge ${c.req ? "req" : "opt"}`}>
+                  {c.req ? (lang === "mn" ? "Заавал" : "Required") : (lang === "mn" ? "Сонголт" : "Optional")}
+                </span>
+                <span className="fga-col-desc">{lang === "mn" ? c.mn : c.en}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CSV example */}
+          <div className="fga-section-label" style={{ marginTop: "1rem" }}>
+            {lang === "mn" ? "CSV жишээ" : "CSV example"}
+          </div>
+          <pre className="fga-code">{CSV_EXAMPLE}</pre>
+
+          {/* JSON example */}
+          <div className="fga-section-label">
+            {lang === "mn" ? "JSON жишээ" : "JSON example"}
+          </div>
+          <pre className="fga-code">{JSON_EXAMPLE}</pre>
+
+          {/* Rules */}
+          <ul className="fga-rules">
+            <li>{lang === "mn" ? "CSV-д эхний мөр нь гарчиг байна (header row)" : "CSV first row must be the header row"}</li>
+            <li>{lang === "mn" ? "JSON нь array эсвэл {buildings: [...]} бүтэцтэй байна" : "JSON must be an array or {buildings: [...]} object"}</li>
+            <li>{lang === "mn" ? "area заавал байна; байхгүй бол тэр мөр алгасагдана" : "area is required; rows without it are skipped"}</li>
+            <li>{lang === "mn" ? "Тэмдэгт кодлол: UTF-8 (BOM байсан ч зөв ажиллана)" : "Encoding: UTF-8 (BOM is handled automatically)"}</li>
+          </ul>
+
+          {/* Template download */}
+          <button className="fga-dl-btn" onClick={() => {
+            const csv = "building_name,area,year,floors,district,type,usage_kwh,insulation_quality,wall_material\nЖишээ байр,1200,1995,9,Сүхбаатар,apartment,38500,medium,panel\n";
+            const b = new Blob(["\uFEFF" + csv], { type: "text/csv" });
+            const u = URL.createObjectURL(b);
+            const a = document.createElement("a"); a.href = u; a.download = "ubenergy_template.csv"; a.click();
+          }}>
+            <FileSpreadsheet size={14} />
+            {lang === "mn" ? "template.csv татах" : "Download template.csv"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Supported file types ─────────────────────────────────────────────────────
@@ -357,10 +558,12 @@ export default function DataInputPage() {
   const [link, setLink] = useState("");
   const [links, setLinks] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitCount, setSubmitCount] = useState(0);
   const [previewFile, setPreviewFile] = useState(null);
   const [elecBill, setElecBill] = useState("");
   const [heatBill, setHeatBill] = useState("");
   const [formErrors, setFormErrors] = useState({});
+  const [parseResults, setParseResults] = useState({}); // keyed by file.name
 
   // form state must be declared BEFORE any hooks that reference it
   const [form, setForm] = useState({
@@ -462,6 +665,22 @@ export default function DataInputPage() {
       const names = new Set(prev.map(f => f.name));
       return [...prev, ...valid.filter(f => !names.has(f.name))];
     });
+    // Auto-parse CSV and JSON
+    valid.forEach(f => {
+      const ext = f.name.split(".").pop().toLowerCase();
+      if (!["csv","json"].includes(ext)) return;
+      setParseResults(prev => ({ ...prev, [f.name]: { parsing: true } }));
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const result = ext === "csv" ? parseCSVText(text) : parseJSONText(text);
+        setParseResults(prev => ({ ...prev, [f.name]: result }));
+      };
+      reader.onerror = () => {
+        setParseResults(prev => ({ ...prev, [f.name]: { valid: [], errors: [{ row: 0, name: "", msg: "Could not read file" }], totalRows: 0 } }));
+      };
+      reader.readAsText(f, "UTF-8");
+    });
   };
 
   const handleDrop = (e) => {
@@ -535,8 +754,18 @@ export default function DataInputPage() {
 
   const handleFileSubmit = () => {
     if (files.length === 0 && links.length === 0) return;
+    // Import all valid parsed buildings
+    let count = 0;
+    Object.values(parseResults).forEach(r => {
+      if (!r || r.parsing || !r.valid) return;
+      r.valid.forEach(record => {
+        saveUserBuilding({ ...record, userId: user?.id || null });
+        count++;
+      });
+    });
+    setSubmitCount(count);
     setSubmitted(true);
-    setTimeout(() => { setSubmitted(false); setFiles([]); setLinks([]); }, 4000);
+    setTimeout(() => { setSubmitted(false); setFiles([]); setLinks([]); setParseResults({}); }, 5000);
   };
 
   const TABS = [
@@ -572,11 +801,12 @@ export default function DataInputPage() {
         {submitted && (
           <div className="success-banner animate-fade" role="status" aria-live="polite">
             <CheckCircle size={20} />
-            <span>{t.dataInput.success_msg}</span>
-            <button
-              className="success-db-btn"
-              onClick={() => navigate("/database")}
-            >
+            <span>
+              {submitCount > 0
+                ? (lang === "mn" ? `${submitCount} барилга амжилттай импортлогдлоо!` : `${submitCount} buildings imported successfully!`)
+                : t.dataInput.success_msg}
+            </span>
+            <button className="success-db-btn" onClick={() => navigate("/database")}>
               {t.dataInput.view_in_database}
               <ArrowRight size={15} />
             </button>
@@ -931,7 +1161,10 @@ export default function DataInputPage() {
         {/* ── File upload tab ── */}
         {activeTab === "file" && (
           <div className="animate-fade">
-            <div className="grid grid-2" style={{ gridTemplateColumns: "1fr 320px", alignItems: "start" }}>
+            {/* Format guide accordion — full width, above the grid */}
+            <FormatGuideAccordion lang={lang} />
+
+            <div className="grid grid-2" style={{ gridTemplateColumns: "1fr 300px", alignItems: "start", marginTop: "1rem" }}>
               <div className="card">
                 <h3 className="section-title" style={{ fontSize: "1rem" }}>
                   <CloudUpload size={16} style={{ marginLeft: 8 }} />
@@ -971,15 +1204,31 @@ export default function DataInputPage() {
                     <div className="fl-header">
                       <span>{files.length} {t.dataInput.files_selected}</span>
                       <button className="btn btn-secondary" style={{ padding: "0.3rem 0.75rem", fontSize: "0.8rem" }}
-                        onClick={() => setFiles([])}>
+                        onClick={() => { setFiles([]); setParseResults({}); }}>
                         <Trash2 size={13} /> {t.dataInput.clear_all}
                       </button>
                     </div>
                     {files.map(f => (
-                      <FileItem key={f.name} file={f} t={t} onRemove={removeFile} onPreview={setPreviewFile} />
+                      <div key={f.name}>
+                        <FileItem file={f} t={t} onRemove={removeFile} onPreview={setPreviewFile} />
+                        <FileParseResult result={parseResults[f.name]} lang={lang} />
+                      </div>
                     ))}
                   </div>
                 )}
+
+                {/* Total valid summary */}
+                {(() => {
+                  const totalValid = Object.values(parseResults).reduce((s, r) => s + (r?.valid?.length || 0), 0);
+                  const totalErr   = Object.values(parseResults).reduce((s, r) => s + (r?.errors?.length || 0), 0);
+                  if (totalValid === 0 && totalErr === 0) return null;
+                  return (
+                    <div className={`file-import-summary ${totalValid > 0 ? "fis-ok" : "fis-err"}`}>
+                      {totalValid > 0 && <><CircleCheck size={14}/> {lang === "mn" ? `${totalValid} барилга импортлох боломжтой` : `${totalValid} buildings ready to import`}</>}
+                      {totalValid === 0 && totalErr > 0 && <><AlertTriangle size={14}/> {lang === "mn" ? "Хүчинтэй мөр байхгүй" : "No valid rows found"}</>}
+                    </div>
+                  );
+                })()}
 
                 <button
                   className="btn btn-primary submit-btn mt-2"
@@ -987,42 +1236,45 @@ export default function DataInputPage() {
                   disabled={files.length === 0 && links.length === 0}
                 >
                   <Upload size={18} />
-                  {t.dataInput.upload_btn} ({files.length} {t.dataInput.file_unit})
+                  {(() => {
+                    const n = Object.values(parseResults).reduce((s, r) => s + (r?.valid?.length || 0), 0);
+                    return n > 0
+                      ? (lang === "mn" ? `${n} барилга импортлох` : `Import ${n} buildings`)
+                      : `${t.dataInput.upload_btn} (${files.length} ${t.dataInput.file_unit})`;
+                  })()}
                 </button>
               </div>
 
-              <div className="card">
-                <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.dataInput.file_guide_title}</h3>
-                <div className="format-guide">
-                  <div className="fg-item">
-                    <FileSpreadsheet size={18} style={{ color: "#2a9d8f" }} />
-                    <div><strong>CSV / Excel</strong><p>{t.dataInput.csv_desc}</p></div>
+              {/* Right sidebar */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div className="card">
+                  <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.dataInput.file_guide_title}</h3>
+                  <div className="format-guide">
+                    <div className="fg-item">
+                      <FileSpreadsheet size={18} style={{ color: "#2a9d8f" }} />
+                      <div>
+                        <strong>CSV / Excel</strong>
+                        <p>{t.dataInput.csv_desc}</p>
+                        <span className="fg-auto-badge">{lang === "mn" ? "Автоматаар уншина" : "Auto-parsed"}</span>
+                      </div>
+                    </div>
+                    <div className="fg-item">
+                      <FileText size={18} style={{ color: "#3a8fd4" }} />
+                      <div>
+                        <strong>JSON</strong>
+                        <p>{t.dataInput.json_desc}</p>
+                        <span className="fg-auto-badge">{lang === "mn" ? "Автоматаар уншина" : "Auto-parsed"}</span>
+                      </div>
+                    </div>
+                    <div className="fg-item">
+                      <FileText size={18} style={{ color: "#e63946" }} />
+                      <div><strong>PDF / Word</strong><p>{t.dataInput.pdf_desc}</p></div>
+                    </div>
+                    <div className="fg-item">
+                      <File size={18} style={{ color: "#f4a261" }} />
+                      <div><strong>ZIP</strong><p>{t.dataInput.zip_desc}</p></div>
+                    </div>
                   </div>
-                  <div className="fg-item">
-                    <FileText size={18} style={{ color: "#3a8fd4" }} />
-                    <div><strong>JSON</strong><p>{t.dataInput.json_desc}</p></div>
-                  </div>
-                  <div className="fg-item">
-                    <FileText size={18} style={{ color: "#e63946" }} />
-                    <div><strong>PDF / Word</strong><p>{t.dataInput.pdf_desc}</p></div>
-                  </div>
-                  <div className="fg-item">
-                    <File size={18} style={{ color: "#f4a261" }} />
-                    <div><strong>ZIP</strong><p>{t.dataInput.zip_desc}</p></div>
-                  </div>
-                </div>
-                <div className="guide-note mt-2">
-                  <strong>{t.dataInput.template_label}</strong><br />
-                  <a href="#" className="text-primary" style={{ fontSize: "0.85rem" }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const csv = "building_name,area,year,floors,usage_kwh,district\nЖишээ байр,1200,1995,9,38500,Сүхбаатар\n";
-                      const b = new Blob(["\uFEFF" + csv], { type: "text/csv" });
-                      const u = URL.createObjectURL(b);
-                      const a = document.createElement("a"); a.href = u; a.download = "template.csv"; a.click();
-                    }}>
-                    template.csv
-                  </a>
                 </div>
               </div>
             </div>
