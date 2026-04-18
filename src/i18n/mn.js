@@ -157,7 +157,7 @@ const mn = {
       electric: "Цахилгаан",
       gas: "Хий",
     },
-    floor_plan: "2D Хавтгай зураг",
+    floor_plan: "3D Барилгын загвар",
     rooms: "Өрөөний тоо",
     insulation_quality: "Дулаалгын чанар",
     insulation_good: "Сайн (шинэ/засварласан)",

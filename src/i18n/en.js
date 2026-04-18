@@ -157,7 +157,7 @@ const en = {
       electric: "Electric",
       gas: "Gas",
     },
-    floor_plan: "2D Floor Plan",
+    floor_plan: "3D Building Model",
     rooms: "Number of Rooms",
     insulation_quality: "Insulation Quality",
     insulation_good: "Good (new/renovated)",
