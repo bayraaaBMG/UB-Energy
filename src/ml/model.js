@@ -338,6 +338,93 @@ export const ACTUAL_VS_PREDICTED = y_test
   .filter((_, i) => i % _step === 0)
   .map((actual, i) => ({ actual: Math.round(actual), predicted: Math.round(y_pred_test[i * _step]) }));
 
+// ─── 10b. Ridge Regression (λ = 200) ─────────────────────────────────────────
+const XtX_ridge = matMul(Xt, X_train);
+const LAMBDA_RIDGE = 200;
+for (let i = 1; i < XtX_ridge.length; i++) XtX_ridge[i][i] += LAMBDA_RIDGE;
+const BETA_RIDGE = matMul(matInverse(XtX_ridge), Xty).map(r => r[0]);
+const y_pred_ridge = X_test.map(row => Math.max(0, BETA_RIDGE.reduce((s, b, i) => s + b * row[i], 0)));
+const RIDGE_M  = evalMetrics(y_test, y_pred_ridge);
+const RIDGE_F1 = f1MacroScore(y_test, y_pred_ridge, test_areas);
+const ridge_w20 = y_test.filter((y, i) => Math.abs(y - y_pred_ridge[i]) / (Math.abs(y) || 1) <= 0.20).length;
+
+// ─── 10c. Decision Tree Regression (max_depth = 6) ───────────────────────────
+function _buildTree(X, y, indices, depth) {
+  const n = indices.length;
+  if (depth >= 6 || n < 10) {
+    let sum = 0;
+    for (const i of indices) sum += y[i];
+    return { leaf: true, val: sum / n };
+  }
+  const nF = X[0].length;
+  let bestScore = Infinity, bestFi = -1, bestThreshold = 0;
+  let bestLeftIdx = null, bestRightIdx = null;
+  let totalSum = 0, totalSq = 0;
+  for (const i of indices) { totalSum += y[i]; totalSq += y[i] * y[i]; }
+
+  for (let fi = 1; fi < nF; fi++) {
+    const sorted = [...indices].sort((a, b) => X[a][fi] - X[b][fi]);
+    let sumL = 0, sq2L = 0, nl = 0;
+    let sumR = totalSum, sq2R = totalSq, nr = n;
+    for (let k = 0; k < n - 1; k++) {
+      const v = y[sorted[k]];
+      sumL += v; sq2L += v * v; nl++;
+      sumR -= v; sq2R -= v * v; nr--;
+      if (X[sorted[k]][fi] === X[sorted[k + 1]][fi]) continue;
+      const score = (sq2L - sumL * sumL / nl) + (sq2R - sumR * sumR / nr);
+      if (score < bestScore) {
+        bestScore = score; bestFi = fi;
+        bestThreshold = (X[sorted[k]][fi] + X[sorted[k + 1]][fi]) / 2;
+        bestLeftIdx  = sorted.slice(0, k + 1);
+        bestRightIdx = sorted.slice(k + 1);
+      }
+    }
+  }
+  if (bestFi === -1) return { leaf: true, val: totalSum / n };
+  return {
+    leaf: false, fi: bestFi, threshold: bestThreshold,
+    left:  _buildTree(X, y, bestLeftIdx,  depth + 1),
+    right: _buildTree(X, y, bestRightIdx, depth + 1),
+  };
+}
+
+function _treePredict(node, row) {
+  return node.leaf ? node.val
+    : row[node.fi] <= node.threshold
+      ? _treePredict(node.left, row)
+      : _treePredict(node.right, row);
+}
+
+const _DT = _buildTree(X_train, y_train, Array.from({ length: X_train.length }, (_, i) => i), 0);
+const y_pred_dt = X_test.map(row => Math.max(0, _treePredict(_DT, row)));
+const DT_M  = evalMetrics(y_test, y_pred_dt);
+const DT_F1 = f1MacroScore(y_test, y_pred_dt, test_areas);
+const dt_w20 = y_test.filter((y, i) => Math.abs(y - y_pred_dt[i]) / (Math.abs(y) || 1) <= 0.20).length;
+
+export const MODEL_COMPARISON = [
+  {
+    id: 'ols', name: 'OLS Regression', name_mn: 'OLS Регресс (Одоогийн)', color: '#3a8fd4',
+    ...TEST_METRICS, f1: TEST_F1,
+    coverage: +(within20 / y_test.length * 100).toFixed(1),
+    note_mn: 'Суурь шугаман загвар. Тогтвортой, тайлбарлахад хялбар.',
+    note_en: 'Baseline linear model. Stable and interpretable.',
+  },
+  {
+    id: 'ridge', name: 'Ridge (λ=200)', name_mn: 'Ридж Регресс (λ=200)', color: '#2a9d8f',
+    ...RIDGE_M, f1: RIDGE_F1,
+    coverage: +(ridge_w20 / y_test.length * 100).toFixed(1),
+    note_mn: 'Хэт тохируулалтаас сэргийлсэн шугаман загвар.',
+    note_en: 'Regularized linear model preventing overfitting.',
+  },
+  {
+    id: 'dt', name: 'Decision Tree (d=6)', name_mn: 'Шийдвэрийн Мод (d=6)', color: '#e9c46a',
+    ...DT_M, f1: DT_F1,
+    coverage: +(dt_w20 / y_test.length * 100).toFixed(1),
+    note_mn: 'Шугаман бус загвар. Харилцан хамаарлыг барьж чадна.',
+    note_en: 'Non-linear model. Captures feature interactions.',
+  },
+];
+
 // ─── 11. Feature importance (normalized |β| of scaled features) ──────────────
 //   Equivalent to permutation importance for linear models on scaled data
 const raw_importance = BETA.slice(1).map(Math.abs);

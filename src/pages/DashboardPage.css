@@ -452,6 +452,67 @@
   line-height: 1.5;
 }
 
+/* ── ML Model Comparison table ── */
+.mc-table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0 0.5rem;
+}
+
+.mc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.mc-table th {
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+
+.mc-table th em {
+  font-style: normal;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.mc-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.mc-row-winner td { background: rgba(58,143,212,0.07); }
+.mc-row-winner td:first-child { border-left: 2px solid var(--primary); }
+
+.mc-model-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.mc-award {
+  color: #e9c46a;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+.mc-num {
+  text-align: right;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.02em;
+}
+
 /* Top high-intensity buildings */
 .top-high-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .th-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.45rem 0.5rem; border-radius: 6px; background: var(--bg2); }

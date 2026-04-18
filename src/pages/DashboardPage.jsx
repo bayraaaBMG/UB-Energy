@@ -9,10 +9,10 @@ import {
   Zap, Thermometer, Activity, X,
   Building2, Database, ArrowRight,
   Download, FileText, Clock, SlidersHorizontal, Info,
-  Gauge, ShieldCheck, Radio,
+  Gauge, ShieldCheck, Radio, Award,
 } from "lucide-react";
 import {
-  Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend, ComposedChart, Area,
   ScatterChart, Scatter, ReferenceLine,
 } from "recharts";
@@ -20,7 +20,7 @@ import {
   monthlyEnergyData, dailyEnergyData, yearlyEnergyData,
   featureImportanceData, shapData, ulaanbaatarDistricts,
 } from "../data/mockData";
-import { METRICS, ACTUAL_VS_PREDICTED } from "../ml/model";
+import { METRICS, ACTUAL_VS_PREDICTED, MODEL_COMPARISON } from "../ml/model";
 import { getAllBuildings, computeStats } from "../utils/buildingStorage";
 import "./DashboardPage.css";
 
@@ -564,6 +564,78 @@ export default function DashboardPage() {
             {lang === "mn"
               ? `Шар шугам нь төгс таамаглалын шугам (y=x). Цэгүүд шугамд ойр байх тусам загвар нарийвчлалтай. R² = ${METRICS.r2}`
               : `Yellow line = perfect prediction (y=x). Points closer to the line indicate better accuracy. R² = ${METRICS.r2}`}
+          </p>
+        </div>
+
+        {/* ── ML Model Comparison ── */}
+        <div className="card mb-3">
+          <div className="chart-header flex-between" style={{ marginBottom: "1rem" }}>
+            <h3 className="section-title" style={{ marginBottom: 0 }}>
+              {lang === "mn" ? "ML Загварын Харьцуулалт" : "ML Model Comparison"}
+            </h3>
+            <span className="avp-badge">
+              {lang === "mn" ? "Тест өгөгдөл дээрх гүйцэтгэл" : "Performance on held-out test set"}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={130}>
+            <BarChart
+              data={MODEL_COMPARISON.map(m => ({
+                name: lang === "mn" ? m.name_mn : m.name,
+                r2: m.r2,
+                id: m.id,
+              }))}
+              layout="vertical"
+              margin={{ top: 0, right: 55, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" horizontal={false} />
+              <XAxis type="number" domain={[0, 1]} tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} tickFormatter={v => v.toFixed(1)} />
+              <YAxis type="category" dataKey="name" tick={{ fill: "#a8c5e0", fontSize: 10 }} width={170} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={v => [v.toFixed(4), "R²"]}
+              />
+              <Bar dataKey="r2" radius={[0, 4, 4, 0]} label={{ position: "right", fill: "#a8c5e0", fontSize: 11, formatter: v => v.toFixed(3) }}>
+                {MODEL_COMPARISON.map(m => <Cell key={m.id} fill={m.color} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="mc-table-wrap">
+            <table className="mc-table">
+              <thead>
+                <tr>
+                  <th>{lang === "mn" ? "Загвар" : "Model"}</th>
+                  <th>R²</th>
+                  <th>MAE <em>kWh</em></th>
+                  <th>RMSE</th>
+                  <th>{lang === "mn" ? "Итгэлцлэл" : "Confidence"}</th>
+                  <th>F1</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const winnerId = MODEL_COMPARISON.reduce((a, b) => b.r2 > a.r2 ? b : a).id;
+                  return MODEL_COMPARISON.map(m => (
+                    <tr key={m.id} className={m.id === winnerId ? "mc-row-winner" : ""}>
+                      <td>
+                        <span className="mc-model-dot" style={{ background: m.color }} />
+                        {lang === "mn" ? m.name_mn : m.name}
+                        {m.id === winnerId && <Award size={13} className="mc-award" />}
+                      </td>
+                      <td className="mc-num" style={{ color: m.color }}>{m.r2}</td>
+                      <td className="mc-num">{m.mae.toLocaleString()}</td>
+                      <td className="mc-num">{m.rmse.toLocaleString()}</td>
+                      <td className="mc-num">{m.confidence}%</td>
+                      <td className="mc-num">{m.f1}</td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+          <p className="avp-note">
+            {lang === "mn"
+              ? "Бүх загвар нэг тест өгөгдөл дээр үнэлэгдсэн. R² өндөр, MAE бага байх тусам загвар сайн."
+              : "All models evaluated on the same held-out test set. Higher R² and lower MAE = better model."}
           </p>
         </div>
 
