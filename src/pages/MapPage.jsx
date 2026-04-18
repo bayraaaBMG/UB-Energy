@@ -348,7 +348,12 @@ function inferYear(tags) {
 function osmToBuilding(el) {
   const tags    = el.tags  || {};
   const geom    = el.geometry || [];
+  if (geom.length < 3) return null;
+
   const area    = Math.round(osmAreaSqm(geom));
+  // Skip obviously broken OSM polygons (garages, kiosks, data errors)
+  if (area < 12) return null;
+
   const type    = osmBuildingType(tags);
   const floors  = inferFloors(area, tags);
   const { year, yearKnown } = inferYear(tags);
@@ -464,7 +469,8 @@ function BuildingFetcher({ onNewBuildings, setLoading }) {
           const els = (json.elements || [])
             .filter(el => el.geometry?.length > 2)
             .slice(0, 1000)
-            .map(osmToBuilding);
+            .map(osmToBuilding)
+            .filter(Boolean);
           if (els.length > 0) { onNewBuildings(els); break; }
         } catch (err) {
           console.warn(`Overpass mirror (${mirror}):`, err.message);
@@ -1126,9 +1132,51 @@ function HowItWorks({ t, lang }) {
   );
 }
 
-// ─── Weather widget (static UB conditions for demo) ───────────────────────────
-function WeatherWidget({ lang }) {
+// ─── Smog / haze overlay ──────────────────────────────────────────────────────
+const SMOG_PARTICLES = Array.from({ length: 22 }, (_, i) => ({
+  id: i,
+  left:   ((i * 41 + 13) % 97),
+  size:   90 + (i * 31) % 130,
+  dur:    13 + (i * 7)  % 14,
+  delay:  -(i * 2.1),
+  opBase: 0.07 + (i * 0.018) % 0.13,
+}));
+
+function SmogOverlay({ pm25 }) {
+  const intensity = Math.min(1, Math.max(0, (pm25 - 15) / 235));
+  const baseOpacity = 0.55 + intensity * 0.45;
+
+  return (
+    <div className="smog-overlay" style={{ opacity: baseOpacity }}>
+      <div className="smog-base" />
+      <div className="smog-vignette" />
+      {SMOG_PARTICLES.map(p => (
+        <div key={p.id} className="smog-particle" style={{
+          left:   `${p.left}%`,
+          width:  p.size,
+          height: p.size,
+          animationDuration:  `${p.dur}s`,
+          animationDelay:     `${p.delay}s`,
+          '--op': p.opBase + intensity * 0.1,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Weather widget ────────────────────────────────────────────────────────────
+function WeatherWidget({ lang, pm25, showSmog, onToggleSmog }) {
   const mn = lang === "mn";
+  const pm25Color =
+    pm25 > 150 ? "#9b1d20" :
+    pm25 > 55  ? "#e63946" :
+    pm25 > 35  ? "#f4a261" : "#2a9d8f";
+  const pm25Label =
+    pm25 > 150 ? (mn ? "Маш аюултай" : "Hazardous") :
+    pm25 > 55  ? (mn ? "Аюултай" : "Unhealthy") :
+    pm25 > 35  ? (mn ? "Дунд" : "Moderate") :
+                 (mn ? "Цэвэр" : "Clean");
+
   return (
     <div className="weather-widget">
       <div className="ww-top">
@@ -1141,9 +1189,16 @@ function WeatherWidget({ lang }) {
       </div>
       <div className="ww-pm">
         <span className="ww-pm-label">PM2.5</span>
-        <span className="ww-pm-val" style={{ color: "#e63946" }}>89 μg/m³</span>
-        <span className="ww-pm-badge">{mn ? "Аюултай" : "Unhealthy"}</span>
+        <span className="ww-pm-val" style={{ color: pm25Color }}>{pm25} μg/m³</span>
+        <span className="ww-pm-badge" style={{ background: `${pm25Color}22`, color: pm25Color, borderColor: `${pm25Color}55` }}>
+          {pm25Label}
+        </span>
       </div>
+      {/* Smog toggle */}
+      <button className={`ww-smog-btn${showSmog ? " active" : ""}`} onClick={onToggleSmog}>
+        <span className="ww-smog-dot" />
+        {showSmog ? (mn ? "Утаа харагдаж байна" : "Smog ON") : (mn ? "Утаа нуусан" : "Smog OFF")}
+      </button>
       <div className="ww-note">{mn ? "Жишиг · бодит биш" : "Demo · not real-time"}</div>
     </div>
   );
@@ -1167,6 +1222,8 @@ export default function MapPage() {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [layer,          setLayer]          = useState("dark");
   const [colorMode,      setColorMode]      = useState("type"); // "type" | "energy" | "grade" | "pm25"
+  const [showSmog,       setShowSmog]       = useState(true);
+  const DEMO_PM25 = 89;
 
   // Called by BuildingFetcher with each batch of OSM buildings
   const addBuildings = useCallback((newBs) => {
@@ -1477,8 +1534,16 @@ export default function MapPage() {
             </div>
           </div>
 
+          {/* Smog overlay */}
+          {showSmog && <SmogOverlay pm25={DEMO_PM25} />}
+
           {/* Weather widget */}
-          <WeatherWidget lang={lang} />
+          <WeatherWidget
+            lang={lang}
+            pm25={DEMO_PM25}
+            showSmog={showSmog}
+            onToggleSmog={() => setShowSmog(s => !s)}
+          />
         </div>
 
         {/* Side panel */}
