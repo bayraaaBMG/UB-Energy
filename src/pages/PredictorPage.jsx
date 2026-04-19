@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+
+const Building3DInterior = lazy(() => import("../components/Building3DInterior"));
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -237,6 +239,7 @@ export default function PredictorPage() {
   const [scenLabel, setScenLabel] = useState("");
   const [showScenModal, setShowScenModal] = useState(false);
   const [scenSaved, setScenSaved] = useState(false);
+  const [show3D, setShow3D] = useState(false);
 
   // Load user's buildings from storage
   useEffect(() => {
@@ -288,7 +291,8 @@ export default function PredictorPage() {
         ...form,
         hdd:       4500,
         residents: Math.max(1, Math.round(form.area / 100 * (resPer100[form.building_type] || 4))),
-        appliances: Math.min(50, Math.max(2, Math.round(form.area / 100 * (appPer100[form.building_type] || 6)))),
+        // Cap at 15 — training data has appliances in [2,15]; exceeding this causes out-of-distribution scaling that clamps OLS output to 0
+        appliances: Math.min(15, Math.max(2, Math.round(form.area / 100 * (appPer100[form.building_type] || 6)))),
       };
       const r   = predict(enriched);
       const h   = predictHeating(enriched);
@@ -497,17 +501,51 @@ export default function PredictorPage() {
           {/* ── Right: Floor plan + Results ──────────────────────── */}
           <div className="predictor-right">
             <div className="card floor-plan-card">
-              <h3 className="section-title" style={{ fontSize: "1rem" }}>
-                <Building2 size={16} style={{ marginLeft: 8 }} />
-                {t.predictor.floor_plan}
-              </h3>
-              <div className="floor-plan-container">
-                <Building3D
-                  floors={form.floors}
-                  area={form.area}
-                  buildingType={form.building_type}
-                />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
+                <h3 className="section-title" style={{ fontSize: "1rem", margin: 0 }}>
+                  <Building2 size={16} style={{ marginLeft: 8 }} />
+                  {show3D ? (lang === "mn" ? "3D Дотоод харагдац" : "3D Interior View") : t.predictor.floor_plan}
+                </h3>
+                <div className="pred-view-toggle">
+                  <button
+                    className={`pred-vtoggle-btn${!show3D ? " active" : ""}`}
+                    onClick={() => setShow3D(false)}
+                    title={lang === "mn" ? "Гадна харагдац" : "Exterior"}
+                  >
+                    <Building2 size={13} />
+                  </button>
+                  <button
+                    className={`pred-vtoggle-btn${show3D ? " active" : ""}`}
+                    onClick={() => setShow3D(true)}
+                    title={lang === "mn" ? "3D дотоод" : "3D Interior"}
+                  >
+                    <Layers size={13} />
+                    <span style={{ fontSize: "0.72rem" }}>3D</span>
+                  </button>
+                </div>
               </div>
+
+              {show3D ? (
+                <Suspense fallback={
+                  <div style={{ height: 340, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div className="wl-spinner" />
+                  </div>
+                }>
+                  <Building3DInterior form={form} />
+                  <p style={{ fontSize: "0.7rem", color: "var(--text3)", textAlign: "center", marginTop: "0.5rem" }}>
+                    {lang === "mn" ? "Чирж эргүүлэх • Scroll томруулах / жижигрүүлэх" : "Drag to orbit • Scroll to zoom"}
+                  </p>
+                </Suspense>
+              ) : (
+                <div className="floor-plan-container">
+                  <Building3D
+                    floors={form.floors}
+                    area={form.area}
+                    buildingType={form.building_type}
+                  />
+                </div>
+              )}
+
               <div className="building-info-tags">
                 <span className="info-tag"><Layers size={12} /> {form.floors} {t.common.floors_unit}</span>
                 <span className="info-tag"><Building2 size={12} /> {form.area} {t.common.units_sqm}</span>

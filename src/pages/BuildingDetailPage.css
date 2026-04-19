@@ -1,0 +1,119 @@
+/* ── Building Detail Page ───────────────────────────────────────────────────── */
+.bdet-page { padding: 0 0 3rem; }
+
+.bdet-not-found {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1rem; padding: 4rem 1rem; text-align: center; color: var(--text3);
+}
+
+.bdet-back {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.9rem; margin-bottom: 1rem;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text2); font-size: 0.85rem; transition: 0.15s;
+}
+.bdet-back:hover { background: var(--bg3); color: var(--text); }
+
+/* ── Header ── */
+.bdet-header {
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 1.4rem 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+.bdet-grade-badge {
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 900; color: #fff; flex-shrink: 0;
+}
+.bdet-header-info { flex: 1; min-width: 180px; }
+.bdet-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 0.35rem; }
+.bdet-meta {
+  display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+  font-size: 0.8rem; color: var(--text3);
+}
+.bdet-meta svg { vertical-align: middle; }
+
+.bdet-header-stats {
+  display: flex; gap: 1rem; flex-shrink: 0; flex-wrap: wrap;
+}
+.bdet-hstat { text-align: center; }
+.bdet-hstat-val { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+.bdet-hstat-lbl { font-size: 0.7rem; color: var(--text3); margin-top: 2px; }
+
+/* ── Chart Card ── */
+.bdet-chart-card { padding: 1.5rem; margin-bottom: 1.25rem; }
+.bdet-chart-header { margin-bottom: 0.5rem; }
+.bdet-chart-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 0.25rem; }
+.bdet-chart-sub { font-size: 0.8rem; color: var(--text3); margin: 0 0 1rem; font-weight: 600; }
+.bdet-chart-note {
+  margin-top: 0.65rem; font-size: 0.71rem; color: var(--text3);
+  padding: 0.4rem 0.7rem; background: var(--bg3); border-radius: 6px;
+}
+
+/* ── Unit Predictor ── */
+.bdet-unit-card { padding: 1.5rem; margin-bottom: 1.25rem; }
+.bdet-unit-header {
+  display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;
+}
+.bdet-unit-header h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+.bdet-unit-desc { font-size: 0.83rem; color: var(--text2); margin: 0 0 1rem; line-height: 1.55; }
+
+.bdet-unit-inputs {
+  display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 1rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 680px) { .bdet-unit-inputs { grid-template-columns: 1fr; } }
+
+.bdet-floor-note {
+  display: block; font-size: 0.72rem; color: #f4a261;
+  margin-top: 0.3rem; line-height: 1.4;
+}
+
+.bdet-unit-result {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+.bdet-unit-grade {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 900; color: #fff;
+}
+.bdet-unit-nums {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.bdet-unum { }
+.bdet-unum-val { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+.bdet-unum-lbl { font-size: 0.7rem; color: var(--text3); margin-top: 2px; }
+.bdet-unum-sep { color: var(--text3); font-size: 1.2rem; }
+.bdet-unit-tag { font-size: 0.75rem; color: var(--text3); }
+
+/* Mini monthly bar chart */
+.bdet-unit-months {
+  display: flex; gap: 3px; align-items: flex-end; height: 62px; padding-top: 10px;
+}
+.bdet-unit-month {
+  display: flex; flex-direction: column; align-items: center; flex: 1;
+}
+.bdet-um-bar-wrap {
+  display: flex; align-items: flex-end; height: 48px;
+}
+.bdet-um-bar {
+  width: 100%; border-radius: 3px 3px 0 0; min-height: 2px;
+  transition: height 0.3s;
+}
+.bdet-um-label { font-size: 0.58rem; color: var(--text3); margin-top: 2px; }
+
+/* ── Metrics grid ── */
+.bdet-metrics-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
+}
+@media (max-width: 860px) { .bdet-metrics-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .bdet-metrics-grid { grid-template-columns: 1fr; } }
+
+.bdet-metric-card {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem;
+}
+.bdet-metric-icon { flex-shrink: 0; }
+.bdet-metric-val { font-size: 0.9rem; font-weight: 700; color: var(--text); text-transform: capitalize; }
+.bdet-metric-lbl { font-size: 0.7rem; color: var(--text3); margin-top: 2px; }

@@ -441,13 +441,42 @@ const GRADE_STEPS      = [[50,'A'],[100,'B'],[150,'C'],[200,'D'],[250,'E'],[300,
 const GRADE_COLORS     = { A:'#2a9d8f',B:'#57cc99',C:'#a8c686',D:'#f4a261',E:'#e76f51',F:'#e63946',G:'#9b1d20' };
 
 export function predict(form) {
-  const rawVec    = featurize(form);
+  // Defensive coercion — any undefined/NaN field makes BETA.reduce return NaN → 0
+  const resPer100 = { apartment: 5, office: 3, school: 4, hospital: 6, commercial: 2, warehouse: 1 };
+  const appPer100 = { apartment: 8, office: 5, school: 4, hospital: 10, commercial: 6, warehouse: 3 };
+  const type = form.building_type || form.type || 'apartment';
+  const area    = Math.max(10, Number(form.area)         || 100);
+  const year    = Math.max(1940, Math.min(2026, Number(form.year)   || 1990));
+  const floors  = Math.max(1,  Number(form.floors)       || 3);
+  const rooms   = Math.max(1,  Number(form.rooms)        || Math.round(area / 50));
+  const hdd     = Math.max(3000, Number(form.hdd)        || 4500);
+  const wr      = Math.max(5,  Number(form.window_ratio) || 25);
+  const res     = Math.max(1,  Number(form.residents)    || Math.round(area / 100 * (resPer100[type] || 4)));
+  const appl    = Math.min(15, Math.max(2, Number(form.appliances)  || Math.min(15, Math.round(area / 100 * (appPer100[type] || 6)))));
+
+  const safeForm = {
+    building_type:      type,
+    area, year, floors, rooms, hdd,
+    window_ratio:       wr,
+    residents:          res,
+    appliances:         appl,
+    wall_material:      form.wall_material      || 'panel',
+    heating_type:       form.heating_type       || 'central',
+    insulation_quality: form.insulation_quality || 'medium',
+    window_type:        form.window_type        || 'double',
+  };
+
+  const rawVec    = featurize(safeForm);
   const scaledVec = applyScaler([rawVec], SCALER)[0];
-  const annual    = Math.max(0, Math.round(BETA.reduce((s, b, i) => s + b * scaledVec[i], 0)));
+  const olsRaw    = BETA.reduce((s, b, i) => s + b * scaledVec[i], 0);
+  // Fallback to physics formula if OLS returns 0 or NaN (out-of-distribution input)
+  const annual    = (Number.isFinite(olsRaw) && olsRaw > 0)
+    ? Math.round(olsRaw)
+    : Math.max(100, Math.round(safeForm.area * physicsEUI(safeForm)));
 
   const monthly_avg = Math.round(annual / 12);
   const daily_avg   = Math.round(annual / 365);
-  const intensity   = annual > 0 ? Math.round(annual / form.area) : 0;
+  const intensity   = annual > 0 ? Math.round(annual / safeForm.area) : 0;
 
   // Seasonal distribution
   const wSum     = SEASONAL_WEIGHTS.reduce((a, b) => a + b, 0);
@@ -531,19 +560,22 @@ export function convertHeatBillToEstimates(tugrug_monthly) {
 // Based on: БНТУ 23-02-09, Улаанбаатар Дулааны Сүлжээ ТӨХК тариф
 // District heating in UB billed per m² per month (~4,500₮/m²/month avg 9 months)
 export function predictHeating(form) {
+  const area   = Math.max(10, Number(form.area) || 100);
+  const hdd    = Math.max(3000, Number(form.hdd) || 4500);
+  const floors = Math.max(1, Number(form.floors) || 3);
+
   // Specific heat load (Gcal/m²/year) by insulation quality
   const base = { good: 0.043, medium: 0.062, poor: 0.090 }[form.insulation_quality] || 0.062;
   const matMod   = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[form.wall_material] || 1.0;
-  const hddRatio = (form.hdd || 4500) / 4500;
-  const floorMod = form.floors >= 5 ? 0.94 : 1.0; // shared walls benefit
+  const hddRatio = hdd / 4500;
+  const floorMod = floors >= 5 ? 0.94 : 1.0;
 
   const gcal_per_m2  = base * matMod * hddRatio * floorMod;
-  const annual_gcal  = +(form.area * gcal_per_m2).toFixed(1);
-  const monthly_peak = +(annual_gcal * 1.85 / 9).toFixed(2); // January peak factor
-  const monthly_avg  = +(annual_gcal / 9).toFixed(2);        // 9 heating months
+  const annual_gcal  = +(area * gcal_per_m2).toFixed(1);
+  const monthly_peak = +(annual_gcal * 1.85 / 9).toFixed(2);
+  const monthly_avg  = +(annual_gcal / 9).toFixed(2);
 
-  // Cost: UB DHN avg ≈ 4,500₮/m²/month × 9 months
-  const annual_heat_cost = Math.round(form.area * 4500 * 9);
+  const annual_heat_cost = Math.round(area * 4500 * 9);
 
   // Equivalent kWh (1 Gcal = 1,163 kWh)
   const annual_kwh_equiv = Math.round(annual_gcal * 1163);

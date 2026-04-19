@@ -24,6 +24,7 @@ const WeatherPage        = lazy(() => import("./pages/WeatherPage"));
 const OWIDPage           = lazy(() => import("./pages/OWIDPage"));
 const ProfilePage        = lazy(() => import("./pages/ProfilePage"));
 const MySpacePage        = lazy(() => import("./pages/MySpacePage"));
+const BuildingDetailPage = lazy(() => import("./pages/BuildingDetailPage"));
 
 function ProtectedRoute({ children }) {
   const { user, authLoading } = useAuth();
@@ -80,6 +81,7 @@ export default function App() {
                 <Route path="/owid" element={<OWIDPage />} />
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/accessibility" element={<AccessibilityPage />} />
+                <Route path="/building/:id" element={<BuildingDetailPage />} />
                 <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
 
                 {/* ── Private routes (login required) ── */}

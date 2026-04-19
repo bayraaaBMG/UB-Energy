@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useConfirm } from "../hooks/useConfirm";
@@ -380,6 +381,7 @@ export default function DatabasePage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.database);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -747,6 +749,14 @@ export default function DatabasePage() {
                   </td>
                   <td>
                     <div className="table-actions">
+                      <button
+                        className="action-btn"
+                        title={lang === "mn" ? "Дэлгэрэнгүй харах" : "View detail"}
+                        aria-label={lang === "mn" ? "Дэлгэрэнгүй харах" : "View detail"}
+                        onClick={() => navigate(`/building/${b.id}`)}
+                      >
+                        <ChevronRight size={14} />
+                      </button>
                       <button
                         className="action-btn view results-btn"
                         title={t.database.view_results}

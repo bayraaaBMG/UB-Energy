@@ -25,7 +25,7 @@ export function normalizeBuilding(raw) {
     hdd:                4500,
     window_ratio:       raw.window_ratio || 25,
     residents:          Math.max(1, Math.round(area / 100 * (resPer100[type] || 4))),
-    appliances:         Math.min(50, Math.max(2, Math.round(area / 100 * (appPer100[type] || 6)))),
+    appliances:         Math.min(15, Math.max(2, Math.round(area / 100 * (appPer100[type] || 6)))),
     wall_material:      raw.wall_material      || "panel",
     heating_type:       raw.heating_type       || "central",
     insulation_quality: raw.insulation_quality || "medium",

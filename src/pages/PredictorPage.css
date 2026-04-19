@@ -1,5 +1,23 @@
 .predictor-page { padding: 0 0 3rem; }
 
+/* ── 3D / exterior view toggle ──────────────────────────────────────────────── */
+.pred-view-toggle {
+  display: flex; align-items: center;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 2px; gap: 2px;
+}
+.pred-vtoggle-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0.28rem 0.55rem; border: none; border-radius: 6px;
+  background: transparent; color: var(--text3); cursor: pointer;
+  font-size: 0.78rem; transition: 0.15s;
+}
+.pred-vtoggle-btn:hover { background: var(--bg2); color: var(--text); }
+.pred-vtoggle-btn.active {
+  background: var(--primary); color: #fff;
+  box-shadow: 0 1px 4px rgba(26,110,181,0.35);
+}
+
 .predictor-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
