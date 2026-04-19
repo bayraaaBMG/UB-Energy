@@ -513,12 +513,12 @@ function HistoryTab({ t, user, predictions, onRefresh }) {
 
   const handleClear = () => {
     if (!window.confirm("Бүх таамаглалын түүхийг устгах уу?")) return;
-    clearPredictions(user.id);
+    clearPredictions(user?.id);
     onRefresh();
   };
 
   const handleDelete = (id) => {
-    deletePrediction(user.id, id);
+    deletePrediction(user?.id, id);
     onRefresh();
   };
 
@@ -617,7 +617,7 @@ function ScenariosTab({ t, user, scenarios, onRefresh }) {
   const navigate = useNavigate();
 
   const handleLoad   = (s) => navigate("/predictor", { state: { scenario: s } });
-  const handleDelete = (id) => { deleteScenario(user.id, id); onRefresh(); };
+  const handleDelete = (id) => { deleteScenario(user?.id, id); onRefresh(); };
 
   if (scenarios.length === 0) return <EmptyState icon={Bookmark} text={t.myspace.scenario_empty} />;
 
@@ -654,7 +654,7 @@ function ScenariosTab({ t, user, scenarios, onRefresh }) {
 
 // ── Favorites Tab ─────────────────────────────────────────────────────────────
 function FavoritesTab({ t, user, favorites, onRefresh }) {
-  const handleRemove = (id) => { removeFavorite(user.id, id); onRefresh(); };
+  const handleRemove = (id) => { removeFavorite(user?.id, id); onRefresh(); };
 
   if (favorites.length === 0) return <EmptyState icon={Star} text={t.myspace.favorites_empty} />;
 
@@ -795,6 +795,7 @@ function ReportsTab({ t, user, buildings, predictions, scenarios }) {
 export default function MySpacePage() {
   const { t } = useLang();
   const { user } = useAuth();
+  const navigate = useNavigate();
   usePageTitle(t.nav.mySpace);
 
   const [activeTab, setActiveTab] = useState("summary");
@@ -802,7 +803,7 @@ export default function MySpacePage() {
   const refresh = () => setTick(n => n + 1);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const buildings   = useMemo(() => getUserBuildings(user?.id).filter(b => b.source !== "mock"), [tick, user?.id]);
+  const buildings   = useMemo(() => user?.id ? getUserBuildings(user.id).filter(b => b.source !== "mock") : [], [tick, user?.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const predictions = useMemo(() => getPredictions(user?.id),  [tick, user?.id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -820,36 +821,36 @@ export default function MySpacePage() {
     { id: "reports",   icon: <FileText size={15} />,  label: t.myspace.tab_reports },
   ];
 
-  if (!user) {
-    return (
-      <div className="container ms-page">
-        <div className="ms-no-user card">
-          <AlertCircle size={40} />
-          <p>Нэвтрэх шаардлагатай</p>
-        </div>
-      </div>
-    );
-  }
+  const effectiveUser = user || { id: null, name: "Зочин", role: "user" };
 
   return (
     <div className="ms-page">
       <div className="container">
+        {!user && (
+          <div className="ms-guest-banner">
+            <AlertCircle size={15} />
+            <span>Та зочин горимд байна. Таны өгөгдөл зөвхөн энэ төхөөрөмжид хадгалагдана.</span>
+            <button className="btn btn-primary ms-guest-login-btn" onClick={() => navigate("/login")}>
+              Нэвтрэх / Бүртгүүлэх
+            </button>
+          </div>
+        )}
         <div className="ms-header card">
           <div className="ms-header-avatar">
-            {user.avatar
+            {user?.avatar
               ? <img src={user.avatar} alt={user.name} />
-              : <span>{user.name?.charAt(0)?.toUpperCase()}</span>
+              : <span>{effectiveUser.name?.charAt(0)?.toUpperCase()}</span>
             }
           </div>
           <div className="ms-header-info">
             <h1><Package size={22} />{t.myspace.title}</h1>
             <p>{t.myspace.subtitle}</p>
             <div className="ms-header-user">
-              <span className="ms-header-name">{user.name}</span>
-              {user.role === "admin" && (
+              <span className="ms-header-name">{effectiveUser.name}</span>
+              {user?.role === "admin" && (
                 <span className="ms-role-chip ms-chip-admin"><Shield size={11} /> {t.myspace.role_admin}</span>
               )}
-              {user.role === "manager" && (
+              {user?.role === "manager" && (
                 <span className="ms-role-chip ms-chip-manager"><Award size={11} /> {t.myspace.role_manager}</span>
               )}
             </div>
@@ -873,18 +874,18 @@ export default function MySpacePage() {
         <div className="ms-tab-content">
           {activeTab === "summary" && (
             <SummaryTab
-              t={t} user={user}
+              t={t} user={effectiveUser}
               buildings={buildings} predictions={predictions}
               scenarios={scenarios} favorites={favorites}
               onTabChange={setActiveTab}
             />
           )}
-          {activeTab === "buildings"  && <BuildingsTab t={t} user={user} buildings={buildings} onRefresh={refresh} />}
+          {activeTab === "buildings"  && <BuildingsTab t={t} user={effectiveUser} buildings={buildings} onRefresh={refresh} />}
           {activeTab === "dataset"    && <DatasetTab t={t} buildings={buildings} />}
-          {activeTab === "history"    && <HistoryTab t={t} user={user} predictions={predictions} onRefresh={refresh} />}
-          {activeTab === "scenarios"  && <ScenariosTab t={t} user={user} scenarios={scenarios} onRefresh={refresh} />}
-          {activeTab === "favorites"  && <FavoritesTab t={t} user={user} favorites={favorites} onRefresh={refresh} />}
-          {activeTab === "reports"    && <ReportsTab t={t} user={user} buildings={buildings} predictions={predictions} scenarios={scenarios} favorites={favorites} />}
+          {activeTab === "history"    && <HistoryTab t={t} user={effectiveUser} predictions={predictions} onRefresh={refresh} />}
+          {activeTab === "scenarios"  && <ScenariosTab t={t} user={effectiveUser} scenarios={scenarios} onRefresh={refresh} />}
+          {activeTab === "favorites"  && <FavoritesTab t={t} user={effectiveUser} favorites={favorites} onRefresh={refresh} />}
+          {activeTab === "reports"    && <ReportsTab t={t} user={effectiveUser} buildings={buildings} predictions={predictions} scenarios={scenarios} favorites={favorites} />}
         </div>
       </div>
     </div>

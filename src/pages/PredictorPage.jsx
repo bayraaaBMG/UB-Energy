@@ -308,14 +308,12 @@ export default function PredictorPage() {
       setHeating(h);
       setRecs(rec);
       setLoading(false);
-      // Auto-save to prediction history
-      if (user?.id) {
-        savePrediction(user.id, {
-          form: { ...enriched, name: form.building_name || `${form.area}м² ${form.building_type}`, grade: r.grade },
-          result: r.annual,
-          heating: h,
-        });
-      }
+      // Auto-save to prediction history (guest saved under "guest" key)
+      savePrediction(user?.id, {
+        form: { ...enriched, name: form.building_name || `${form.area}м² ${form.building_type}`, grade: r.grade },
+        result: r.annual,
+        heating: h,
+      });
     }, 900);
   };
 
@@ -1173,7 +1171,7 @@ export default function PredictorPage() {
               autoFocus
               onKeyDown={e => {
                 if (e.key === "Enter" && scenLabel.trim()) {
-                  saveScenario(user.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  saveScenario(user?.id, { label: scenLabel.trim(), form, id: Date.now() });
                   setShowScenModal(false);
                   setScenSaved(true);
                   setTimeout(() => setScenSaved(false), 2500);
@@ -1188,7 +1186,7 @@ export default function PredictorPage() {
                 className="btn btn-primary"
                 disabled={!scenLabel.trim()}
                 onClick={() => {
-                  saveScenario(user.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  saveScenario(user?.id, { label: scenLabel.trim(), form, id: Date.now() });
                   setShowScenModal(false);
                   setScenSaved(true);
                   setTimeout(() => setScenSaved(false), 2500);
