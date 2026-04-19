@@ -9,6 +9,7 @@ import {
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
   Home, Snowflake, Info, Save, X, Bookmark,
   Flame, Lightbulb, AlertTriangle, CheckCircle, DollarSign, FlaskConical,
+  Clock,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -29,6 +30,12 @@ const BUILDING_COLORS = {
   apartment: "#3a8fd4", office: "#2a9d8f", school: "#e9c46a",
   hospital: "#e63946", warehouse: "#a8c5e0", commercial: "#f4a261"
 };
+
+// Hourly consumption weight profile (sums to 24 — average weight = 1.0)
+// Represents typical UB apartment load curve (heating-heavy winter city)
+const HOUR_W = [0.52, 0.44, 0.40, 0.38, 0.40, 0.62, 1.10, 1.45, 1.35, 1.15, 1.10, 1.05,
+                1.00, 1.00, 1.00, 1.08, 1.18, 1.42, 1.55, 1.52, 1.30, 1.12, 0.90, 0.67];
+const HOUR_W_SUM = HOUR_W.reduce((a, b) => a + b, 0); // ≈ 24
 
 // ─── SVG Isometric Building ───────────────────────────────────────────────────
 function Building3D({ floors, area, buildingType }) {
@@ -603,10 +610,11 @@ export default function PredictorPage() {
                 {/* Result Tabs */}
                 <div className="result-tabs" style={{ display: "flex", gap: "0.3rem", marginBottom: "1.1rem", background: "var(--bg3)", padding: "0.3rem", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
                   {[
-                    { id: "elec", icon: Zap, label: lang === "mn" ? "Цахилгаан" : "Electricity" },
-                    { id: "heat", icon: Flame, label: lang === "mn" ? "Дулаан" : "Heating" },
-                    { id: "recs", icon: Lightbulb, label: lang === "mn" ? "Зөвлөмж" : "Recommendations" },
-                    { id: "cases", icon: FlaskConical, label: lang === "mn" ? "Жишээ" : "Case Studies" },
+                    { id: "elec",     icon: Zap,         label: lang === "mn" ? "Цахилгаан" : "Electricity" },
+                    { id: "heat",     icon: Flame,       label: lang === "mn" ? "Дулаан" : "Heating" },
+                    { id: "forecast", icon: Clock,       label: lang === "mn" ? "Таамаглал" : "Forecast" },
+                    { id: "recs",     icon: Lightbulb,   label: lang === "mn" ? "Зөвлөмж" : "Tips" },
+                    { id: "cases",    icon: FlaskConical, label: lang === "mn" ? "Жишээ" : "Cases" },
                   ].map(tab => {
                     const TIcon = tab.icon;
                     return (
@@ -944,6 +952,144 @@ export default function PredictorPage() {
                     </div>
                   </div>
                 )}
+
+                {/* ── Forecast Tab ── */}
+                {resultTab === "forecast" && (() => {
+                  const now   = new Date();
+                  const hIdx  = now.getHours();
+                  const mIdx  = now.getMonth();          // 0-based
+                  const thisHourKwh  = +(result.daily_avg * HOUR_W[hIdx] / HOUR_W_SUM * 24).toFixed(2);
+                  const thisMonthKwh = result.chart_data[mIdx].usage;
+                  const daysInMonth  = new Date(now.getFullYear(), mIdx + 1, 0).getDate();
+                  const remainDays   = daysInMonth - now.getDate() + 1;
+                  const remainMonth  = Math.round(result.daily_avg * remainDays);
+
+                  // Next 12 months starting from today
+                  const next12 = Array.from({ length: 12 }, (_, i) => {
+                    const mi   = (mIdx + i) % 12;
+                    const d    = new Date(now.getFullYear(), mIdx + i, 1);
+                    const lbl  = d.toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", year: "2-digit" });
+                    return { month: lbl, kwh: result.chart_data[mi].usage, isCurrent: i === 0 };
+                  });
+
+                  // 5-year outlook (+2% per year aging factor)
+                  const years5 = Array.from({ length: 5 }, (_, i) => ({
+                    year: now.getFullYear() + i,
+                    kwh:  Math.round(result.annual * Math.pow(1.02, i)),
+                  }));
+                  const maxKwh5 = years5[years5.length - 1].kwh;
+
+                  return (
+                    <div className="animate-fade">
+                      <p style={{ fontSize: "0.78rem", color: "var(--text2)", marginBottom: "1rem", lineHeight: 1.6 }}>
+                        {lang === "mn"
+                          ? "Барилгын параметр болон сарын хэв маягт тулгуурлан цаг хугацааны хэрэглээг таамаглав."
+                          : "Energy use projected across time periods using building parameters and seasonal patterns."}
+                      </p>
+
+                      {/* ── Time cards ── */}
+                      <div className="ptf-grid">
+                        {[
+                          {
+                            period: lang === "mn" ? "Энэ цаг" : "This hour",
+                            val:    thisHourKwh,
+                            unit:   "kWh",
+                            color:  "#3a8fd4",
+                            sub:    `${String(hIdx).padStart(2,"0")}:00 – ${String(hIdx+1).padStart(2,"0")}:00`,
+                          },
+                          {
+                            period: lang === "mn" ? "Өнөөдөр" : "Today",
+                            val:    result.daily_avg.toLocaleString(),
+                            unit:   "kWh",
+                            color:  "#2a9d8f",
+                            sub:    now.toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { weekday: "short", day: "numeric", month: "short" }),
+                          },
+                          {
+                            period: lang === "mn" ? "Энэ сар" : "This month",
+                            val:    thisMonthKwh.toLocaleString(),
+                            unit:   "kWh",
+                            color:  "#f4a261",
+                            sub:    lang === "mn"
+                              ? `Үлдсэн ~${remainMonth.toLocaleString()} kWh (${remainDays} өдөр)`
+                              : `~${remainMonth.toLocaleString()} kWh left (${remainDays}d)`,
+                          },
+                          {
+                            period: lang === "mn" ? "Жил" : "Year",
+                            val:    result.annual.toLocaleString(),
+                            unit:   "kWh",
+                            color:  "#e9c46a",
+                            sub:    `${now.getFullYear()} · ${result.intensity} kWh/m²`,
+                          },
+                        ].map((c, i) => (
+                          <div key={i} className="ptf-card" style={{ borderColor: `${c.color}44` }}>
+                            <div className="ptf-period" style={{ color: c.color }}>{c.period}</div>
+                            <div className="ptf-val">
+                              {c.val} <span className="ptf-unit">{c.unit}</span>
+                            </div>
+                            <div className="ptf-sub">{c.sub}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ── Next 12 months chart ── */}
+                      <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
+                        {lang === "mn" ? "Дараагийн 12 сарын таамаглал" : "Next 12-month forecast"}
+                      </h4>
+                      <div className="result-chart">
+                        <ResponsiveContainer width="100%" height={155}>
+                          <BarChart data={next12} margin={{ top: 4, right: 4, left: -25, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+                            <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} />
+                            <YAxis tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} axisLine={false} />
+                            <Tooltip
+                              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 11 }}
+                              formatter={v => [`${v.toLocaleString()} kWh`, lang === "mn" ? "Таамаглал" : "Forecast"]}
+                            />
+                            <Bar dataKey="kwh" radius={[3,3,0,0]} maxBarSize={22}
+                              fill="#1a6eb5"
+                              label={false}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: "0.35rem", textAlign: "center" }}>
+                        {lang === "mn" ? "Одоогийн сараас эхлэн 12 сар · сарын хэв маягтаар тооцсон" : "Starting from current month · based on seasonal pattern"}
+                      </div>
+
+                      {/* ── 5-year outlook ── */}
+                      <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
+                        {lang === "mn" ? "5 жилийн хэтийн таамаглал" : "5-year outlook"}
+                      </h4>
+                      <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginBottom: "0.7rem" }}>
+                        {lang === "mn"
+                          ? "+2%/жил өсөлт гэж үзсэн (барилгын нас, тоног төхөөрөмжийн эдэлгээ)"
+                          : "+2%/yr growth assumed (building aging, equipment wear)"}
+                      </div>
+                      <div className="ptf-5yr">
+                        {years5.map((y, i) => (
+                          <div key={y.year} className="ptf-5yr-row">
+                            <div className="ptf-5yr-yr" style={{ color: i === 0 ? "var(--primary-light)" : "var(--text2)" }}>
+                              {y.year}{i === 0 ? (lang === "mn" ? " ←одоо" : " ←now") : ""}
+                            </div>
+                            <div className="ptf-5yr-bar-wrap">
+                              <div className="ptf-5yr-bar"
+                                style={{ width: `${(y.kwh / maxKwh5) * 100}%`,
+                                  background: i === 0 ? "#3a8fd4" : `rgba(58,143,212,${0.38 + i * 0.13})` }} />
+                            </div>
+                            <div className="ptf-5yr-val">
+                              {y.kwh.toLocaleString()} <span style={{ color: "var(--text3)", fontSize: "0.68rem" }}>kWh</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: "0.65rem", lineHeight: 1.5 }}>
+                        {lang === "mn"
+                          ? "Таамаглал нь барилгын физик параметр + сарын хэрэглээний хэв маягт тулгуурласан. Бодит хэрэглээ цаг уур, хэрэглэгчийн зан байдлаас хамаарч өөрчлөгдөж болно."
+                          : "Forecast based on building parameters and seasonal patterns. Actual usage may differ with weather changes and occupant behavior."}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Model info + save */}
                 <div className="model-info-row">

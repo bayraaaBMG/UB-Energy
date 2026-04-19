@@ -646,3 +646,93 @@
   padding: 0 0.3rem;
   font-weight: 800;
 }
+
+/* ── Forecast tab ────────────────────────────────────────────────────────────── */
+.ptf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.ptf-card {
+  padding: 0.75rem 0.9rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-left-width: 3px;
+}
+
+.ptf-period {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+
+.ptf-val {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.ptf-unit {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text3);
+  margin-left: 2px;
+}
+
+.ptf-sub {
+  font-size: 0.63rem;
+  color: var(--text3);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+/* 5-year outlook */
+.ptf-5yr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ptf-5yr-row {
+  display: grid;
+  grid-template-columns: 85px 1fr 95px;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ptf-5yr-yr {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ptf-5yr-bar-wrap {
+  height: 7px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ptf-5yr-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.ptf-5yr-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .ptf-grid { grid-template-columns: 1fr; }
+  .ptf-5yr-row { grid-template-columns: 70px 1fr 80px; }
+}
