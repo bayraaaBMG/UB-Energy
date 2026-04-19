@@ -7,22 +7,21 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, Zap, TrendingUp,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
-  Home, Snowflake, Info, Save, X, Bookmark,
-  Flame, Lightbulb, AlertTriangle, CheckCircle, DollarSign, FlaskConical,
-  Clock,
+  Home, Info, X, Bookmark,
+  Flame, Lightbulb, CheckCircle, DollarSign, FlaskConical,
+  Clock, Upload, AlertTriangle,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ulaanbaatarDistricts } from "../data/mockData";
 import {
   predict, METRICS, GRADE_COLORS,
   convertElecMoneyToKwh, convertHeatBillToEstimates,
   predictHeating, generateRecommendations, CASE_STUDIES,
   TARIFF_TIERS,
 } from "../ml/model";
-import { saveUserBuilding } from "../utils/buildingStorage";
+import { getUserBuildings } from "../utils/buildingStorage";
 import { savePrediction, saveScenario } from "../utils/userDataStorage";
 import "./PredictorPage.css";
 
@@ -224,72 +223,62 @@ export default function PredictorPage() {
     insulation_quality: "medium",
     window_type: "double",
   });
+  const [userBuildings, setUserBuildings] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [scenarioLoaded, setScenarioLoaded] = useState(false);
   const [result, setResult] = useState(null);
   const [heating, setHeating] = useState(null);
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [resultTab, setResultTab] = useState("elec");
   const [elecBill, setElecBill] = useState("");
   const [heatBill, setHeatBill] = useState("");
-  const [baseline, setBaseline] = useState(null); // { form, result, label }
+  const [baseline, setBaseline] = useState(null);
   const [scenLabel, setScenLabel] = useState("");
   const [showScenModal, setShowScenModal] = useState(false);
   const [scenSaved, setScenSaved] = useState(false);
-  const [errors, setErrors] = useState({});
+
+  // Load user's buildings from storage
+  useEffect(() => {
+    const b = getUserBuildings(user?.id).filter(b => b.source !== "mock");
+    setUserBuildings(b);
+  }, [user?.id]);
 
   // Load scenario from My Space
   useEffect(() => {
     const s = location.state?.scenario;
     if (s?.form) {
       setForm(f => ({ ...f, ...s.form }));
+      setScenarioLoaded(true);
+      setSelectedId(null);
     }
   }, [location.state]);
 
-  const handleChange = (e) => {
-    const val = e.target.type === "number" || e.target.type === "range"
-      ? Number(e.target.value) : e.target.value;
-    setForm({ ...form, [e.target.name]: val });
-    if (errors[e.target.name]) setErrors(prev => { const n = { ...prev }; delete n[e.target.name]; return n; });
-  };
-
-  const validate = () => {
-    const e = {};
-    if (!form.area || form.area < 50) e.area = lang === "mn" ? "Талбай 50м²-аас их байх ёстой" : "Area must be at least 50m²";
-    else if (form.area > 50000) e.area = lang === "mn" ? "Талбай 50,000м²-аас хэтрэхгүй" : "Area must be under 50,000m²";
-    if (!form.year || form.year < 1940) e.year = lang === "mn" ? "Барилгын жил 1940-өөс их байх ёстой" : "Year must be after 1940";
-    else if (form.year > 2026) e.year = lang === "mn" ? "Барилгын жил 2026-аас хэтрэхгүй" : "Year must not exceed 2026";
-    if (!form.floors || form.floors < 1) e.floors = lang === "mn" ? "Давхрын тоо 1-ээс их байх ёстой" : "At least 1 floor required";
-    else if (form.floors > 50) e.floors = lang === "mn" ? "Давхрын тоо 50-аас хэтрэхгүй" : "Floors must not exceed 50";
-    if (!form.rooms || form.rooms < 1) e.rooms = lang === "mn" ? "Өрөөний тоо 1-ээс их байх ёстой" : "At least 1 room required";
-    return e;
-  };
-
-  const fillExample = () => {
-    setForm(prev => ({
-      ...prev,
-      building_name: lang === "mn" ? "Жишиг орон сууц" : "Example Apartment",
-      district: "Сүхбаатар",
-      area: 1200,
-      building_type: "apartment",
-      year: 1985,
-      floors: 9,
-      rooms: 3,
-      window_ratio: 30,
-      wall_material: "panel",
-      heating_type: "central",
-      insulation_quality: "medium",
-      window_type: "double",
-    }));
-    setErrors({});
+  const selectBuilding = (b) => {
+    setSelectedId(b.id);
+    setScenarioLoaded(false);
+    setForm({
+      building_name: b.name || "",
+      district: b.district || "Сүхбаатар",
+      area: b.area,
+      building_type: b.type || "apartment",
+      year: b.year,
+      floors: b.floors,
+      rooms: b.rooms || 3,
+      window_ratio: b.window_ratio || 25,
+      wall_material: b.wall_material || "panel",
+      heating_type: b.heating_type || "central",
+      insulation_quality: b.insulation_quality || "medium",
+      window_type: b.window_type || "double",
+    });
+    setResult(null);
+    setHeating(null);
+    setRecs([]);
   };
 
   const runModel = () => {
-    const e = validate();
-    if (Object.keys(e).length > 0) { setErrors(e); return; }
-    setErrors({});
+    if (!selectedId && !scenarioLoaded) return;
     setLoading(true);
-    setSaved(false);
     setResultTab("elec");
     setTimeout(() => {
       // Auto-derive occupancy/equipment from area + building type (hidden from UI)
@@ -351,98 +340,55 @@ export default function PredictorPage() {
         </div>
 
         <div className="predictor-layout">
-          {/* ── Left: Input form ─────────────────────────────────── */}
+          {/* ── Left: Building picker ─────────────────────────────── */}
           <div className="card predictor-form-card">
 
-            <Section icon={Building2} title={t.predictor.section_building}>
-              <div className="grid grid-2">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-building_name">{t.dataInput.building_name}</label>
-                  <input id="pred-building_name" type="text" name="building_name" value={form.building_name} onChange={handleChange}
-                    className="form-input" placeholder={t.predictor.building_name_placeholder} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-district">{t.dataInput.district}</label>
-                  <select id="pred-district" name="district" value={form.district} onChange={handleChange} className="form-select">
-                    {ulaanbaatarDistricts.map(d => <option key={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-area">{t.predictor.area}</label>
-                  <input id="pred-area" type="number" name="area" value={form.area} onChange={handleChange}
-                    className={`form-input${errors.area ? " input-error" : ""}`} min={50} max={50000} step={10} />
-                  {errors.area && <span className="field-error">{errors.area}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-building_type">{t.predictor.building_type}</label>
-                  <select id="pred-building_type" name="building_type" value={form.building_type} onChange={handleChange} className="form-select">
-                    {Object.entries(bTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-year">{t.predictor.year}</label>
-                  <input id="pred-year" type="number" name="year" value={form.year} onChange={handleChange}
-                    className={`form-input${errors.year ? " input-error" : ""}`} min={1940} max={2026} />
-                  {errors.year && <span className="field-error">{errors.year}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-floors">{t.predictor.floors}</label>
-                  <input id="pred-floors" type="number" name="floors" value={form.floors} onChange={handleChange}
-                    className={`form-input${errors.floors ? " input-error" : ""}`} min={1} max={50} />
-                  {errors.floors && <span className="field-error">{errors.floors}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-rooms">{t.predictor.rooms}</label>
-                  <input id="pred-rooms" type="number" name="rooms" value={form.rooms} onChange={handleChange}
-                    className={`form-input${errors.rooms ? " input-error" : ""}`} min={1} max={20} />
-                  {errors.rooms && <span className="field-error">{errors.rooms}</span>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-wall_material">{t.predictor.wall_material}</label>
-                  <select id="pred-wall_material" name="wall_material" value={form.wall_material} onChange={handleChange} className="form-select">
-                    {Object.entries(wMaterials).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-heating_type">{t.predictor.heating_type}</label>
-                  <select id="pred-heating_type" name="heating_type" value={form.heating_type} onChange={handleChange} className="form-select">
-                    {Object.entries(hTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-              </div>
-            </Section>
+            {/* Building selector */}
+            <div className="pred-picker-header">
+              <Building2 size={17} style={{ color: "var(--primary-light)" }} />
+              <span>{lang === "mn" ? "Барилга сонгох" : "Select a building"}</span>
+              <button className="btn btn-secondary pred-add-bld-btn" onClick={() => navigate("/data-input")}>
+                <Upload size={13} /> {lang === "mn" ? "Нэмэх" : "Add"}
+              </button>
+            </div>
 
-            <Section icon={Snowflake} title={t.predictor.section_envelope} defaultOpen={true}>
-              <div className="grid grid-2">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-insulation_quality">{t.predictor.insulation_quality}</label>
-                  <select id="pred-insulation_quality" name="insulation_quality" value={form.insulation_quality} onChange={handleChange} className="form-select">
-                    <option value="good">{t.predictor.insulation_good}</option>
-                    <option value="medium">{t.predictor.insulation_medium}</option>
-                    <option value="poor">{t.predictor.insulation_poor}</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="pred-window_type">{t.predictor.window_type}</label>
-                  <select id="pred-window_type" name="window_type" value={form.window_type} onChange={handleChange} className="form-select">
-                    <option value="vacuum">{t.predictor.window_vacuum}</option>
-                    <option value="double">{t.predictor.window_double}</option>
-                    <option value="single">{t.predictor.window_single}</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-                  <label className="form-label" htmlFor="pred-window_ratio">{t.predictor.window_ratio} ({form.window_ratio}%)</label>
-                  <input id="pred-window_ratio" type="range" name="window_ratio" value={form.window_ratio} onChange={handleChange}
-                    className="range-input" min={5} max={70} />
-                  <div className="range-labels">
-                    <span>5%</span><span>70%</span>
-                  </div>
-                </div>
+            {scenarioLoaded && (
+              <div className="pred-scen-loaded-banner">
+                <Bookmark size={13} style={{ color: "#f4a261" }} />
+                <span>{lang === "mn" ? "Сценариас ачааллав" : "Loaded from scenario"}: <strong>{form.building_name || `${form.area}м²`}</strong></span>
               </div>
-            </Section>
+            )}
 
-            {/* ── Сарын зардалаас тооцоолох ── */}
-            <Section icon={DollarSign} title={lang === "mn" ? "Сарын зардалаас тооцоолох" : "Estimate from monthly costs"} defaultOpen={true}>
+            {userBuildings.length === 0 && !scenarioLoaded ? (
+              <div className="pred-empty-bld">
+                <Building2 size={38} style={{ color: "var(--text3)", marginBottom: "0.6rem" }} />
+                <p>{lang === "mn" ? "Одоогоор барилга байхгүй байна." : "No buildings yet."}</p>
+                <button className="btn btn-primary" onClick={() => navigate("/data-input")}>
+                  <Upload size={14} /> {lang === "mn" ? "Барилга нэмэх" : "Add Building"}
+                </button>
+              </div>
+            ) : (
+              <div className="pred-bld-list">
+                {userBuildings.map(b => (
+                  <button
+                    key={b.id}
+                    className={`pred-bld-item${selectedId === b.id ? " active" : ""}`}
+                    onClick={() => selectBuilding(b)}
+                  >
+                    <div className="pred-bld-grade" style={{ background: GRADE_COLORS[b.grade] || "#888" }}>{b.grade}</div>
+                    <div className="pred-bld-info">
+                      <strong>{b.name}</strong>
+                      <span>{b.type} · {b.area}м² · {b.year}</span>
+                    </div>
+                    <ChevronRight size={14} className="pred-bld-arrow" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Bill calculator (optional, shown when building selected or scenario loaded) ── */}
+            {(selectedId || scenarioLoaded) && (
+            <Section icon={DollarSign} title={lang === "mn" ? "Сарын зардалаас тооцоолох" : "Estimate from monthly costs"} defaultOpen={false}>
               <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
                 {lang === "mn"
                   ? "Сарын нэхэмжлэлийн дүнгээ оруулна уу. Тариф болон норматив дээр үндэслэн автоматаар тооцоолно."
@@ -516,13 +462,10 @@ export default function PredictorPage() {
               )}
             </Section>
 
-            {Object.keys(errors).length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 0.9rem", background: "rgba(230,57,70,0.08)", border: "1px solid rgba(230,57,70,0.3)", borderRadius: 8, marginBottom: "0.5rem", fontSize: "0.82rem", color: "#e63946" }}>
-                <AlertTriangle size={14} />
-                {lang === "mn" ? "Оруулсан утгуудыг шалгана уу" : "Please fix the errors above before predicting"}
-              </div>
             )}
-            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+
+            {(selectedId || scenarioLoaded) && (
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
               <button
                 className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
                 onClick={runModel}
@@ -536,15 +479,6 @@ export default function PredictorPage() {
                   <><Brain size={18} />{t.predictor.predict_btn}<ChevronRight size={16} /></>
                 )}
               </button>
-              <button
-                className="btn btn-secondary"
-                onClick={fillExample}
-                title={lang === "mn" ? "Жишиг барилгын мэдээллээр дүүргэх" : "Fill with a sample building to try the predictor"}
-                style={{ flexShrink: 0 }}
-              >
-                <Lightbulb size={14} />
-                {lang === "mn" ? "Жишээ" : "Example"}
-              </button>
               {result && (
                 <button
                   className="btn btn-secondary"
@@ -557,6 +491,7 @@ export default function PredictorPage() {
                 </button>
               )}
             </div>
+            )}
           </div>
 
           {/* ── Right: Floor plan + Results ──────────────────────── */}
@@ -1114,37 +1049,6 @@ export default function PredictorPage() {
                       {lang === "mn" ? "Сценари" : "Scenario"}
                     </button>
                   )}
-                  <button
-                    className="btn btn-secondary pred-save-btn"
-                    onClick={() => {
-                      saveUserBuilding({
-                        id: `pred_${Date.now()}`,
-                        name: form.building_name.trim() ||
-                          `${form.area}${t.common.units_sqm} ${t.predictor.building_types[form.building_type] || form.building_type}`,
-                        type: form.building_type,
-                        area: form.area,
-                        floors: form.floors,
-                        year: form.year,
-                        district: form.district,
-                        rooms: form.rooms,
-                        wall_material: form.wall_material,
-                        heating_type: form.heating_type,
-                        insulation_quality: form.insulation_quality,
-                        window_type: form.window_type,
-                        latitude: 47.9184,
-                        longitude: 106.9177,
-                        source: "predictor",
-                        userId: user?.id || null,
-                        submittedAt: new Date().toISOString(),
-                      });
-                      setSaved(true);
-                      setTimeout(() => navigate("/database"), 900);
-                    }}
-                    title={t.predictor.save_to_db}
-                  >
-                    <Save size={14} />
-                    {saved ? t.predictor.saved : t.common.save}
-                  </button>
                 </div>
               </div>
             )}

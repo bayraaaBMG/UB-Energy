@@ -388,6 +388,67 @@
 /* Scenario save button */
 .pred-save-btn { display: flex; align-items: center; gap: 0.35rem; }
 
+/* ── Building picker ────────────────────────────────────────────────────────── */
+.pred-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 0.85rem;
+}
+.pred-picker-header > span { flex: 1; }
+.pred-add-bld-btn { font-size: 0.78rem; padding: 0.3rem 0.7rem; }
+
+.pred-bld-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.pred-bld-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+.pred-bld-item:hover { border-color: var(--primary); background: rgba(26,110,181,0.05); }
+.pred-bld-item.active { border-color: var(--primary); background: rgba(26,110,181,0.10); }
+.pred-bld-grade {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.85rem; color: #fff; flex-shrink: 0;
+}
+.pred-bld-info { flex: 1; overflow: hidden; }
+.pred-bld-info strong { display: block; font-size: 0.88rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pred-bld-info span { font-size: 0.73rem; color: var(--text3); }
+.pred-bld-arrow { color: var(--text3); flex-shrink: 0; }
+.pred-bld-item.active .pred-bld-arrow { color: var(--primary-light); }
+
+.pred-empty-bld {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 2rem 1rem; text-align: center; color: var(--text3);
+  gap: 0.5rem;
+}
+.pred-empty-bld p { margin: 0; font-size: 0.88rem; }
+
+.pred-scen-loaded-banner {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.85rem; border-radius: var(--radius-sm);
+  background: rgba(244,162,97,0.1); border: 1px solid rgba(244,162,97,0.35);
+  font-size: 0.8rem; color: var(--text2); margin-bottom: 0.75rem;
+}
+
 /* Toast */
 .pred-toast {
   position: fixed;
