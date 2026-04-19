@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { MapContainer, TileLayer, Polygon, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Tooltip as LeafletTooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -439,7 +439,7 @@ async function tryOverpass(endpoint, query) {
 // ─── BuildingFetcher — lives inside MapContainer ───────────────────────────────
 // Fetches OSM buildings for the current viewport on mount and after pan/zoom.
 // Uses a grid-cell cache to avoid re-fetching the same area.
-function BuildingFetcher({ onNewBuildings, setLoading }) {
+function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
   const map = useMap();
   const fetchedCells = useRef(new Set());
   const inFlight = useRef(false);
@@ -471,7 +471,7 @@ function BuildingFetcher({ onNewBuildings, setLoading }) {
             .slice(0, 1000)
             .map(osmToBuilding)
             .filter(Boolean);
-          if (els.length > 0) { onNewBuildings(els); break; }
+          if (els.length > 0) { onNewBuildings(els); onFetched?.(new Date()); break; }
         } catch (err) {
           console.warn(`Overpass mirror (${mirror}):`, err.message);
         }
@@ -1215,9 +1215,10 @@ export default function MapPage() {
     ...MOCK_FALLBACK.map(b => [b.id, b]),
     ...loadUserMapBuildings(user?.id).map(b => [b.id, b]),
   ]));
-  const [buildings,   setBuildings]  = useState([...buildingCache.current.values()]);
-  const [loading,     setLoading]    = useState(true);
-  const [selected,    setSelected]   = useState(null);
+  const [buildings,    setBuildings]   = useState([...buildingCache.current.values()]);
+  const [loading,      setLoading]     = useState(true);
+  const [lastFetched,  setLastFetched] = useState(null);
+  const [selected,     setSelected]   = useState(null);
   const [typeFilter,     setTypeFilter]     = useState("all");
   const [districtFilter, setDistrictFilter] = useState("all");
   const [layer,          setLayer]          = useState("dark");
@@ -1319,7 +1320,7 @@ export default function MapPage() {
             <TileLayer url={tile.url} attribution={tile.attribution} maxZoom={19} />
 
             {/* Viewport-based building loader */}
-            <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} />
+            <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} />
 
             {filtered.map(b => {
               const active   = selected?.id === b.id;
@@ -1385,7 +1386,31 @@ export default function MapPage() {
                     dashArray:   isMine && !active ? "5 3" : undefined,
                   }}
                   eventHandlers={{ click: () => setSelected(b) }}
-                />
+                >
+                  <LeafletTooltip sticky direction="top" offset={[0, -4]}>
+                    {(() => {
+                      const c = calcBuilding(b);
+                      return (
+                        <div style={{ fontSize: 12, lineHeight: 1.55, minWidth: 140 }}>
+                          <strong style={{ display: "block", marginBottom: 2 }}>{b.name}</strong>
+                          <span style={{ color: TYPE_COLOR[b.type] || "#888" }}>
+                            {b.type}{b.year ? ` · ${b.year}${!b.yearKnown && b.source === "osm" ? "~" : ""}` : ""}
+                          </span>
+                          <br />
+                          {b.area.toLocaleString()} m² · {b.floors} {lang === "mn" ? "давхар" : "fl"}
+                          <br />
+                          <span style={{ color: "#f4a261", fontWeight: 700 }}>{c.total.toLocaleString()} kWh/жил</span>
+                          {" · "}
+                          <span style={{ color: GRADE_COLORS[c.grade], fontWeight: 700 }}>{c.grade}</span>
+                          <br />
+                          <span style={{ color: "#aaa", fontSize: 11 }}>
+                            CO₂ {c.co2} t · {c.hasActualData ? (lang === "mn" ? "Бодит" : "Actual") : (lang === "mn" ? "ML таамаглал" : "ML est.")}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </LeafletTooltip>
+                </Polygon>
               );
             })}
 
@@ -1400,7 +1425,7 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* Building count badge */}
+          {/* Building count + last updated badge */}
           {buildings.length > 0 && (
             <div className="bldg-count">
               {filtered.length} / {buildings.length} {t.map.buildings_unit}
@@ -1410,6 +1435,13 @@ export default function MapPage() {
               {userCount > 0 && (
                 <span className="bldg-mock-note" style={{ color: "#f4c842" }}>
                   {" "}· {userCount} {lang === "mn" ? "өөрийн барилга" : "my buildings"}
+                </span>
+              )}
+              {lastFetched && (
+                <span className="bldg-mock-note" style={{ color: "#6a9bbf", marginLeft: 6 }}>
+                  · {lang === "mn" ? "Шинэчлэгдсэн" : "Updated"}{" "}
+                  {lastFetched.toLocaleTimeString(lang === "mn" ? "mn-MN" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+                  {" (OSM)"}
                 </span>
               )}
             </div>

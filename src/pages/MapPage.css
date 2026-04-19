@@ -1260,9 +1260,16 @@
 @media (max-width: 500px) {
   .map-canvas       { height: 48vh; }
   .map-panel        { max-height: 460px; }
-  .bp-tab           { font-size: 0.65rem; }
+  .bp-tab           { font-size: 0.65rem; padding: 0.28rem 0.35rem; }
   .cr-formula       { display: none; }
   .how-step         { flex-direction: column; gap: 0.7rem; }
   .how-formula      { font-size: 0.65rem; }
   .weather-widget   { display: none; }
+  /* Compact controls on small screens */
+  .map-controls     { gap: 5px; max-width: calc(100vw - 24px); }
+  .layer-btn        { padding: 4px 7px; font-size: 0.67rem; }
+  .ctrl-pill        { padding: 5px 8px; }
+  .ctrl-sel         { font-size: 0.75rem; max-width: 120px; }
+  /* Hide map-style row — use default dark on mobile */
+  .map-controls .layer-group:last-child { display: none; }
 }
