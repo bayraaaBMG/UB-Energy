@@ -833,6 +833,28 @@
   margin-right: 0.25rem;
 }
 
+/* ── Building card action buttons group ─────────────────────────────────────── */
+.ms-bld-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Building energy intensity mini-bar ──────────────────────────────────────── */
+.ms-bld-intensity-bar {
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+.ms-bld-intensity-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
 /* ── Dataset quality bar ─────────────────────────────────────────────────────── */
 .ms-quality-bar-wrap {
   width: 80px;

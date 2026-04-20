@@ -256,6 +256,7 @@ function SummaryTab({ t, user, buildings, predictions, scenarios, favorites, onT
 // ── Buildings Tab ─────────────────────────────────────────────────────────────
 function BuildingsTab({ t, user, buildings, onRefresh }) {
   const navigate  = useNavigate();
+  const { lang }  = useLang();
   const [orgTags, setOrgTags]   = useState({});
   const [savedTags, setSavedTags] = useState({});
   const [search, setSearch]     = useState("");
@@ -392,13 +393,32 @@ function BuildingsTab({ t, user, buildings, onRefresh }) {
                       <span>{b.intensity || 0} кВт·цаг/м²</span>
                     </div>
                   </div>
-                  <button
-                    className="ms-icon-btn ms-danger"
-                    onClick={() => handleDelete(b.id)}
-                    title={t.myspace.delete_building}
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="ms-bld-actions">
+                    <button
+                      className="ms-icon-btn"
+                      onClick={() => navigate(`/building/${b.id}`)}
+                      title={lang === "mn" ? "Дэлгэрэнгүй харах" : "View detail"}
+                    >
+                      <ChevronRight size={15} />
+                    </button>
+                    <button
+                      className="ms-icon-btn ms-danger"
+                      onClick={() => handleDelete(b.id)}
+                      title={t.myspace.delete_building}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                {/* Mini energy intensity bar */}
+                <div className="ms-bld-intensity-bar">
+                  <div
+                    className="ms-bld-intensity-fill"
+                    style={{
+                      width: `${Math.min(100, ((b.intensity || 0) / 300) * 100)}%`,
+                      background: GRADE_COLORS[b.grade] || "#888",
+                    }}
+                  />
                 </div>
 
                 {isOfficialOrAdmin && (
