@@ -8,7 +8,12 @@ import {
   FileText, BarChart2, Trash2, Download, Upload, Shield,
   Award, User, Tag, ChevronRight, AlertCircle, AlertTriangle,
   Zap, MapPin, ChevronDown, ChevronUp, Search, ArrowUpDown,
+  Clock, Calendar, Sun, TrendingUp, Info,
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, ReferenceLine, Line, ComposedChart, Area,
+} from "recharts";
 import {
   getPredictions, clearPredictions, deletePrediction,
   getScenarios, deleteScenario,
@@ -17,7 +22,227 @@ import {
 import {
   getUserBuildings, deleteUserBuilding, updateUserBuilding,
 } from "../utils/buildingStorage";
+import { predict } from "../ml/model";
 import "./MySpacePage.css";
+
+// ─── Forecast engine ──────────────────────────────────────────────────────────
+// UB seasonal heating-degree-day weights (Jan=peak, Jul=min)
+const MW = [1.85, 1.72, 1.38, 0.82, 0.45, 0.32, 0.28, 0.31, 0.55, 1.02, 1.52, 1.78];
+const MW_SUM = MW.reduce((s, w) => s + w, 0);
+const MN_MN  = ['1-р','2-р','3-р','4-р','5-р','6-р','7-р','8-р','9-р','10-р','11-р','12-р'];
+const MN_EN  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Hourly occupancy profiles for UB apartments
+const HWD = [0.50,0.40,0.35,0.30,0.38,0.62,0.92,1.12,0.88,0.60,0.52,0.56,
+              0.60,0.52,0.46,0.52,0.68,0.92,1.22,1.42,1.36,1.22,1.00,0.70];
+const HWE = [0.50,0.40,0.35,0.32,0.42,0.68,0.82,0.92,1.02,1.12,1.18,1.24,
+              1.28,1.22,1.18,1.12,1.12,1.08,1.22,1.32,1.22,1.02,0.86,0.66];
+
+const SEASON_COLOR = { winter: "#3a8fd4", mid: "#e9c46a", summer: "#2a9d8f" };
+const DAY_LABELS_MN = ['Ня','Да','Мя','Лх','Пү','Ба','Бя'];
+const DAY_LABELS_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function safeAnnual(p) {
+  const r = Number(p?.result);
+  if (r > 0) return r;
+  if (p?.form) { try { return predict(p.form).annual; } catch (_) {} }
+  return 0;
+}
+
+function buildForecast(annualKwh, startDate) {
+  const daily   = annualKwh / 365;
+  const start   = startDate instanceof Date ? startDate : new Date();
+
+  // Hourly (next 24h from start hour)
+  const startH  = start.getHours();
+  const isWE    = start.getDay() === 0 || start.getDay() === 6;
+  const hPat    = isWE ? HWE : HWD;
+  const hSum    = hPat.reduce((s, w) => s + w, 0);
+  const hourly  = Array.from({ length: 24 }, (_, i) => {
+    const h = (startH + i) % 24;
+    return {
+      label: `${h}:00`,
+      kwh:   +(daily * hPat[h] / hSum).toFixed(3),
+      peak:  (h >= 6 && h <= 8) || (h >= 18 && h <= 22),
+    };
+  });
+
+  // Daily (next 14 days)
+  const daily14 = Array.from({ length: 14 }, (_, i) => {
+    const d   = new Date(start);
+    d.setDate(d.getDate() + i);
+    const dow = d.getDay();
+    const we  = dow === 0 || dow === 6;
+    const mul = we ? 1.20 : 0.94; // weekends +20 %, weekdays -6 %
+    const mIdx = d.getMonth();
+    const sMul = MW[mIdx] / (MW_SUM / 12); // seasonal multiplier
+    return {
+      label:     `${d.getMonth() + 1}/${d.getDate()}`,
+      dayLabel:  DAY_LABELS_MN[dow],
+      kwh:       +(daily * mul * sMul).toFixed(1),
+      isWeekend: we,
+    };
+  });
+
+  // Monthly (12 months from start month)
+  const sm  = start.getMonth();
+  const sy  = start.getFullYear();
+  const monthly = Array.from({ length: 12 }, (_, i) => {
+    const mi  = (sm + i) % 12;
+    const yr  = sy + Math.floor((sm + i) / 12);
+    const days = new Date(yr, mi + 1, 0).getDate();
+    const kwh  = Math.round(annualKwh * MW[mi] / MW_SUM);
+    const season = (mi <= 1 || mi >= 10) ? 'winter' : (mi >= 4 && mi <= 7) ? 'summer' : 'mid';
+    return { label: MN_MN[mi], label_en: MN_EN[mi], kwh, days, season };
+  });
+
+  // Yearly (next 5 years, flat projection with -1%/yr efficiency trend)
+  const yearly = Array.from({ length: 5 }, (_, i) => ({
+    label: `${sy + i}`,
+    kwh:   Math.round(annualKwh * Math.pow(0.99, i)),
+  }));
+
+  return { hourly, daily: daily14, monthly, yearly };
+}
+
+function ForecastPanel({ prediction, lang }) {
+  const [tab, setTab] = useState("monthly");
+  const annual = safeAnnual(prediction);
+  const start  = prediction.savedAt ? new Date(prediction.savedAt) : new Date();
+  const fc     = useMemo(() => (annual > 0 ? buildForecast(annual, start) : null), [annual, start.toDateString()]);
+
+  if (!fc) return (
+    <div className="ms-fc-empty">
+      <Info size={14} />
+      <span>{lang === "mn" ? "Таамаглалын өгөгдөл байхгүй — дахин таамаглал хийнэ үү" : "No forecast data — run a new prediction"}</span>
+    </div>
+  );
+
+  const tabs = [
+    { id: "hourly",  icon: <Clock size={12} />,     label: lang === "mn" ? "Цаг"  : "Hourly" },
+    { id: "daily",   icon: <Calendar size={12} />,  label: lang === "mn" ? "Өдөр" : "Daily" },
+    { id: "monthly", icon: <Sun size={12} />,       label: lang === "mn" ? "Сар"  : "Monthly" },
+    { id: "yearly",  icon: <TrendingUp size={12} />,label: lang === "mn" ? "Жил"  : "Yearly" },
+  ];
+
+  const chartData = {
+    hourly:  fc.hourly,
+    daily:   fc.daily,
+    monthly: fc.monthly.map(d => ({ ...d, label: lang === "mn" ? d.label : d.label_en })),
+    yearly:  fc.yearly,
+  }[tab];
+
+  const dataKey = "kwh";
+  const unit    = "кВт·цаг";
+
+  const methodNotes = {
+    hourly: lang === "mn"
+      ? `Цагийн таамаглал: Жилийн ${annual.toLocaleString()} кВт·цаг ÷ 365 = өдрийн ${(annual/365).toFixed(1)} кВт·цаг. Цагийн хуваарилалт UB орон сууцны хэрэглэлийн профайлаар (оройн 18-22ц онцгой оргил). ${fc.hourly[0]?.peak !== undefined ? (new Date().getDay()===0||new Date().getDay()===6 ? "Амралтын өдрийн профайл: өдөр +20% (гэртээ байгаа учир)." : "Ажлын өдрийн профайл: өглөө 6-8ц, оройн 18-22ц оргил.") : ""}`
+      : `Hourly: ${annual.toLocaleString()} kWh/yr ÷ 365 = ${(annual/365).toFixed(1)} kWh/day. Distributed by UB apartment occupancy profile — evening peak 18-22h. ${new Date().getDay()===0||new Date().getDay()===6 ? "Weekend pattern: +20% daytime (people home)." : "Weekday pattern: peaks at 6-8h and 18-22h."}`,
+    daily: lang === "mn"
+      ? `Өдрийн таамаглал: Ажлын өдөр ×0.94, амралтын өдөр ×1.20 (гэртээ байгаа учир). Улирлын жинг ашигласан (1-р сар = 1.85×, 7-р сар = 0.28×). Таамаглал ${start.toLocaleDateString("mn-MN")} өдрөөс эхэлсэн.`
+      : `Daily: Weekday ×0.94, Weekend ×1.20 (home occupancy). Scaled by monthly HDD weight (Jan=1.85×, Jul=0.28×). Forecast starts from ${start.toLocaleDateString("en-US")}.`,
+    monthly: lang === "mn"
+      ? `Сарын таамаглал: Жилийн нийт ${annual.toLocaleString()} кВт·цаг-ийг UB-ийн халааны зэрэг-өдрийн (HDD) жингээр хуваарилсан. 1-р сар хамгийн их (жингийн 1.85×), 7-р сар хамгийн бага (0.28×). Энэ нь Улаанбаатарын эрс тэс уур амьсгалаас үүдэлтэй.`
+      : `Monthly: Annual ${annual.toLocaleString()} kWh distributed by UB Heating-Degree-Day weights. Jan peak (1.85×), Jul minimum (0.28×) — driven by UB's extreme continental climate (HDD ≈ 4200).`,
+    yearly: lang === "mn"
+      ? `Жилийн таамаглал: Жилийн ${annual.toLocaleString()} кВт·цаг-аас эхэлсэн. Барилгын хуучирч, тусгаарлалт муудах хандлагын дагуу жилд -1% хэмнэлт хийх хандлага тооцсон (IEA 2022 норматив).`
+      : `Yearly: Baseline ${annual.toLocaleString()} kWh/yr. Projects -1%/yr reflecting gradual efficiency degradation per IEA 2022 reference building standards.`,
+  };
+
+  return (
+    <div className="ms-fc-panel">
+      <div className="ms-fc-tabs">
+        {tabs.map(tb => (
+          <button
+            key={tb.id}
+            className={`ms-fc-tab${tab === tb.id ? " active" : ""}`}
+            onClick={() => setTab(tb.id)}
+          >
+            {tb.icon}{tb.label}
+          </button>
+        ))}
+      </div>
+
+      <ResponsiveContainer width="100%" height={180}>
+        {tab === "yearly" ? (
+          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+            <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+            <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+            <Tooltip
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+              formatter={v => [`${Math.round(v).toLocaleString()} ${unit}`, lang === "mn" ? "Таамаглал" : "Forecast"]}
+            />
+            <Area type="monotone" dataKey={dataKey} fill="#1a6eb522" stroke="#1a6eb5" strokeWidth={2} dot={{ r: 4, fill: "#1a6eb5" }} />
+            <Line type="monotone" dataKey={dataKey} stroke="#1a6eb5" strokeWidth={0} dot={false} />
+          </ComposedChart>
+        ) : (
+          <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+            <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+            <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+            <Tooltip
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+              formatter={(v, _n, props) => {
+                const d = props.payload;
+                const extra = tab === "daily" && d?.isWeekend
+                  ? (lang === "mn" ? " (амралт +20%)" : " (weekend +20%)")
+                  : tab === "hourly" && d?.peak
+                  ? (lang === "mn" ? " (оргил цаг)" : " (peak hour)")
+                  : tab === "monthly"
+                  ? ` (${d?.days || 30} ${lang === "mn" ? "өдөр" : "days"})`
+                  : "";
+                return [`${v.toLocaleString ? v.toLocaleString() : v} ${unit}${extra}`, lang === "mn" ? "Таамаглал" : "Forecast"];
+              }}
+              labelFormatter={l => tab === "daily"
+                ? `${l} (${chartData.find(d => d.label === l)?.dayLabel || ""})`
+                : l}
+            />
+            <Bar dataKey={dataKey} radius={[3, 3, 0, 0]} maxBarSize={32}>
+              {chartData.map((d, i) => (
+                <Cell
+                  key={i}
+                  fill={
+                    tab === "monthly" ? SEASON_COLOR[d.season] || "#3a8fd4"
+                    : tab === "daily"  ? (d.isWeekend ? "#f4a261" : "#3a8fd4")
+                    : tab === "hourly" ? (d.peak ? "#e9c46a" : "#3a8fd4")
+                    : "#3a8fd4"
+                  }
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        )}
+      </ResponsiveContainer>
+
+      {tab === "daily" && (
+        <div className="ms-fc-legend">
+          <span className="ms-fc-leg-dot" style={{ background: "#3a8fd4" }} /> {lang === "mn" ? "Ажлын өдөр" : "Weekday"}
+          <span className="ms-fc-leg-dot" style={{ background: "#f4a261", marginLeft: 12 }} /> {lang === "mn" ? "Амралтын өдөр (+20%)" : "Weekend (+20%)"}
+        </div>
+      )}
+      {tab === "monthly" && (
+        <div className="ms-fc-legend">
+          <span className="ms-fc-leg-dot" style={{ background: "#3a8fd4" }} /> {lang === "mn" ? "Өвлийн улирал" : "Winter"}
+          <span className="ms-fc-leg-dot" style={{ background: "#e9c46a", marginLeft: 12 }} /> {lang === "mn" ? "Дунд улирал" : "Shoulder"}
+          <span className="ms-fc-leg-dot" style={{ background: "#2a9d8f", marginLeft: 12 }} /> {lang === "mn" ? "Зуны улирал" : "Summer"}
+        </div>
+      )}
+      {tab === "hourly" && (
+        <div className="ms-fc-legend">
+          <span className="ms-fc-leg-dot" style={{ background: "#3a8fd4" }} /> {lang === "mn" ? "Ердийн цаг" : "Normal"}
+          <span className="ms-fc-leg-dot" style={{ background: "#e9c46a", marginLeft: 12 }} /> {lang === "mn" ? "Оргил цаг (6-8ц, 18-22ц)" : "Peak (6-8h, 18-22h)"}
+        </div>
+      )}
+
+      <p className="ms-fc-note">
+        <Info size={12} style={{ flexShrink: 0 }} />
+        {methodNotes[tab]}
+      </p>
+    </div>
+  );
+}
 
 const GRADE_COLORS = { A: "#2a9d8f", B: "#57cc99", C: "#e9c46a", D: "#f4a261", E: "#e76f51", F: "#e63946", G: "#6d2b2b" };
 
@@ -530,6 +755,8 @@ function DatasetTab({ t, buildings }) {
 // ── Prediction History Tab ────────────────────────────────────────────────────
 function HistoryTab({ t, user, predictions, onRefresh }) {
   const navigate = useNavigate();
+  const { lang } = useLang();
+  const [expandedId, setExpandedId] = useState(null);
 
   const handleClear = () => {
     if (!window.confirm("Бүх таамаглалын түүхийг устгах уу?")) return;
@@ -539,6 +766,7 @@ function HistoryTab({ t, user, predictions, onRefresh }) {
 
   const handleDelete = (id) => {
     deletePrediction(user?.id, id);
+    if (expandedId === id) setExpandedId(null);
     onRefresh();
   };
 
@@ -556,13 +784,14 @@ function HistoryTab({ t, user, predictions, onRefresh }) {
     );
   }
 
-  const latest = predictions[0];
+  const latest  = predictions[0];
+  const latestKwh = safeAnnual(latest);
 
   return (
     <div>
       {/* Latest prediction featured card */}
       <div className="card ms-latest-pred">
-        <div className="ms-latest-label">Сүүлийн таамаглал</div>
+        <div className="ms-latest-label">{lang === "mn" ? "Сүүлийн таамаглал" : "Latest Prediction"}</div>
         <div className="ms-latest-main">
           <div className="ms-latest-info">
             <div className="ms-latest-name">
@@ -577,56 +806,68 @@ function HistoryTab({ t, user, predictions, onRefresh }) {
             </div>
           </div>
           <div className="ms-latest-kwh">
-            <div className="ms-latest-kwh-val">{latest.result ? Math.round(latest.result).toLocaleString() : "—"}</div>
+            <div className="ms-latest-kwh-val">{latestKwh > 0 ? latestKwh.toLocaleString() : "—"}</div>
             <div className="ms-latest-kwh-lbl">кВт·цаг/жил</div>
           </div>
         </div>
+        {/* Forecast panel for latest */}
+        <ForecastPanel prediction={latest} lang={lang} />
         <div className="ms-latest-footer">
           <span>{new Date(latest.savedAt).toLocaleString("mn-MN")}</span>
           <button className="btn btn-primary" style={{ fontSize: "0.8rem", padding: "0.3rem 0.75rem" }} onClick={() => navigate("/predictor")}>
-            <ChevronRight size={13} /> Шинэ таамаглал
+            <ChevronRight size={13} /> {lang === "mn" ? "Шинэ таамаглал" : "New Prediction"}
           </button>
         </div>
       </div>
 
       <div className="ms-list-header">
-        <span>{predictions.length} таамаглал</span>
+        <span>{predictions.length} {lang === "mn" ? "таамаглал" : "predictions"}</span>
         <button className="btn btn-secondary ms-danger-btn" onClick={handleClear}>
           <Trash2 size={14} /> {t.myspace.history_clear}
         </button>
       </div>
 
       <div className="ms-cards-list">
-        {predictions.map(p => (
-          <div key={p.id} className="ms-pred-card card">
-            <div className="ms-pred-main">
-              <div>
-                <div className="ms-pred-name">
-                  <History size={14} />
-                  <strong>{p.form?.name || "Барилга"}</strong>
-                  {p.form?.grade && <GradePill grade={p.form.grade} />}
-                </div>
-                <div className="ms-pred-meta">
-                  {p.form?.type && <span>{TYPE_LABELS[p.form.type] || p.form.type}</span>}
-                  {p.form?.area && <><span>·</span><span>{p.form.area} м²</span></>}
-                  {p.form?.year && <><span>·</span><span>{p.form.year}</span></>}
-                </div>
-                {p.result && (
+        {predictions.map(p => {
+          const kwh    = safeAnnual(p);
+          const isOpen = expandedId === p.id;
+          return (
+            <div key={p.id} className={`ms-pred-card card${isOpen ? " ms-pred-open" : ""}`}>
+              <div className="ms-pred-main" onClick={() => setExpandedId(isOpen ? null : p.id)} style={{ cursor: "pointer" }}>
+                <div>
+                  <div className="ms-pred-name">
+                    <History size={14} />
+                    <strong>{p.form?.name || "Барилга"}</strong>
+                    {p.form?.grade && <GradePill grade={p.form.grade} />}
+                  </div>
+                  <div className="ms-pred-meta">
+                    {p.form?.type && <span>{TYPE_LABELS[p.form.type] || p.form.type}</span>}
+                    {p.form?.area && <><span>·</span><span>{p.form.area} м²</span></>}
+                    {p.form?.year && <><span>·</span><span>{p.form.year}</span></>}
+                  </div>
                   <div className="ms-pred-result">
                     <Zap size={12} />
-                    <span>{Math.round(p.result).toLocaleString()} кВт·цаг/жил</span>
+                    <span>{kwh > 0 ? `${kwh.toLocaleString()} кВт·цаг/жил` : (lang === "mn" ? "Өгөгдөл байхгүй" : "No data")}</span>
                   </div>
-                )}
+                </div>
+                <div className="ms-pred-right">
+                  <span className="ms-pred-date">{new Date(p.savedAt).toLocaleDateString("mn-MN")}</span>
+                  <span className="ms-pred-expand-icon">
+                    {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </span>
+                  <button className="ms-icon-btn ms-danger" onClick={e => { e.stopPropagation(); handleDelete(p.id); }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="ms-pred-right">
-                <span className="ms-pred-date">{new Date(p.savedAt).toLocaleDateString("mn-MN")}</span>
-                <button className="ms-icon-btn ms-danger" onClick={() => handleDelete(p.id)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
+              {isOpen && (
+                <div className="ms-pred-forecast">
+                  <ForecastPanel prediction={p} lang={lang} />
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

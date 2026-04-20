@@ -855,6 +855,80 @@
   transition: width 0.4s ease;
 }
 
+/* ── Forecast panel ──────────────────────────────────────────────────────────── */
+.ms-fc-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 0.85rem;
+  margin-top: 0.85rem;
+}
+.ms-fc-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.ms-fc-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.ms-fc-tab:hover { background: var(--bg3); color: var(--text); }
+.ms-fc-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.ms-fc-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+.ms-fc-leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.ms-fc-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--text3);
+  line-height: 1.5;
+  background: var(--bg2);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  border-left: 2px solid var(--primary);
+}
+.ms-fc-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text3);
+  padding: 0.75rem 0;
+}
+
+/* Expandable prediction card */
+.ms-pred-open { border-color: var(--primary); }
+.ms-pred-expand-icon { color: var(--text3); display: flex; align-items: center; }
+.ms-pred-forecast {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 /* ── Dataset quality bar ─────────────────────────────────────────────────────── */
 .ms-quality-bar-wrap {
   width: 80px;
