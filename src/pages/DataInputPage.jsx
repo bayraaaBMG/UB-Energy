@@ -172,6 +172,38 @@ function computeQualityScore(form, elecBill, heatBill) {
 // ─── CSV / JSON parsers ───────────────────────────────────────────────────────
 const CSV_REQUIRED = ["area"];
 const NAME_KEYS    = ["building_name", "name", "нэр"];
+
+function detectDelimiter(line) {
+  const counts = { ",": 0, ";": 0, "\t": 0 };
+  let inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (!inQ && counts[ch] !== undefined) counts[ch]++;
+  }
+  if (counts[";"] > counts[","] && counts[";"] > counts["\t"]) return ";";
+  if (counts["\t"] > counts[","]) return "\t";
+  return ",";
+}
+
+function parseCSVLine(line, delim = ",") {
+  const result = [];
+  let cur = "", inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === delim && !inQ) {
+      result.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 const COL_SPEC = [
   { key: "building_name", req: true,  mn: "Барилгын нэр",                         en: "Building name" },
   { key: "area",          req: true,  mn: "Талбай (м²)",                           en: "Floor area (m²)" },
@@ -217,15 +249,18 @@ function normalizeRow(obj, idx) {
 }
 
 function parseCSVText(text) {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+  // Strip UTF-8 BOM that Excel adds
+  const clean = text.replace(/^﻿/, "");
+  const lines = clean.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
     .split("\n").filter(l => l.trim());
   if (lines.length < 2) return { headers: [], valid: [], errors: [{ row: 1, name: "", msg: "Empty file or no data rows" }], totalRows: 0 };
-  const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, "").toLowerCase());
+  const delim   = detectDelimiter(lines[0]);
+  const headers = parseCSVLine(lines[0], delim).map(h => h.replace(/^["']|["']$/g, "").toLowerCase().trim());
   const nameKey = NAME_KEYS.find(k => headers.includes(k));
   const valid = [], errors = [];
   lines.slice(1).forEach((line, idx) => {
     if (!line.trim()) return;
-    const vals = line.split(",").map(v => v.trim().replace(/^["']|["']$/g, ""));
+    const vals = parseCSVLine(line, delim).map(v => v.replace(/^["']|["']$/g, ""));
     const obj  = Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]));
     if (nameKey) obj.building_name = obj[nameKey];
     const r = normalizeRow(obj, idx);
@@ -286,6 +321,47 @@ function FileParseResult({ result, lang }) {
             </div>
           ))}
           {errors.length > 8 && <div className="fpr-more">+{errors.length - 8} {lang === "mn" ? "алдаа" : "more"}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CSV table preview ────────────────────────────────────────────────────────
+function CSVPreviewTable({ content }) {
+  const allLines = content.replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+    .split("\n").filter(l => l.trim());
+  if (allLines.length < 2) return <p style={{ color: "var(--text3)", padding: "1rem" }}>Өгөгдөл байхгүй / No data</p>;
+  const delim   = detectDelimiter(allLines[0]);
+  const headers = parseCSVLine(allLines[0], delim);
+  const rows    = allLines.slice(1, 11).map(l => parseCSVLine(l, delim));
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ fontSize: "0.78rem", borderCollapse: "collapse", width: "100%" }}>
+        <thead>
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} style={{ padding: "0.4rem 0.65rem", background: "var(--bg3)", border: "1px solid var(--border)", textAlign: "left", whiteSpace: "nowrap", color: "var(--primary-light)", fontWeight: 700 }}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri} style={{ background: ri % 2 === 0 ? "var(--card)" : "var(--bg2)" }}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={{ padding: "0.35rem 0.65rem", border: "1px solid var(--border)", color: "var(--text2)", whiteSpace: "nowrap", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {cell || <span style={{ color: "var(--text3)" }}>—</span>}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {allLines.length > 11 && (
+        <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem", textAlign: "center" }}>
+          Эхний 10 мөр · нийт {allLines.length - 1} мөр
         </div>
       )}
     </div>
@@ -560,6 +636,7 @@ export default function DataInputPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitCount, setSubmitCount] = useState(0);
   const [previewFile, setPreviewFile] = useState(null);
+  const [previewContent, setPreviewContent] = useState(null);
   const [elecBill, setElecBill] = useState("");
   const [heatBill, setHeatBill] = useState("");
   const [formErrors, setFormErrors] = useState({});
@@ -665,6 +742,8 @@ export default function DataInputPage() {
       const names = new Set(prev.map(f => f.name));
       return [...prev, ...valid.filter(f => !names.has(f.name))];
     });
+    // Reset input value so the same file can be re-selected
+    if (fileRef.current) fileRef.current.value = "";
     // Auto-parse CSV and JSON
     valid.forEach(f => {
       const ext = f.name.split(".").pop().toLowerCase();
@@ -1177,6 +1256,9 @@ export default function DataInputPage() {
                   onDragLeave={() => setDragOver(false)}
                   onDrop={handleDrop}
                   onClick={() => fileRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
                 >
                   <CloudUpload size={40} opacity={0.5} />
                   <p className="dz-main">
@@ -1188,7 +1270,7 @@ export default function DataInputPage() {
                     type="file"
                     multiple
                     accept={ACCEPT_STR}
-                    className="file-input-hidden"
+                    style={{ display: "none" }}
                     onChange={(e) => addFiles(e.target.files)}
                   />
                 </div>
@@ -1210,7 +1292,19 @@ export default function DataInputPage() {
                     </div>
                     {files.map(f => (
                       <div key={f.name}>
-                        <FileItem file={f} t={t} onRemove={removeFile} onPreview={setPreviewFile} />
+                        <FileItem file={f} t={t} onRemove={removeFile} onPreview={(file) => {
+                          setPreviewFile(file);
+                          setPreviewContent(null);
+                          const ext = file.name.split(".").pop().toLowerCase();
+                          if (["csv","json"].includes(ext)) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const text = ev.target.result.replace(/^﻿/, "");
+                              setPreviewContent({ type: ext, content: text });
+                            };
+                            reader.readAsText(file, "UTF-8");
+                          }
+                        }} />
                         <FileParseResult result={parseResults[f.name]} lang={lang} />
                       </div>
                     ))}
@@ -1343,17 +1437,29 @@ export default function DataInputPage() {
 
         {/* File preview modal */}
         {previewFile && (
-          <div className="preview-overlay" onClick={() => setPreviewFile(null)}>
+          <div className="preview-overlay" onClick={() => { setPreviewFile(null); setPreviewContent(null); }}>
             <div className="preview-modal card" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={previewFile.name}>
               <div className="preview-header">
-                <span>{previewFile.name}</span>
-                <button className="chatbot-close" onClick={() => setPreviewFile(null)} aria-label={t.common.close}><X size={18} /></button>
+                <span>{previewFile.name} <span style={{ fontWeight: 400, color: "var(--text3)", fontSize: "0.82rem" }}>({formatSize(previewFile.size)})</span></span>
+                <button className="chatbot-close" onClick={() => { setPreviewFile(null); setPreviewContent(null); }} aria-label={t.common.close}><X size={18} /></button>
               </div>
-              <div className="preview-body">
-                <p style={{ color: "var(--text3)", fontSize: "0.85rem", textAlign: "center", padding: "2rem" }}>
-                  {t.dataInput.preview_note}<br />
-                  <strong style={{ color: "var(--primary-light)" }}>{previewFile.name}</strong> ({formatSize(previewFile.size)}) {t.dataInput.preview_ready}.
-                </p>
+              <div className="preview-body" style={{ padding: "1rem" }}>
+                {previewContent === null ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "2rem", color: "var(--text3)", fontSize: "0.85rem" }}>
+                    <Loader2 size={16} className="fpr-spin" />
+                    {lang === "mn" ? "Уншиж байна..." : "Loading..."}
+                  </div>
+                ) : previewContent.type === "csv" ? (
+                  <CSVPreviewTable content={previewContent.content} />
+                ) : previewContent.type === "json" ? (
+                  <pre style={{ fontSize: "0.76rem", color: "var(--text2)", overflow: "auto", maxHeight: "55vh", margin: 0, lineHeight: 1.6, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, padding: "0.75rem" }}>
+                    {previewContent.content.slice(0, 4000)}{previewContent.content.length > 4000 ? "\n\n... (truncated)" : ""}
+                  </pre>
+                ) : (
+                  <p style={{ color: "var(--text3)", fontSize: "0.85rem", textAlign: "center", padding: "2rem" }}>
+                    {t.dataInput.preview_note}
+                  </p>
+                )}
               </div>
             </div>
           </div>
