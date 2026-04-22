@@ -347,11 +347,11 @@ function aggregateTimeSeries(text) {
     ? [...new Set(rows.map(r => r[idIdx]).filter(Boolean))]
     : [buildingId];
 
-  // Accumulate
+  // Accumulate — track min/max inline to avoid Math.min(...50k) stack overflow
   let totalUse = 0, totalHeat = 0, totalElec = 0;
   let peakKw   = 0, tempSum = 0, tempN = 0, occSum = 0, occN = 0;
   const monthly = {}, hourly = Array(24).fill(0), hourlyCnt = Array(24).fill(0);
-  const dates   = [];
+  let minDate = null, maxDate = null;
 
   rows.forEach(r => {
     const u = parseFloat(r[useIdx]) || 0;
@@ -361,18 +361,18 @@ function aggregateTimeSeries(text) {
     if (electricIdx >= 0) totalElec += parseFloat(r[electricIdx]) || 0;
     if (tempIdx >= 0) { const t = parseFloat(r[tempIdx]); if (!isNaN(t)) { tempSum += t; tempN++; } }
     if (occupIdx >= 0) { const o = parseFloat(r[occupIdx]); if (!isNaN(o)) { occSum += o; occN++; } }
-    const d = new Date(r[dateIdx]);
-    if (!isNaN(d)) {
-      dates.push(d);
+    // Fix: replace space with T for cross-browser Date parsing (Safari)
+    const rawDate = (r[dateIdx] || "").trim().replace(" ", "T");
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      if (!minDate || d < minDate) minDate = d;
+      if (!maxDate || d > maxDate) maxDate = d;
       const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
       monthly[mk] = (monthly[mk] || 0) + u;
       hourly[d.getHours()] += u;
       hourlyCnt[d.getHours()]++;
     }
   });
-
-  const minDate = dates.length ? new Date(Math.min(...dates)) : null;
-  const maxDate = dates.length ? new Date(Math.max(...dates)) : null;
   const periodYears = minDate && maxDate
     ? Math.max(0.01, (maxDate - minDate) / (365.25 * 24 * 3600 * 1000))
     : 1;
