@@ -222,7 +222,27 @@
   opacity: 0.8;
 }
 
-/* .file-input-hidden is now display:none — trigger via div onClick */
+/* ── CSV paste textarea ─────────────────────────────────────────────────────── */
+.csv-paste-area {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  resize: vertical;
+  transition: border-color 0.2s;
+  outline: none;
+}
+.csv-paste-area:focus {
+  border-color: #2a9d8f;
+  background: var(--card);
+}
+.csv-paste-area::placeholder { color: var(--text3); }
 
 /* ── Format badges ──────────────────────────────────────────────────────────── */
 .format-badges {
