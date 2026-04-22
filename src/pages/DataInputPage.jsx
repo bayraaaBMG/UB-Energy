@@ -742,8 +742,6 @@ export default function DataInputPage() {
       const names = new Set(prev.map(f => f.name));
       return [...prev, ...valid.filter(f => !names.has(f.name))];
     });
-    // Reset input value so the same file can be re-selected
-    if (fileRef.current) fileRef.current.value = "";
     // Auto-parse CSV and JSON
     valid.forEach(f => {
       const ext = f.name.split(".").pop().toLowerCase();
@@ -1250,15 +1248,13 @@ export default function DataInputPage() {
                   {t.dataInput.file_section_title}
                 </h3>
 
-                <div
+                <label
+                  htmlFor="di-file-upload"
                   className={`drop-zone ${dragOver ? "over" : ""}`}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
                   onDrop={handleDrop}
-                  onClick={() => fileRef.current?.click()}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}
                 >
                   <CloudUpload size={40} opacity={0.5} />
                   <p className="dz-main">
@@ -1266,14 +1262,18 @@ export default function DataInputPage() {
                   </p>
                   <p className="dz-sub">{t.dataInput.dz_sub}</p>
                   <input
+                    id="di-file-upload"
                     ref={fileRef}
                     type="file"
                     multiple
                     accept={ACCEPT_STR}
                     style={{ display: "none" }}
-                    onChange={(e) => addFiles(e.target.files)}
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.target.value = "";
+                    }}
                   />
-                </div>
+                </label>
 
                 <div className="format-badges">
                   {["CSV", "Excel", "JSON", "PDF", "Word", "ZIP"].map(f => (
