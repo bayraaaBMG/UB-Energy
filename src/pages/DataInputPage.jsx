@@ -1242,22 +1242,87 @@ export default function DataInputPage() {
           <div className="animate-fade">
             <FormatGuideAccordion lang={lang} />
 
-            <div className="grid grid-2" style={{ gridTemplateColumns: "1fr 300px", alignItems: "start", marginTop: "1rem" }}>
-              <div className="card">
+            <div className="csv-import-layout" style={{ marginTop: "1rem" }}>
 
-                {/* ① CSV PASTE — primary method, always works */}
-                <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.75rem" }}>
-                  <FileSpreadsheet size={15} style={{ color: "#2a9d8f", flexShrink: 0 }} />
-                  <span className="form-section-title" style={{ color: "#2a9d8f" }}>
-                    {lang === "mn" ? "CSV өгөгдөл буулгах" : "Paste CSV data"}
-                  </span>
+              {/* ── Step 1: file OR paste ── */}
+              <div className="card" style={{ marginBottom: "1rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+
+                  {/* LEFT: direct file input */}
+                  <div>
+                    <div className="form-section-header" style={{ borderColor: "#3a8fd4", marginBottom: "0.65rem" }}>
+                      <CloudUpload size={14} style={{ color: "#3a8fd4", flexShrink: 0 }} />
+                      <span className="form-section-title" style={{ color: "#3a8fd4" }}>
+                        {lang === "mn" ? "① Файл сонгох" : "① Upload file"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.75rem", lineHeight: 1.55 }}>
+                      {lang === "mn" ? "CSV эсвэл JSON файл сонгоно уу. Файл сонгосноор агуулга нь доорх талбарт автоматаар орно." : "Choose a CSV or JSON file. Content will load automatically below."}
+                    </p>
+                    {/* Plain visible file input — browser handles it natively, always works */}
+                    <input
+                      type="file"
+                      accept=".csv,.json,.txt"
+                      className="csv-file-input"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const raw = (ev.target.result || "").replace(/^﻿/, "");
+                          const ext = file.name.split(".").pop().toLowerCase();
+                          if (ext === "json") {
+                            setCsvText(raw);
+                            setPasteResult(parseJSONText(raw));
+                          } else {
+                            setCsvText(raw);
+                            setPasteResult(parseCSVText(raw));
+                          }
+                        };
+                        reader.onerror = () => {
+                          setPasteResult({ valid: [], errors: [{ row: 0, name: "", msg: "File could not be read" }], totalRows: 0 });
+                        };
+                        reader.readAsText(file, "UTF-8");
+                      }}
+                    />
+                  </div>
+
+                  {/* RIGHT: paste */}
+                  <div>
+                    <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.65rem" }}>
+                      <FileSpreadsheet size={14} style={{ color: "#2a9d8f", flexShrink: 0 }} />
+                      <span className="form-section-title" style={{ color: "#2a9d8f" }}>
+                        {lang === "mn" ? "② Эсвэл шууд буулгах" : "② Or paste directly"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.75rem", lineHeight: 1.55 }}>
+                      {lang === "mn" ? "Excel / Google Sheets-ийн хүснэгтийг Ctrl+C хуулаад доорх талбарт Ctrl+V буулгана уу." : "Copy from Excel/Sheets with Ctrl+C, then paste with Ctrl+V into the area below."}
+                    </p>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <span className="fmt-badge">Ctrl+C → Ctrl+V</span>
+                      <span className="fmt-badge">CSV</span>
+                      <span className="fmt-badge">TSV</span>
+                    </div>
+                  </div>
                 </div>
-                <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.65rem", lineHeight: 1.6 }}>
-                  {lang === "mn"
-                    ? "Excel эсвэл Google Sheets-ийн өгөгдлийг хуулаад доорх хэсэгт буулгана уу. Эхний мөр нь гарчиг (header) байх ёстой."
-                    : "Copy data from Excel or Google Sheets and paste below. First row must be the header."}
-                </p>
+              </div>
 
+              {/* ── Step 2: editable content area ── */}
+              <div className="card" style={{ marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
+                  <div className="form-section-header" style={{ borderColor: "#9b72cf", margin: 0 }}>
+                    <FileText size={14} style={{ color: "#9b72cf", flexShrink: 0 }} />
+                    <span className="form-section-title" style={{ color: "#9b72cf" }}>
+                      {lang === "mn" ? "CSV агуулга" : "CSV content"}
+                    </span>
+                  </div>
+                  {csvText && (
+                    <button className="fi-btn danger" style={{ width: "auto", padding: "0.2rem 0.55rem", fontSize: "0.75rem", display: "flex", gap: "0.3rem" }}
+                      onClick={() => { setCsvText(""); setPasteResult(null); }}>
+                      <Trash2 size={12} /> {lang === "mn" ? "Цэвэрлэх" : "Clear"}
+                    </button>
+                  )}
+                </div>
                 <textarea
                   className="csv-paste-area"
                   value={csvText}
@@ -1269,136 +1334,77 @@ export default function DataInputPage() {
                     setPasteResult(parseCSVText(trimmed));
                   }}
                   placeholder={`building_name,area,year,floors,district,type\nСансар 15-р байр,2400,1992,9,Чингэлтэй,apartment\nТөв оффис,3200,2005,8,Сүхбаатар,office`}
-                  rows={7}
+                  rows={8}
                   spellCheck={false}
                 />
-
                 {pasteResult && (
-                  <div style={{ marginTop: "0.4rem" }}>
+                  <div style={{ marginTop: "0.5rem" }}>
                     <FileParseResult result={pasteResult} lang={lang} />
                   </div>
                 )}
+              </div>
 
-                {/* ② FILE PICKER — secondary, best-effort */}
-                <div style={{ borderTop: "1px solid var(--border)", margin: "1.25rem 0 0.85rem", paddingTop: "1rem" }}>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text3)", marginBottom: "0.6rem" }}>
-                    {lang === "mn" ? "Эсвэл файл сонгох (CSV / JSON):" : "Or pick a file (CSV / JSON):"}
+              {/* ── Step 3: preview table ── */}
+              {pasteResult?.valid?.length > 0 && (
+                <div className="card" style={{ marginBottom: "1rem" }}>
+                  <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.65rem" }}>
+                    <Eye size={14} style={{ color: "#2a9d8f" }} />
+                    <span className="form-section-title" style={{ color: "#2a9d8f" }}>
+                      {lang === "mn" ? "Урьдчилан харах" : "Preview"}
+                    </span>
+                    <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "#2a9d8f", fontWeight: 600 }}>
+                      {pasteResult.valid.length} {lang === "mn" ? "барилга" : "buildings"}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", flexWrap: "wrap" }}>
-                    {/* visually-hidden input — clip technique works in all browsers */}
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      multiple
-                      accept={ACCEPT_STR}
-                      style={{ position: "absolute", clip: "rect(0 0 0 0)", clipPath: "inset(50%)", height: "1px", width: "1px", overflow: "hidden", whiteSpace: "nowrap" }}
-                      onChange={(e) => addFiles(e.target.files)}
-                    />
-                    <button type="button" className="btn btn-secondary" style={{ padding: "0.45rem 1rem", fontSize: "0.85rem" }}
-                      onClick={() => fileRef.current?.click()}>
-                      <CloudUpload size={15} />
-                      {lang === "mn" ? "Файл сонгох" : "Choose file"}
-                    </button>
-                    {files.length > 0 && (
-                      <button className="btn btn-secondary" style={{ padding: "0.3rem 0.65rem", fontSize: "0.78rem" }}
-                        onClick={() => { setFiles([]); setParseResults({}); }}>
-                        <Trash2 size={12} /> {lang === "mn" ? "Цэвэрлэх" : "Clear"}
-                      </button>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                      <thead>
+                        <tr>
+                          {["name","area","year","floors","district","type"].map(h => (
+                            <th key={h} style={{ padding: "0.35rem 0.65rem", background: "var(--bg3)", border: "1px solid var(--border)", textAlign: "left", color: "var(--primary-light)", whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pasteResult.valid.slice(0, 10).map((r, i) => (
+                          <tr key={i} style={{ background: i % 2 === 0 ? "var(--card)" : "var(--bg2)" }}>
+                            {[r.name, r.area, r.year||"—", r.floors||"—", r.district, r.type].map((v, j) => (
+                              <td key={j} style={{ padding: "0.3rem 0.65rem", border: "1px solid var(--border)", color: "var(--text2)", whiteSpace: "nowrap" }}>{v}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {pasteResult.valid.length > 10 && (
+                      <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.4rem", textAlign: "center" }}>
+                        + {pasteResult.valid.length - 10} {lang === "mn" ? "барилга дэлгэгдэхгүй байна" : "more not shown"}
+                      </div>
                     )}
                   </div>
-
-                  {files.length > 0 && (
-                    <div className="file-list" style={{ marginTop: "0.6rem" }}>
-                      {files.map(f => (
-                        <div key={f.name}>
-                          <FileItem file={f} t={t} onRemove={removeFile} onPreview={(file) => {
-                            setPreviewFile(file);
-                            setPreviewContent(null);
-                            const ext = file.name.split(".").pop().toLowerCase();
-                            if (["csv","json"].includes(ext)) {
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                const text = ev.target.result.replace(/^﻿/, "");
-                                setPreviewContent({ type: ext, content: text });
-                              };
-                              reader.readAsText(file, "UTF-8");
-                            }
-                          }} />
-                          <FileParseResult result={parseResults[f.name]} lang={lang} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
+              )}
 
-                {/* Import summary + button */}
-                {(() => {
-                  const fromPaste = pasteResult?.valid?.length || 0;
-                  const fromFiles = Object.values(parseResults).reduce((s, r) => s + (r?.valid?.length || 0), 0);
-                  const total = fromPaste + fromFiles;
-                  const hasErrors = (pasteResult?.errors?.length || 0) + Object.values(parseResults).reduce((s, r) => s + (r?.errors?.length || 0), 0) > 0;
-                  return total > 0 ? (
-                    <div className="file-import-summary fis-ok">
-                      <CircleCheck size={14} />
-                      {lang === "mn" ? `${total} барилга импортлоход бэлэн` : `${total} buildings ready to import`}
-                      {hasErrors && <span style={{ color: "#f4a261", marginLeft: "0.5rem" }}>{lang === "mn" ? "(зарим мөр алдаатай)" : "(some rows have errors)"}</span>}
-                    </div>
-                  ) : null;
-                })()}
+              {/* ── Import button ── */}
+              <button
+                className="btn btn-primary submit-btn"
+                style={{ width: "100%" }}
+                onClick={() => {
+                  const all = pasteResult?.valid || [];
+                  if (all.length === 0) return;
+                  all.forEach(record => saveUserBuilding({ ...record, userId: user?.id || null }));
+                  setSubmitCount(all.length);
+                  setSubmitted(true);
+                  setCsvText(""); setPasteResult(null);
+                  setTimeout(() => setSubmitted(false), 5000);
+                }}
+                disabled={!pasteResult?.valid?.length}
+              >
+                <Upload size={18} />
+                {pasteResult?.valid?.length > 0
+                  ? (lang === "mn" ? `${pasteResult.valid.length} барилга импортлох` : `Import ${pasteResult.valid.length} buildings`)
+                  : (lang === "mn" ? "Өгөгдөл оруулаагүй байна" : "No data to import")}
+              </button>
 
-                <button
-                  className="btn btn-primary submit-btn mt-2"
-                  onClick={() => {
-                    const fromPaste = pasteResult?.valid || [];
-                    const fromFiles = Object.values(parseResults).flatMap(r => r?.valid || []);
-                    const all = [...fromPaste, ...fromFiles];
-                    if (all.length === 0 && files.length === 0) return;
-                    let count = 0;
-                    all.forEach(record => {
-                      saveUserBuilding({ ...record, userId: user?.id || null });
-                      count++;
-                    });
-                    setSubmitCount(count || files.length);
-                    setSubmitted(true);
-                    setCsvText(""); setPasteResult(null);
-                    setTimeout(() => { setSubmitted(false); setFiles([]); setLinks([]); setParseResults({}); }, 5000);
-                  }}
-                  disabled={!csvText.trim() && files.length === 0}
-                >
-                  <Upload size={18} />
-                  {(() => {
-                    const n = (pasteResult?.valid?.length || 0) + Object.values(parseResults).reduce((s, r) => s + (r?.valid?.length || 0), 0);
-                    return n > 0
-                      ? (lang === "mn" ? `${n} барилга импортлох` : `Import ${n} buildings`)
-                      : (lang === "mn" ? "Импортлох" : "Import");
-                  })()}
-                </button>
-              </div>
-
-              {/* Right sidebar */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div className="card">
-                  <h3 className="section-title" style={{ fontSize: "1rem" }}>{t.dataInput.file_guide_title}</h3>
-                  <div className="format-guide">
-                    <div className="fg-item">
-                      <FileSpreadsheet size={18} style={{ color: "#2a9d8f" }} />
-                      <div>
-                        <strong>CSV / Excel</strong>
-                        <p>{t.dataInput.csv_desc}</p>
-                        <span className="fg-auto-badge">{lang === "mn" ? "Автоматаар уншина" : "Auto-parsed"}</span>
-                      </div>
-                    </div>
-                    <div className="fg-item">
-                      <FileText size={18} style={{ color: "#3a8fd4" }} />
-                      <div>
-                        <strong>JSON</strong>
-                        <p>{t.dataInput.json_desc}</p>
-                        <span className="fg-auto-badge">{lang === "mn" ? "Автоматаар уншина" : "Auto-parsed"}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

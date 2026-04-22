@@ -222,6 +222,38 @@
   opacity: 0.8;
 }
 
+/* ── Direct file input (always visible, browser-native) ────────────────────── */
+.csv-file-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg2);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.83rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.csv-file-input:hover { border-color: #3a8fd4; }
+.csv-file-input:focus { outline: 2px solid #3a8fd4; outline-offset: 1px; }
+.csv-file-input::file-selector-button {
+  padding: 0.38rem 0.85rem;
+  margin-right: 0.75rem;
+  background: rgba(58,143,212,0.13);
+  border: 1px solid rgba(58,143,212,0.4);
+  border-radius: 6px;
+  color: #3a8fd4;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.csv-file-input::file-selector-button:hover {
+  background: rgba(58,143,212,0.26);
+}
+
 /* ── CSV paste textarea ─────────────────────────────────────────────────────── */
 .csv-paste-area {
   width: 100%;
@@ -491,6 +523,9 @@
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .input-layout { grid-template-columns: 1fr; }
+  .csv-import-layout .card > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 600px) {
