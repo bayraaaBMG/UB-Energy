@@ -222,6 +222,91 @@
   opacity: 0.8;
 }
 
+/* ── Time-series analysis ───────────────────────────────────────────────────── */
+.ts-analysis { display: flex; flex-direction: column; gap: 1rem; }
+
+.ts-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(233,196,106,0.08);
+  border: 1px solid rgba(233,196,106,0.35);
+  border-left: 4px solid #e9c46a;
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+.ts-banner strong { display: block; color: var(--text); font-size: 0.9rem; margin-bottom: 0.2rem; }
+.ts-banner-meta { font-size: 0.8rem; color: var(--text2); }
+.ts-banner-cols { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
+.ts-col-chip {
+  padding: 0.1rem 0.45rem;
+  background: rgba(233,196,106,0.12);
+  border: 1px solid rgba(233,196,106,0.3);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: #e9c46a;
+}
+
+.ts-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+.ts-metric-card {
+  padding: 0.85rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.ts-metric-val { font-size: 1.55rem; font-weight: 800; line-height: 1.1; }
+.ts-metric-label { font-size: 0.72rem; color: var(--text2); margin-top: 0.2rem; font-weight: 600; }
+.ts-metric-sub { font-size: 0.68rem; color: var(--text3); margin-top: 0.15rem; }
+
+.ts-chart-card { padding: 1rem 1.1rem; }
+
+.ts-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 90px;
+  position: relative;
+}
+.ts-hourly-chart { height: 70px; }
+.ts-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+.ts-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.ts-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+  min-height: 2px;
+}
+.ts-bar-label { font-size: 0.6rem; color: var(--text3); margin-top: 2px; white-space: nowrap; }
+.ts-bar-year {
+  position: absolute;
+  bottom: -14px;
+  font-size: 0.6rem;
+  color: var(--primary-light);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .ts-metrics { grid-template-columns: 1fr 1fr; }
+}
+
 /* ── Direct file input (always visible, browser-native) ────────────────────── */
 .csv-file-input {
   display: block;

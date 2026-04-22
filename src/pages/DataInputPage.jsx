@@ -285,6 +285,144 @@ function parseJSONText(text) {
   }
 }
 
+// ─── Time-series detection & aggregation ─────────────────────────────────────
+const TS_DATE_PATTERNS  = /date|time|datetime|timestamp/i;
+const TS_POWER_PATTERNS = /use_kw|use_kwh|total_kw|heating_kw|electric_kw|kw$|kwh$|power|watt|load|energy|consumption/i;
+const TS_ID_PATTERNS    = /building_id|building_name|meter_id|^id$|^name$/i;
+const TS_AREA_PATTERNS  = /area_m2|area$|floor_area|gaz/i;
+const TS_TEMP_PATTERNS  = /outdoortemp|outdoor_temp|temp$|temperature/i;
+const TS_OCC_PATTERNS   = /occupancy|residents|people/i;
+
+function detectTimeSeries(headers) {
+  const hasDate  = headers.some(h => TS_DATE_PATTERNS.test(h));
+  const hasPower = headers.some(h => TS_POWER_PATTERNS.test(h));
+  return hasDate && hasPower;
+}
+
+function pickCol(headers, pattern) {
+  return headers.findIndex(h => pattern.test(h));
+}
+
+function aggregateTimeSeries(text) {
+  const clean = text.replace(/^﻿/, "");
+  const lines  = clean.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim());
+  if (lines.length < 2) return null;
+
+  const delim   = detectDelimiter(lines[0]);
+  const headers = parseCSVLine(lines[0], delim).map(h => h.trim().toLowerCase());
+
+  const dateIdx    = pickCol(headers, TS_DATE_PATTERNS);
+  const useIdx     = pickCol(headers, /use_kw$/i) >= 0 ? pickCol(headers, /use_kw$/i) : pickCol(headers, TS_POWER_PATTERNS);
+  const heatingIdx = pickCol(headers, /heating_kw/i);
+  const electricIdx= pickCol(headers, /electric_kw/i);
+  const areaIdx    = pickCol(headers, TS_AREA_PATTERNS);
+  const floorsIdx  = pickCol(headers, /^floors$|^floor_count$/i);
+  const idIdx      = pickCol(headers, TS_ID_PATTERNS);
+  const districtIdx= pickCol(headers, /^district$|дүүрэг/i);
+  const tempIdx    = pickCol(headers, TS_TEMP_PATTERNS);
+  const occupIdx   = pickCol(headers, TS_OCC_PATTERNS);
+
+  if (dateIdx < 0 || useIdx < 0) return null;
+
+  // Parse all rows
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const v = parseCSVLine(lines[i], delim);
+    const useVal = parseFloat(v[useIdx]);
+    if (isNaN(useVal)) continue;
+    rows.push(v);
+  }
+  if (rows.length === 0) return null;
+
+  // Building metadata from first row
+  const r0       = rows[0];
+  const buildingId = idIdx >= 0 ? (r0[idIdx] || "Unknown") : "Unknown";
+  const area       = areaIdx >= 0 ? (parseFloat(r0[areaIdx]) || null) : null;
+  const floors     = floorsIdx >= 0 ? (parseInt(r0[floorsIdx]) || null) : null;
+  const district   = districtIdx >= 0 ? (r0[districtIdx] || null) : null;
+
+  // Unique building IDs
+  const buildingIds = idIdx >= 0
+    ? [...new Set(rows.map(r => r[idIdx]).filter(Boolean))]
+    : [buildingId];
+
+  // Accumulate
+  let totalUse = 0, totalHeat = 0, totalElec = 0;
+  let peakKw   = 0, tempSum = 0, tempN = 0, occSum = 0, occN = 0;
+  const monthly = {}, hourly = Array(24).fill(0), hourlyCnt = Array(24).fill(0);
+  const dates   = [];
+
+  rows.forEach(r => {
+    const u = parseFloat(r[useIdx]) || 0;
+    totalUse += u;
+    if (u > peakKw) peakKw = u;
+    if (heatingIdx >= 0) totalHeat += parseFloat(r[heatingIdx]) || 0;
+    if (electricIdx >= 0) totalElec += parseFloat(r[electricIdx]) || 0;
+    if (tempIdx >= 0) { const t = parseFloat(r[tempIdx]); if (!isNaN(t)) { tempSum += t; tempN++; } }
+    if (occupIdx >= 0) { const o = parseFloat(r[occupIdx]); if (!isNaN(o)) { occSum += o; occN++; } }
+    const d = new Date(r[dateIdx]);
+    if (!isNaN(d)) {
+      dates.push(d);
+      const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      monthly[mk] = (monthly[mk] || 0) + u;
+      hourly[d.getHours()] += u;
+      hourlyCnt[d.getHours()]++;
+    }
+  });
+
+  const minDate = dates.length ? new Date(Math.min(...dates)) : null;
+  const maxDate = dates.length ? new Date(Math.max(...dates)) : null;
+  const periodYears = minDate && maxDate
+    ? Math.max(0.01, (maxDate - minDate) / (365.25 * 24 * 3600 * 1000))
+    : 1;
+  const annualKwh = Math.round(totalUse / periodYears);
+  const avgKw     = totalUse / rows.length;
+  const loadFactor= peakKw > 0 ? avgKw / peakKw : 0;
+  const intensity  = area ? Math.round(annualKwh / area) : null;
+
+  const GRADE_THRESHOLDS = [50,100,150,200,250,350];
+  const GRADES = "ABCDEFG";
+  const grade = intensity === null ? "—"
+    : GRADES[GRADE_THRESHOLDS.findIndex(t => intensity < t) >= 0
+        ? GRADE_THRESHOLDS.findIndex(t => intensity < t)
+        : 6];
+
+  const sortedMonthly = Object.entries(monthly)
+    .sort(([a],[b]) => a.localeCompare(b))
+    .map(([month, kwh]) => ({ month, kwh: Math.round(kwh) }));
+
+  const hourlyAvg = hourly.map((v, i) => hourlyCnt[i] > 0 ? Math.round(v / hourlyCnt[i] * 10) / 10 : 0);
+
+  return {
+    buildingIds, buildingId, area, floors, district,
+    totalRows: rows.length,
+    periodYears: Math.round(periodYears * 10) / 10,
+    dateRange: minDate && maxDate
+      ? { from: minDate.toISOString().slice(0,10), to: maxDate.toISOString().slice(0,10) }
+      : null,
+    totalUseKwh:     Math.round(totalUse),
+    annualKwh,
+    peakKw:          Math.round(peakKw * 10) / 10,
+    avgKw:           Math.round(avgKw   * 10) / 10,
+    loadFactor:      Math.round(loadFactor * 100),
+    totalHeatingKwh: heatingIdx >= 0 ? Math.round(totalHeat) : null,
+    totalElectricKwh:electricIdx >= 0 ? Math.round(totalElec) : null,
+    avgTemp:         tempN > 0 ? Math.round(tempSum / tempN * 10) / 10 : null,
+    avgOccupancy:    occN  > 0 ? Math.round(occSum  / occN) : null,
+    intensity, grade,
+    monthly: sortedMonthly,
+    hourlyAvg,
+    detectedCols: {
+      date:     headers[dateIdx],
+      use:      headers[useIdx],
+      heating:  heatingIdx >= 0  ? headers[heatingIdx]  : null,
+      electric: electricIdx >= 0 ? headers[electricIdx] : null,
+      temp:     tempIdx >= 0     ? headers[tempIdx]     : null,
+    },
+  };
+}
+
 // ─── Parse result badge ───────────────────────────────────────────────────────
 function FileParseResult({ result, lang }) {
   if (!result) return null;
@@ -643,6 +781,22 @@ export default function DataInputPage() {
   const [parseResults, setParseResults] = useState({}); // keyed by file.name
   const [csvText, setCsvText] = useState("");
   const [pasteResult, setPasteResult] = useState(null);
+  const [tsResult, setTsResult] = useState(null);
+
+  const handleCsvInput = (val) => {
+    setCsvText(val);
+    const trimmed = val.trim();
+    if (!trimmed) { setPasteResult(null); setTsResult(null); return; }
+    const firstLine = trimmed.split("\n")[0];
+    const headers   = parseCSVLine(firstLine, detectDelimiter(firstLine)).map(h => h.trim().toLowerCase());
+    if (detectTimeSeries(headers)) {
+      setTsResult(aggregateTimeSeries(trimmed));
+      setPasteResult(null);
+    } else {
+      setPasteResult(parseCSVText(trimmed));
+      setTsResult(null);
+    }
+  };
 
   // form state must be declared BEFORE any hooks that reference it
   const [form, setForm] = useState({
@@ -1240,172 +1394,314 @@ export default function DataInputPage() {
         {/* ── File upload tab ── */}
         {activeTab === "file" && (
           <div className="animate-fade">
-            <FormatGuideAccordion lang={lang} />
 
-            <div className="csv-import-layout" style={{ marginTop: "1rem" }}>
-
-              {/* ── Step 1: file OR paste ── */}
-              <div className="card" style={{ marginBottom: "1rem" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-
-                  {/* LEFT: direct file input */}
-                  <div>
-                    <div className="form-section-header" style={{ borderColor: "#3a8fd4", marginBottom: "0.65rem" }}>
-                      <CloudUpload size={14} style={{ color: "#3a8fd4", flexShrink: 0 }} />
-                      <span className="form-section-title" style={{ color: "#3a8fd4" }}>
-                        {lang === "mn" ? "① Файл сонгох" : "① Upload file"}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.75rem", lineHeight: 1.55 }}>
-                      {lang === "mn" ? "CSV эсвэл JSON файл сонгоно уу. Файл сонгосноор агуулга нь доорх талбарт автоматаар орно." : "Choose a CSV or JSON file. Content will load automatically below."}
-                    </p>
-                    {/* Plain visible file input — browser handles it natively, always works */}
-                    <input
-                      type="file"
-                      accept=".csv,.json,.txt"
-                      className="csv-file-input"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const raw = (ev.target.result || "").replace(/^﻿/, "");
-                          const ext = file.name.split(".").pop().toLowerCase();
-                          if (ext === "json") {
-                            setCsvText(raw);
-                            setPasteResult(parseJSONText(raw));
-                          } else {
-                            setCsvText(raw);
-                            setPasteResult(parseCSVText(raw));
-                          }
-                        };
-                        reader.onerror = () => {
-                          setPasteResult({ valid: [], errors: [{ row: 0, name: "", msg: "File could not be read" }], totalRows: 0 });
-                        };
-                        reader.readAsText(file, "UTF-8");
-                      }}
-                    />
-                  </div>
-
-                  {/* RIGHT: paste */}
-                  <div>
-                    <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.65rem" }}>
-                      <FileSpreadsheet size={14} style={{ color: "#2a9d8f", flexShrink: 0 }} />
-                      <span className="form-section-title" style={{ color: "#2a9d8f" }}>
-                        {lang === "mn" ? "② Эсвэл шууд буулгах" : "② Or paste directly"}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.75rem", lineHeight: 1.55 }}>
-                      {lang === "mn" ? "Excel / Google Sheets-ийн хүснэгтийг Ctrl+C хуулаад доорх талбарт Ctrl+V буулгана уу." : "Copy from Excel/Sheets with Ctrl+C, then paste with Ctrl+V into the area below."}
-                    </p>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <span className="fmt-badge">Ctrl+C → Ctrl+V</span>
-                      <span className="fmt-badge">CSV</span>
-                      <span className="fmt-badge">TSV</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Step 2: editable content area ── */}
-              <div className="card" style={{ marginBottom: "1rem" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-                  <div className="form-section-header" style={{ borderColor: "#9b72cf", margin: 0 }}>
-                    <FileText size={14} style={{ color: "#9b72cf", flexShrink: 0 }} />
-                    <span className="form-section-title" style={{ color: "#9b72cf" }}>
-                      {lang === "mn" ? "CSV агуулга" : "CSV content"}
+            {/* Input section: file picker + paste */}
+            <div className="card" style={{ marginBottom: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                <div>
+                  <div className="form-section-header" style={{ borderColor: "#3a8fd4", marginBottom: "0.6rem" }}>
+                    <CloudUpload size={14} style={{ color: "#3a8fd4" }} />
+                    <span className="form-section-title" style={{ color: "#3a8fd4" }}>
+                      {lang === "mn" ? "Файл сонгох" : "Upload file"}
                     </span>
                   </div>
-                  {csvText && (
-                    <button className="fi-btn danger" style={{ width: "auto", padding: "0.2rem 0.55rem", fontSize: "0.75rem", display: "flex", gap: "0.3rem" }}
-                      onClick={() => { setCsvText(""); setPasteResult(null); }}>
-                      <Trash2 size={12} /> {lang === "mn" ? "Цэвэрлэх" : "Clear"}
-                    </button>
-                  )}
+                  <p style={{ fontSize: "0.79rem", color: "var(--text2)", marginBottom: "0.6rem", lineHeight: 1.55 }}>
+                    {lang === "mn"
+                      ? "CSV файл — нэг барилгын бүртгэл болон цаг цувааны (time-series) дата хоёуланг дэмжинэ."
+                      : "CSV file — supports both building registry rows and time-series (hourly/daily) data."}
+                  </p>
+                  <input
+                    type="file"
+                    accept=".csv,.json,.txt"
+                    className="csv-file-input"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const raw = (ev.target.result || "").replace(/^﻿/, "");
+                        handleCsvInput(raw);
+                      };
+                      reader.onerror = () => setPasteResult({ valid: [], errors: [{ row: 0, name: "", msg: "File could not be read" }], totalRows: 0 });
+                      reader.readAsText(file, "UTF-8");
+                    }}
+                  />
                 </div>
-                <textarea
-                  className="csv-paste-area"
-                  value={csvText}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setCsvText(val);
-                    const trimmed = val.trim();
-                    if (!trimmed) { setPasteResult(null); return; }
-                    setPasteResult(parseCSVText(trimmed));
-                  }}
-                  placeholder={`building_name,area,year,floors,district,type\nСансар 15-р байр,2400,1992,9,Чингэлтэй,apartment\nТөв оффис,3200,2005,8,Сүхбаатар,office`}
-                  rows={8}
-                  spellCheck={false}
-                />
-                {pasteResult && (
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <FileParseResult result={pasteResult} lang={lang} />
-                  </div>
-                )}
-              </div>
-
-              {/* ── Step 3: preview table ── */}
-              {pasteResult?.valid?.length > 0 && (
-                <div className="card" style={{ marginBottom: "1rem" }}>
-                  <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.65rem" }}>
-                    <Eye size={14} style={{ color: "#2a9d8f" }} />
+                <div>
+                  <div className="form-section-header" style={{ borderColor: "#2a9d8f", marginBottom: "0.6rem" }}>
+                    <FileSpreadsheet size={14} style={{ color: "#2a9d8f" }} />
                     <span className="form-section-title" style={{ color: "#2a9d8f" }}>
-                      {lang === "mn" ? "Урьдчилан харах" : "Preview"}
-                    </span>
-                    <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "#2a9d8f", fontWeight: 600 }}>
-                      {pasteResult.valid.length} {lang === "mn" ? "барилга" : "buildings"}
+                      {lang === "mn" ? "Эсвэл CSV буулгах" : "Or paste CSV"}
                     </span>
                   </div>
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-                      <thead>
-                        <tr>
-                          {["name","area","year","floors","district","type"].map(h => (
-                            <th key={h} style={{ padding: "0.35rem 0.65rem", background: "var(--bg3)", border: "1px solid var(--border)", textAlign: "left", color: "var(--primary-light)", whiteSpace: "nowrap" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pasteResult.valid.slice(0, 10).map((r, i) => (
-                          <tr key={i} style={{ background: i % 2 === 0 ? "var(--card)" : "var(--bg2)" }}>
-                            {[r.name, r.area, r.year||"—", r.floors||"—", r.district, r.type].map((v, j) => (
-                              <td key={j} style={{ padding: "0.3rem 0.65rem", border: "1px solid var(--border)", color: "var(--text2)", whiteSpace: "nowrap" }}>{v}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {pasteResult.valid.length > 10 && (
-                      <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.4rem", textAlign: "center" }}>
-                        + {pasteResult.valid.length - 10} {lang === "mn" ? "барилга дэлгэгдэхгүй байна" : "more not shown"}
-                      </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.6rem", flexWrap: "wrap" }}>
+                    <span className="fmt-badge">Ctrl+C → Ctrl+V</span>
+                    <span className="fmt-badge">time-series ✓</span>
+                    <span className="fmt-badge">building list ✓</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <p style={{ fontSize: "0.79rem", color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
+                      {lang === "mn"
+                        ? "DateTime + Use_kW баганатай бол цаг цуваа гэж автоматаар таньна."
+                        : "Auto-detected as time-series when DateTime + power columns are present."}
+                    </p>
+                    {csvText && (
+                      <button className="fi-btn danger" style={{ width: "auto", padding: "0.2rem 0.55rem", flexShrink: 0, marginLeft: "0.5rem" }}
+                        onClick={() => { setCsvText(""); setPasteResult(null); setTsResult(null); }}>
+                        <Trash2 size={12} />
+                      </button>
                     )}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* ── Import button ── */}
-              <button
-                className="btn btn-primary submit-btn"
-                style={{ width: "100%" }}
-                onClick={() => {
-                  const all = pasteResult?.valid || [];
-                  if (all.length === 0) return;
-                  all.forEach(record => saveUserBuilding({ ...record, userId: user?.id || null }));
-                  setSubmitCount(all.length);
-                  setSubmitted(true);
-                  setCsvText(""); setPasteResult(null);
-                  setTimeout(() => setSubmitted(false), 5000);
-                }}
-                disabled={!pasteResult?.valid?.length}
-              >
-                <Upload size={18} />
-                {pasteResult?.valid?.length > 0
-                  ? (lang === "mn" ? `${pasteResult.valid.length} барилга импортлох` : `Import ${pasteResult.valid.length} buildings`)
-                  : (lang === "mn" ? "Өгөгдөл оруулаагүй байна" : "No data to import")}
-              </button>
-
+              {/* Shared textarea */}
+              <textarea
+                className="csv-paste-area"
+                style={{ marginTop: "1rem" }}
+                value={csvText}
+                onChange={(e) => handleCsvInput(e.target.value)}
+                placeholder={lang === "mn"
+                  ? "Файл сонгох эсвэл энд CSV буулгах...\n\nЖишээ (барилгын бүртгэл):\nbuilding_name,area,year,floors,district,type\nСансар 15-р байр,2400,1992,9,Чингэлтэй,apartment\n\nЖишээ (цаг цуваа):\nDateTime,Use_kW,Heating_kW,Electric_kW\n2024-01-01 00:00,179.84,125.89,53.95"
+                  : "Upload a file or paste CSV here...\n\nBuilding list example:\nbuilding_name,area,year,floors,district,type\nCenter Tower,3200,2005,8,Sukhbaatar,office\n\nTime-series example:\nDateTime,Use_kW,Heating_kW,Electric_kW\n2024-01-01 00:00,179.84,125.89,53.95"}
+                rows={6}
+                spellCheck={false}
+              />
             </div>
+
+            {/* ── TIME-SERIES ANALYSIS ── */}
+            {tsResult && (
+              <div className="ts-analysis animate-fade">
+
+                {/* Detection banner */}
+                <div className="ts-banner">
+                  <Zap size={16} style={{ color: "#e9c46a", flexShrink: 0 }} />
+                  <div>
+                    <strong>{lang === "mn" ? "Цаг цувааны дата илрүүлсэн" : "Time-series data detected"}</strong>
+                    <span className="ts-banner-meta">
+                      {tsResult.totalRows.toLocaleString()} {lang === "mn" ? "мөр" : "rows"} ·{" "}
+                      {tsResult.buildingIds.join(", ")} ·{" "}
+                      {tsResult.dateRange ? `${tsResult.dateRange.from} → ${tsResult.dateRange.to}` : ""}
+                    </span>
+                  </div>
+                  <div className="ts-banner-cols">
+                    {Object.entries(tsResult.detectedCols).filter(([,v]) => v).map(([k, v]) => (
+                      <code key={k} className="ts-col-chip">{v}</code>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Key metric cards */}
+                <div className="ts-metrics">
+                  <div className="ts-metric-card">
+                    <div className="ts-metric-val" style={{ color: "#3a8fd4" }}>{tsResult.annualKwh.toLocaleString()}</div>
+                    <div className="ts-metric-label">kWh/{lang === "mn" ? "жил" : "yr"} (est.)</div>
+                    <div className="ts-metric-sub">{lang === "mn" ? `${tsResult.periodYears} жилийн дундаж` : `avg of ${tsResult.periodYears} yrs`}</div>
+                  </div>
+                  <div className="ts-metric-card">
+                    <div className="ts-metric-val" style={{ color: "#e63946" }}>{tsResult.peakKw.toLocaleString()}</div>
+                    <div className="ts-metric-label">kW {lang === "mn" ? "оргил ачаалал" : "peak demand"}</div>
+                    <div className="ts-metric-sub">{lang === "mn" ? "хамгийн их" : "maximum"}</div>
+                  </div>
+                  <div className="ts-metric-card">
+                    <div className="ts-metric-val" style={{ color: "#9b72cf" }}>{tsResult.avgKw.toLocaleString()}</div>
+                    <div className="ts-metric-label">kW {lang === "mn" ? "дундаж" : "average"}</div>
+                    <div className="ts-metric-sub">{lang === "mn" ? `ачааллын хүчин зүйл: ${tsResult.loadFactor}%` : `load factor: ${tsResult.loadFactor}%`}</div>
+                  </div>
+                  {tsResult.intensity && (
+                    <div className="ts-metric-card">
+                      <div className="ts-metric-val" style={{ color: GRADE_COLORS[tsResult.grade] || "#f4a261" }}>{tsResult.intensity}</div>
+                      <div className="ts-metric-label">kWh/m²/{lang === "mn" ? "жил" : "yr"}</div>
+                      <div className="ts-metric-sub">
+                        {lang === "mn" ? "зэрэглэл" : "grade"}{" "}
+                        <strong style={{ color: GRADE_COLORS[tsResult.grade], fontSize: "1rem" }}>{tsResult.grade}</strong>
+                        {tsResult.area && <> · {tsResult.area.toLocaleString()} m²</>}
+                      </div>
+                    </div>
+                  )}
+                  {tsResult.totalHeatingKwh && (
+                    <div className="ts-metric-card">
+                      <div className="ts-metric-val" style={{ color: "#f4a261" }}>{Math.round(tsResult.totalHeatingKwh/1000)}k</div>
+                      <div className="ts-metric-label">kWh {lang === "mn" ? "халаалт нийт" : "total heating"}</div>
+                      <div className="ts-metric-sub">
+                        {Math.round(tsResult.totalHeatingKwh / tsResult.totalUseKwh * 100)}% {lang === "mn" ? "нийтийн" : "of total"}
+                      </div>
+                    </div>
+                  )}
+                  {tsResult.totalElectricKwh && (
+                    <div className="ts-metric-card">
+                      <div className="ts-metric-val" style={{ color: "#1a6eb5" }}>{Math.round(tsResult.totalElectricKwh/1000)}k</div>
+                      <div className="ts-metric-label">kWh {lang === "mn" ? "цахилгаан нийт" : "total electric"}</div>
+                      <div className="ts-metric-sub">
+                        {Math.round(tsResult.totalElectricKwh / tsResult.totalUseKwh * 100)}% {lang === "mn" ? "нийтийн" : "of total"}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Monthly bar chart */}
+                {tsResult.monthly.length > 0 && (
+                  <div className="card ts-chart-card">
+                    <div className="form-section-header" style={{ borderColor: "#3a8fd4", marginBottom: "0.85rem" }}>
+                      <Zap size={14} style={{ color: "#3a8fd4" }} />
+                      <span className="form-section-title" style={{ color: "#3a8fd4" }}>
+                        {lang === "mn" ? "Сарын хэрэглээ (kWh)" : "Monthly consumption (kWh)"}
+                      </span>
+                    </div>
+                    {(() => {
+                      // Group by year, show up to last 24 months
+                      const shown = tsResult.monthly.slice(-24);
+                      const maxVal = Math.max(...shown.map(m => m.kwh));
+                      return (
+                        <div style={{ overflowX: "auto" }}>
+                          <div className="ts-bar-chart">
+                            {shown.map((m, i) => {
+                              const pct = maxVal > 0 ? (m.kwh / maxVal * 100) : 0;
+                              const [yr, mo] = m.month.split("-");
+                              const isWinter = [12,1,2,3].includes(parseInt(mo));
+                              return (
+                                <div key={i} className="ts-bar-col" title={`${m.month}: ${m.kwh.toLocaleString()} kWh`}>
+                                  <div className="ts-bar-wrap">
+                                    <div className="ts-bar" style={{ height: `${pct}%`, background: isWinter ? "#3a8fd4" : "#2a9d8f" }} />
+                                  </div>
+                                  <div className="ts-bar-label">{parseInt(mo)}р</div>
+                                  {parseInt(mo) === 1 && <div className="ts-bar-year">{yr}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem", fontSize: "0.72rem", color: "var(--text3)" }}>
+                            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#3a8fd4", borderRadius: 2, marginRight: 4 }} />{lang === "mn" ? "өвөл" : "winter"}</span>
+                            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#2a9d8f", borderRadius: 2, marginRight: 4 }} />{lang === "mn" ? "зун" : "summer"}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Hourly profile */}
+                {tsResult.hourlyAvg.some(v => v > 0) && (
+                  <div className="card ts-chart-card">
+                    <div className="form-section-header" style={{ borderColor: "#9b72cf", marginBottom: "0.85rem" }}>
+                      <Zap size={14} style={{ color: "#9b72cf" }} />
+                      <span className="form-section-title" style={{ color: "#9b72cf" }}>
+                        {lang === "mn" ? "Өдрийн дундаж профайл (kW)" : "Average daily profile (kW)"}
+                      </span>
+                    </div>
+                    {(() => {
+                      const maxH = Math.max(...tsResult.hourlyAvg);
+                      return (
+                        <div className="ts-bar-chart ts-hourly-chart">
+                          {tsResult.hourlyAvg.map((v, h) => (
+                            <div key={h} className="ts-bar-col" title={`${h}:00 — ${v} kW`}>
+                              <div className="ts-bar-wrap">
+                                <div className="ts-bar" style={{ height: `${maxH > 0 ? v/maxH*100 : 0}%`, background: h >= 8 && h <= 22 ? "#9b72cf" : "#4a3a6a" }} />
+                              </div>
+                              <div className="ts-bar-label">{h % 6 === 0 ? `${h}h` : ""}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Save to database button */}
+                <button
+                  className="btn btn-primary submit-btn"
+                  style={{ width: "100%", marginTop: "0.5rem" }}
+                  onClick={() => {
+                    const rec = {
+                      id:           `ts_${Date.now()}`,
+                      name:         tsResult.buildingId,
+                      type:         "apartment",
+                      area:         tsResult.area,
+                      floors:       tsResult.floors,
+                      year:         tsResult.dateRange ? parseInt(tsResult.dateRange.from.slice(0,4)) : new Date().getFullYear(),
+                      district:     tsResult.district || "Сүхбаатар",
+                      predicted_kwh: tsResult.annualKwh,
+                      peak_kw:      tsResult.peakKw,
+                      load_factor:  tsResult.loadFactor / 100,
+                      heating_kwh:  tsResult.totalHeatingKwh,
+                      electric_kwh: tsResult.totalElectricKwh,
+                      intensity:    tsResult.intensity,
+                      grade:        tsResult.grade,
+                      data_source:  "timeseries",
+                      period_years: tsResult.periodYears,
+                      monthly_profile: tsResult.monthly,
+                      source:       "user",
+                      userId:       user?.id || null,
+                      submittedAt:  new Date().toISOString(),
+                    };
+                    saveUserBuilding(rec);
+                    setSubmitCount(1);
+                    setSubmitted(true);
+                    setCsvText(""); setTsResult(null);
+                    setTimeout(() => setSubmitted(false), 5000);
+                  }}
+                >
+                  <Upload size={18} />
+                  {lang === "mn"
+                    ? `"${tsResult.buildingId}" барилгыг хадгалах`
+                    : `Save "${tsResult.buildingId}" to database`}
+                </button>
+              </div>
+            )}
+
+            {/* ── BUILDING LIST (regular CSV) ── */}
+            {pasteResult && (
+              <div className="animate-fade">
+                <div className="card" style={{ marginBottom: "1rem" }}>
+                  <FileParseResult result={pasteResult} lang={lang} />
+                  {pasteResult.valid.length > 0 && (
+                    <div style={{ marginTop: "0.75rem", overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                        <thead>
+                          <tr>{["name","area","year","floors","district","type"].map(h => (
+                            <th key={h} style={{ padding: "0.35rem 0.65rem", background: "var(--bg3)", border: "1px solid var(--border)", textAlign: "left", color: "var(--primary-light)" }}>{h}</th>
+                          ))}</tr>
+                        </thead>
+                        <tbody>
+                          {pasteResult.valid.slice(0,8).map((r, i) => (
+                            <tr key={i} style={{ background: i%2===0?"var(--card)":"var(--bg2)" }}>
+                              {[r.name, r.area, r.year||"—", r.floors||"—", r.district, r.type].map((v,j) => (
+                                <td key={j} style={{ padding:"0.3rem 0.65rem", border:"1px solid var(--border)", color:"var(--text2)" }}>{v}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {pasteResult.valid.length > 8 && (
+                        <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.4rem", textAlign: "center" }}>
+                          + {pasteResult.valid.length - 8} {lang === "mn" ? "барилга" : "more"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="btn btn-primary submit-btn"
+                  style={{ width: "100%" }}
+                  onClick={() => {
+                    const all = pasteResult.valid || [];
+                    if (!all.length) return;
+                    all.forEach(r => saveUserBuilding({ ...r, userId: user?.id || null }));
+                    setSubmitCount(all.length);
+                    setSubmitted(true);
+                    setCsvText(""); setPasteResult(null);
+                    setTimeout(() => setSubmitted(false), 5000);
+                  }}
+                  disabled={!pasteResult.valid.length}
+                >
+                  <Upload size={18} />
+                  {pasteResult.valid.length > 0
+                    ? (lang === "mn" ? `${pasteResult.valid.length} барилга импортлох` : `Import ${pasteResult.valid.length} buildings`)
+                    : (lang === "mn" ? "Хүчинтэй мөр байхгүй" : "No valid rows")}
+                </button>
+              </div>
+            )}
+
           </div>
         )}
 
