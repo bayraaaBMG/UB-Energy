@@ -423,7 +423,7 @@ function loadUserMapBuildings(userId = null) {
 // Fetch with 14-second abort timeout
 async function tryOverpass(endpoint, query) {
   const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 14000);
+  const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
     const res = await fetch(`${endpoint}?data=${encodeURIComponent(query)}`, {
       signal: ctrl.signal,
@@ -459,7 +459,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
     setLoading(true);
 
     const query =
-      `[out:json][timeout:12][maxsize:3000000];` +
+      `[out:json][timeout:25][maxsize:8000000];` +
       `way["building"](${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)});out geom;`;
 
     try {
@@ -468,7 +468,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
           const json = await tryOverpass(mirror, query);
           const els = (json.elements || [])
             .filter(el => el.geometry?.length > 2)
-            .slice(0, 1000)
+            .slice(0, 3000)
             .map(osmToBuilding)
             .filter(Boolean);
           if (els.length > 0) { onNewBuildings(els); onFetched?.(new Date()); break; }
@@ -1121,8 +1121,8 @@ function HowItWorks({ t, lang }) {
       color: "#3a8fd4",
       title: t.map.how_step1_title,
       desc: mn
-        ? "OpenStreetMap-ийн Overpass API ашиглан таны харж буй газрын зургийн хэсгийн бүх барилгын полигоны татаж авна. Хэрэглэгч газрын зургийг хөдөлгөх бүрт шинэ хэсгийн барилгуудыг автоматаар нэмнэ. Нийтдээ 1000 барилга хүртэл нэг хүсэлтэд багтана."
-        : "Overpass API fetches all building polygons from OpenStreetMap for the visible viewport. Every time you pan the map, buildings for the new area are automatically loaded. Up to 1,000 buildings are fetched per request.",
+        ? "OpenStreetMap-ийн Overpass API ашиглан таны харж буй газрын зургийн хэсгийн бүх барилгын полигоны татаж авна. Хэрэглэгч газрын зургийг хөдөлгөх бүрт шинэ хэсгийн барилгуудыг автоматаар нэмнэ. Нэг хүсэлтэд 3,000 барилга хүртэл, 8 МБ-аас бага хэмжээний өгөгдөл татна."
+        : "Overpass API fetches all building polygons from OpenStreetMap for the visible viewport. Every time you pan the map, buildings for the new area are automatically loaded. Up to 3,000 buildings per request, max 8 MB response.",
       formula: 'GET /api/interpreter?data=way["building"](bbox);out geom;',
     },
     {
