@@ -345,14 +345,28 @@ function inferYear(tags) {
   return { year: 1985, yearKnown: false }; // UB median for unknown buildings
 }
 
+// Tags that indicate a non-building large area accidentally tagged with building
+const SKIP_BUILDING_VALS = new Set([
+  "no", "entrance", "roof", "bridge", "chimney", "bunker",
+  "construction", "proposed", "demolished", "ruins",
+]);
+
 function osmToBuilding(el) {
   const tags    = el.tags  || {};
   const geom    = el.geometry || [];
   if (geom.length < 3) return null;
 
+  // Skip non-structural tags
+  const bval = (tags.building || "yes").toLowerCase();
+  if (SKIP_BUILDING_VALS.has(bval)) return null;
+
+  // Skip landuse/natural/leisure areas mistakenly tagged with building
+  if (tags.landuse || tags.natural || tags.leisure || tags.boundary) return null;
+
   const area    = Math.round(osmAreaSqm(geom));
-  // Skip obviously broken OSM polygons (garages, kiosks, data errors)
-  if (area < 12) return null;
+  // Skip too-small (garages/kiosks) and too-large (parks/stadiums mislabelled)
+  if (area < 12)     return null;
+  if (area > 25000)  return null;   // >25,000 m² is almost certainly not a single building
 
   const type    = osmBuildingType(tags);
   const floors  = inferFloors(area, tags);
@@ -479,7 +493,9 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
 
     const query =
       `[out:json][timeout:25][maxsize:8000000];` +
-      `way["building"](${s2.toFixed(5)},${w2.toFixed(5)},${n2.toFixed(5)},${e2.toFixed(5)});out geom;`;
+      `way["building"]["building"!="no"]["building"!="construction"]` +
+      `["building"!="proposed"]["building"!="entrance"]["building"!="roof"]` +
+      `(${s2.toFixed(5)},${w2.toFixed(5)},${n2.toFixed(5)},${e2.toFixed(5)});out geom;`;
 
     try {
       for (const mirror of OVERPASS_MIRRORS) {
