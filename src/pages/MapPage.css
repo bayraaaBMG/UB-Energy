@@ -1248,6 +1248,27 @@
   line-height: 1.5;
 }
 
+/* ─── Zoom-in hint overlay ────────────────────────────────────────────────── */
+.map-zoom-hint {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 410;
+  background: rgba(15, 25, 35, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.45rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text2);
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* ─── OSM Result Summary ──────────────────────────────────────────────────── */
 .osm-result-summary {
   border-bottom: 1px solid var(--border);

@@ -439,19 +439,38 @@ async function tryOverpass(endpoint, query) {
 // ─── BuildingFetcher — lives inside MapContainer ───────────────────────────────
 // Fetches OSM buildings for the current viewport on mount and after pan/zoom.
 // Uses a grid-cell cache to avoid re-fetching the same area.
-function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
+function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
   const map = useMap();
   const fetchedCells = useRef(new Set());
   const inFlight = useRef(false);
 
   const fetchViewport = useCallback(async () => {
     if (inFlight.current) return;
+
+    const z = map.getZoom();
+    onZoom?.(z);
+
+    // Only fetch at zoom ≥ 14 — below that the bbox is too large for Overpass
+    if (z < 14) {
+      setLoading(false);
+      return;
+    }
+
     const bounds = map.getBounds();
     const s = bounds.getSouth(), w = bounds.getWest();
     const n = bounds.getNorth(), e = bounds.getEast();
 
+    // Clamp bbox to ≤ 0.12° per side (~13 km) to prevent Overpass timeout
+    const latSpan = n - s, lngSpan = e - w;
+    const latMid  = (n + s) / 2,  lngMid = (e + w) / 2;
+    const maxSpan = 0.12;
+    const s2 = latSpan > maxSpan ? latMid - maxSpan / 2 : s;
+    const n2 = latSpan > maxSpan ? latMid + maxSpan / 2 : n;
+    const w2 = lngSpan > maxSpan ? lngMid - maxSpan / 2 : w;
+    const e2 = lngSpan > maxSpan ? lngMid + maxSpan / 2 : e;
+
     // Grid-cell dedup: floor coords to FETCH_STEP grid
-    const ck = `${Math.floor(s / FETCH_STEP)},${Math.floor(w / FETCH_STEP)}`;
+    const ck = `${Math.floor(s2 / FETCH_STEP)},${Math.floor(w2 / FETCH_STEP)}`;
     if (fetchedCells.current.has(ck)) return;
     fetchedCells.current.add(ck);
 
@@ -460,7 +479,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
 
     const query =
       `[out:json][timeout:25][maxsize:8000000];` +
-      `way["building"](${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)});out geom;`;
+      `way["building"](${s2.toFixed(5)},${w2.toFixed(5)},${n2.toFixed(5)},${e2.toFixed(5)});out geom;`;
 
     try {
       for (const mirror of OVERPASS_MIRRORS) {
@@ -485,8 +504,11 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched }) {
   // Fetch on first render
   useEffect(() => { fetchViewport(); }, [fetchViewport]);
 
-  // Re-fetch after pan / zoom
-  useMapEvents({ moveend: fetchViewport, zoomend: fetchViewport });
+  // Re-fetch after pan / zoom; also track zoom for UI
+  useMapEvents({
+    moveend:  fetchViewport,
+    zoomend:  () => { onZoom?.(map.getZoom()); fetchViewport(); },
+  });
 
   return null;
 }
@@ -1305,6 +1327,7 @@ export default function MapPage() {
   const [layer,          setLayer]          = useState("dark");
   const [colorMode,      setColorMode]      = useState("type"); // "type" | "energy" | "grade" | "pm25"
   const [showSmog,       setShowSmog]       = useState(true);
+  const [mapZoom,        setMapZoom]        = useState(15);
   const DEMO_PM25 = 89;
 
   // Called by BuildingFetcher with each batch of OSM buildings
@@ -1400,8 +1423,8 @@ export default function MapPage() {
           >
             <TileLayer url={tile.url} attribution={tile.attribution} maxZoom={19} />
 
-            {/* Viewport-based building loader */}
-            <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} />
+            {/* Viewport-based building loader + zoom tracker */}
+            <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} onZoom={setMapZoom} />
 
             {filtered.map(b => {
               const active   = selected?.id === b.id;
@@ -1497,6 +1520,18 @@ export default function MapPage() {
 
             <ZoomControl position="bottomright" />
           </MapContainer>
+
+          {/* Zoom-in hint — shown when too far out to load OSM buildings */}
+          {mapZoom < 14 && !loading && (
+            <div className="map-zoom-hint">
+              <MapPin size={18} style={{ opacity: 0.7 }} />
+              <span>
+                {lang === "mn"
+                  ? "Барилгуудыг харахын тулд газрын зурагт дөхүүлнэ үү (zoom ≥ 14)"
+                  : "Zoom in to load OSM buildings (zoom ≥ 14)"}
+              </span>
+            </div>
+          )}
 
           {/* Loading overlay */}
           {loading && (
