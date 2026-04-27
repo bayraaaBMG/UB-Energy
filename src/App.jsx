@@ -51,7 +51,7 @@ function AppLayout({ children }) {
         {lang === "mn" ? "Үндсэн агуулга руу шилжих" : "Skip to main content"}
       </a>
       <Navbar />
-      <main id="main-content" style={{ flex: 1, paddingTop: "1rem" }}>
+      <main id="main-content" style={{ flex: 1, paddingTop: "clamp(0.5rem, 2vw, 1rem)", minHeight: 0, overflowX: "hidden" }}>
         <ErrorBoundary lang={lang}>
           <Suspense fallback={<PageLoader />}>
             {children}

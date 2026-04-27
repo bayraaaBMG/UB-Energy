@@ -111,16 +111,14 @@ export default function Navbar() {
             </Link>
           )}
 
-          {user && (
-            <button
-              className="menu-toggle"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? t.common.close : "Menu"}
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-          )}
+          <button
+            className="menu-toggle"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? t.common.close : "Menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
       </div>
     </nav>

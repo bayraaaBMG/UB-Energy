@@ -412,13 +412,17 @@
 }
 
 /* ── Results modal ──────────────────────────────────────────────────────────── */
-.results-modal {
-  width: min(700px, 97vw);
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
+/* Inline detail panel (replaces old overlay modal) */
+.building-detail-panel {
+  margin-top: 1.25rem;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Keep old class for legacy compat */
+.results-modal {
+  border-radius: 14px;
+  overflow: visible;
 }
 
 .res-header {
@@ -567,16 +571,23 @@
 @media (max-width: 768px) {
   .db-controls { flex-direction: column; align-items: stretch; }
   .db-controls-left { flex-wrap: wrap; }
-  .search-box { flex: 1; }
+  .search-box { flex: 1; min-width: 0; }
   .search-input { width: 100%; }
   .db-download-btns { justify-content: flex-end; }
+  .data-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .db-stats-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .db-pagination { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+  .building-detail-panel { border-radius: 10px; }
+  .res-breakdown { font-size: 0.78rem; }
 }
 
 @media (max-width: 640px) {
   .res-stats-row { grid-template-columns: repeat(2, 1fr); }
   .res-compare-row { flex-direction: column; }
-  .results-modal { max-height: 98vh; border-radius: 10px; }
   .db-stats { gap: 0.4rem; }
+  .res-section-title { font-size: 0.82rem; }
+  .db-stat-badge { font-size: 0.75rem; }
+  .type-filter { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
@@ -584,6 +595,8 @@
   .res-body { padding: 0.9rem; }
   .res-header { padding: 0.75rem 0.9rem; }
   .db-controls { padding: 0.75rem 0.9rem; }
+  .db-download-btns { flex-wrap: wrap; gap: 0.4rem; }
+  .dbp-pages .dbp-btn { padding: 0.3rem 0.5rem; font-size: 0.78rem; }
 }
 
 /* ── Chart source legend ─────────────────────────────────────────────────────── */

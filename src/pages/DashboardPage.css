@@ -209,6 +209,7 @@
 
 @media (max-width: 600px) {
   .usb-stats { grid-template-columns: repeat(2, 1fr); }
+  .avp-badge { font-size: 0.7rem; }
 }
 
 @media (max-width: 768px) {
@@ -216,14 +217,22 @@
   .dash-toolbar { flex-direction: column; align-items: flex-start; }
   .dash-toolbar-right { width: 100%; justify-content: flex-end; }
   .grid-3.model-metric-row { grid-template-columns: 1fr; }
+  .mc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chart-header { flex-wrap: wrap; gap: 0.5rem; }
+  .period-tabs { flex-wrap: wrap; }
+  .usb-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+  .feature-bars .feat-label { font-size: 0.72rem; }
 }
 
 @media (max-width: 480px) {
   .metrics-grid { grid-template-columns: 1fr; }
   .usb-stats { grid-template-columns: repeat(2, 1fr); }
   .mc-value { font-size: 1.2rem; }
-  .period-tab { padding: 0.35rem 0.65rem; font-size: 0.78rem; }
+  .period-tab { padding: 0.35rem 0.55rem; font-size: 0.76rem; }
   .dash-toolbar-label { display: none; }
+  .dash-filter-select { font-size: 0.8rem; max-width: 130px; }
+  .mmc-big-value { font-size: 1.8rem; }
+  .adm-stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Metric cards */
