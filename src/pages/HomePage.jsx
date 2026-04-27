@@ -6,7 +6,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Users, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
+  Building2, Zap, Database, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
   ShieldAlert, Clock,
 } from "lucide-react";
 import {
@@ -60,7 +60,7 @@ export default function HomePage() {
       color: "#2a9d8f", src: t.home.stat3_src, badge: REAL_BADGE,
     },
     {
-      icon: Users,
+      icon: Database,
       value: `${METRICS.n_total} ${t.home.stat4_unit}`,
       label: t.home.stat4_label,
       color: "#f4a261", src: t.home.stat4_src, badge: SYNT_BADGE,
