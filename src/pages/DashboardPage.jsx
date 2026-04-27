@@ -9,7 +9,7 @@ import {
   Zap, Thermometer, Activity, X,
   Building2, Database, ArrowRight,
   Download, FileText, Clock, SlidersHorizontal, Info,
-  Gauge, ShieldCheck, Radio, Award,
+  Gauge, ShieldCheck, Radio, Award, Brain, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
   Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
@@ -94,6 +94,7 @@ export default function DashboardPage() {
   const [period, setPeriod]         = useState("monthly");
   const [showAlert, setShowAlert]   = useState(true);
   const [showNote, setShowNote]     = useState(true);
+  const [showExplain, setShowExplain] = useState(true);
   const [districtFilter, setDistrictFilter] = useState("all");
   const [typeFilter, setTypeFilter]         = useState("all");
 
@@ -284,6 +285,7 @@ export default function DashboardPage() {
 
         {/* ── User buildings summary ── */}
         {userStats ? (
+          <>
           <div className="card user-summary-card mb-3">
             <div className="usb-header">
               <div className="usb-title">
@@ -318,6 +320,182 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* ── ML тайлбарын хэсэг ── */}
+          <div className="card usbe-card mb-0" style={{ marginTop: "0.6rem", borderTop: "1px solid var(--border)" }}>
+            <button
+              className="usbe-toggle"
+              onClick={() => setShowExplain(s => !s)}
+            >
+              <Brain size={14} style={{ color: "#9b72cf" }} />
+              <span>{lang === "mn"
+                ? "Яагаад ийм тооцоолол гарав? — ML загварын тайлбар"
+                : "Why these numbers? — ML model explanation"}</span>
+              {showExplain ? <ChevronUp size={14} style={{ marginLeft: "auto", opacity: 0.5 }} />
+                           : <ChevronDown size={14} style={{ marginLeft: "auto", opacity: 0.5 }} />}
+            </button>
+
+            {showExplain && (
+              <div className="usbe-body">
+
+                {/* ML загварын мэдээлэл */}
+                <div className="usbe-model-row">
+                  <div className="usbe-model-badge">OLS</div>
+                  <div>
+                    <div className="usbe-model-title">
+                      {lang === "mn"
+                        ? "OLS Шугаман Регресс — Одоогийн ашиглаж буй ML загвар"
+                        : "OLS Linear Regression — Current ML model in use"}
+                    </div>
+                    <div className="usbe-model-sub">
+                      {lang === "mn"
+                        ? `600 синтетик Монгол барилга дээр сургасан · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`
+                        : `Trained on 600 synthetic Mongolian buildings · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`}
+                    </div>
+                    <div className="usbe-model-sub" style={{ marginTop: 2 }}>
+                      {lang === "mn"
+                        ? "Оролтууд: Талбай · Он · Давхар · Дулаалга · Цонх · Халаалт · Материал · HDD (30+ feature)"
+                        : "Inputs: Area · Year · Floors · Insulation · Window · Heating · Material · HDD (30+ features)"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Барилга бүрийн тооцооллын тайлбар */}
+                {userBuildings.slice(0, 3).map((b, bi) => {
+                  const kw   = b.predicted_kwh || 0;
+                  const area = b.area || 1;
+                  const int  = b.intensity || Math.round(kw / area);
+                  const grd  = b.grade || (int < 50 ? "A" : int < 100 ? "B" : int < 150 ? "C" : int < 200 ? "D" : int < 250 ? "E" : int < 300 ? "F" : "G");
+                  const gradeLbl = lang === "mn"
+                    ? { A:"маш үр ашигтай",B:"үр ашигтай",C:"дунд",D:"хэвийн",E:"их хэрэглээтэй",F:"маш их хэрэглээтэй",G:"хэт их" }[grd] || ""
+                    : { A:"very efficient",B:"efficient",C:"average",D:"normal",E:"high usage",F:"very high",G:"extremely high" }[grd] || "";
+                  const insl  = { poor: lang==="mn"?"Муу":"Poor", medium: lang==="mn"?"Дунд":"Medium", good: lang==="mn"?"Сайн":"Good" }[b.insulation_quality] || "—";
+                  const win   = { single: lang==="mn"?"Нэг давхар":"Single", double: lang==="mn"?"Хос":"Double", vacuum: lang==="mn"?"Вакуум":"Vacuum" }[b.window_type] || "—";
+                  const heat  = { central: lang==="mn"?"Дүүргийн":"District", local: lang==="mn"?"Орон нутаг":"Local", electric: lang==="mn"?"Цахилгаан":"Electric", gas: "Gas" }[b.heating_type] || "—";
+                  const mat   = { panel: lang==="mn"?"Панель":"Panel", brick: lang==="mn"?"Тоосго":"Brick", concrete: lang==="mn"?"Бетон":"Concrete", wood: lang==="mn"?"Мод":"Wood", metal: lang==="mn"?"Метал":"Metal" }[b.wall_material] || "—";
+                  return (
+                    <div key={b.id} className="usbe-bldg">
+                      <div className="usbe-bldg-header">
+                        <Building2 size={12} style={{ color: "#3a8fd4", flexShrink: 0 }} />
+                        <span className="usbe-bldg-name">{b.name || `${lang === "mn" ? "Барилга" : "Building"} ${bi + 1}`}</span>
+                        {b.type && (
+                          <span className="usbe-type-tag">{lang === "mn"
+                            ? { apartment:"Орон сууц",office:"Оффис",school:"Сургууль",hospital:"Эмнэлэг",commercial:"Худалдаа",warehouse:"Агуулах" }[b.type] || b.type
+                            : b.type}</span>
+                        )}
+                      </div>
+
+                      {/* Оролтын параметрүүд */}
+                      <div className="usbe-inputs">
+                        {[
+                          { k: lang==="mn"?"Талбай":"Area",     v: `${area.toLocaleString()} m²` },
+                          { k: lang==="mn"?"Он":"Year",         v: b.year || "~1990" },
+                          { k: lang==="mn"?"Давхар":"Floors",   v: `${b.floors || "?"}` },
+                          { k: lang==="mn"?"Дулаалга":"Insul",  v: insl },
+                          { k: lang==="mn"?"Цонх":"Window",     v: win },
+                          { k: lang==="mn"?"Халаалт":"Heating", v: heat },
+                          { k: lang==="mn"?"Хана":"Wall",       v: mat },
+                        ].map(({ k, v }) => (
+                          <span key={k} className="usbe-chip">
+                            <span className="usbe-chip-k">{k}:</span>
+                            <span className="usbe-chip-v">{v}</span>
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Тооцооллын 3 алхам */}
+                      <div className="usbe-steps">
+                        <div className="usbe-step">
+                          <span className="usbe-snum">①</span>
+                          <span className="usbe-stxt">
+                            {lang === "mn"
+                              ? `Эдгээр параметрийг OLS загварт оруулна: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`
+                              : `Feed parameters to OLS: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`}
+                          </span>
+                        </div>
+                        <div className="usbe-step">
+                          <span className="usbe-snum">②</span>
+                          <span className="usbe-stxt">
+                            {lang === "mn"
+                              ? `Загварын β коэффициентүүдтэй үржүүлж нэмнэ: annual_kWh = Xβ = `
+                              : `Multiply by β coefficients and sum: annual_kWh = Xβ = `}
+                            <strong style={{ color: "#f4a261" }}>{kw.toLocaleString()} kWh/жил</strong>
+                          </span>
+                        </div>
+                        <div className="usbe-step">
+                          <span className="usbe-snum">③</span>
+                          <span className="usbe-stxt">
+                            {lang === "mn"
+                              ? `Эрч = ${kw.toLocaleString()} ÷ ${area} m² = `
+                              : `Intensity = ${kw.toLocaleString()} ÷ ${area} m² = `}
+                            <strong style={{ color: "#9b72cf" }}>{int} kWh/m²</strong>
+                            {" → "}
+                            <strong style={{ color: GRADE_COLORS[grd] }}>{grd} зэрэглэл</strong>
+                            <span style={{ fontSize: "0.7rem", color: "var(--text3)", marginLeft: 4 }}>({gradeLbl})</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {userBuildings.length > 3 && (
+                  <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text3)", padding: "0.4rem 0" }}>
+                    {lang === "mn" ? `+${userBuildings.length - 3} барилга нэмэлтэд байна` : `+${userBuildings.length - 3} more buildings`}
+                  </div>
+                )}
+
+                {/* Нийт тооцооллын хураангуй */}
+                <div className="usbe-summary">
+                  <div className="usbe-sum-title">
+                    {lang === "mn" ? "Нийт тооцооллын хураангуй" : "Summary calculation"}
+                  </div>
+                  <div className="usbe-sum-row">
+                    <span className="usbe-sum-lbl">{lang === "mn" ? "Нийт хэрэглээ" : "Total usage"}</span>
+                    <code className="usbe-sum-eq">= Σ({lang === "mn" ? "барилга бүрийн" : "each building's"} kWh)</code>
+                    <span className="usbe-sum-val" style={{ color: "#f4a261" }}>{userStats.totalAnnual.toLocaleString()} kWh/жил</span>
+                  </div>
+                  <div className="usbe-sum-row">
+                    <span className="usbe-sum-lbl">{lang === "mn" ? "Сарын дундаж" : "Monthly avg"}</span>
+                    <code className="usbe-sum-eq">= {userStats.totalAnnual.toLocaleString()} ÷ 12</code>
+                    <span className="usbe-sum-val" style={{ color: "#3a8fd4" }}>{userStats.avgMonthly.toLocaleString()} kWh/сар</span>
+                  </div>
+                  <div className="usbe-sum-row">
+                    <span className="usbe-sum-lbl">{lang === "mn" ? "Дундаж эрч" : "Avg intensity"}</span>
+                    <code className="usbe-sum-eq">= {userStats.totalAnnual.toLocaleString()} ÷ {userStats.totalArea.toLocaleString()} m²</code>
+                    <span className="usbe-sum-val" style={{ color: GRADE_COLORS[userStats.grade] }}>
+                      {userStats.avgIntensity} kWh/m² → {userStats.grade}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Зэрэглэлийн тайлбар */}
+                <div className="usbe-grade-note" style={{ borderLeftColor: GRADE_COLORS[userStats.grade] }}>
+                  <strong style={{ color: GRADE_COLORS[userStats.grade] }}>{userStats.grade} {lang === "mn" ? "зэрэглэл" : "grade"}</strong>
+                  {" — "}
+                  {lang === "mn"
+                    ? `эрчим хүчний эрч ${userStats.avgIntensity} kWh/m²/жил. ${
+                        { A:"50-аас бага — дэлхийн стандартад нийцэж байна.",
+                          B:"50–100 — үр ашигтай Монголын барилга.",
+                          C:"100–150 — дунд зэрэг, сайжруулах боломжтой.",
+                          D:"150–200 — хэвийн, дулаалга болон цонхыг сайжруулах зөвлөмжтэй.",
+                          E:"200–250 — их хэрэглээтэй. Дулаалга, цонх, халаалтын системийг шинэчлэх хэрэгтэй.",
+                          F:"250–300 — маш их хэрэглээтэй. Яаралтай шинэчлэл шаардлагатай.",
+                          G:"300-аас их — хэт их хэрэглээ. Цогц шинэчлэл зайлшгүй." }[userStats.grade] || ""}`
+                    : `intensity ${userStats.avgIntensity} kWh/m²/yr. ${
+                        { A:"Below 50 — meets world-class efficiency standards.",
+                          B:"50–100 — efficient by Mongolian standards.",
+                          C:"100–150 — average, improvement possible.",
+                          D:"150–200 — normal, insulation & window upgrade recommended.",
+                          E:"200–250 — high usage. Insulation, windows, heating system need updating.",
+                          F:"250–300 — very high. Urgent retrofit required.",
+                          G:"Above 300 — extremely high. Full retrofit essential." }[userStats.grade] || ""}`}
+                </div>
+
+              </div>
+            )}
+          </div>
+          </>
         ) : userBuildingCount === 0 && (
           <div className="card user-summary-empty mb-3">
             <Building2 size={20} opacity={0.3} />
