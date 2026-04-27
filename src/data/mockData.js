@@ -1,95 +1,236 @@
-// Mock data for the energy consumption website
+// Баянмонгол хорооллын 82 айлтай 12 давхар байрны эрчим хүчний хэрэглээний өгөгдөл
+// Энэ файл нь dashboard дээр харагдах chart, map, model metric, feature importance-ийн өгөгдлийг өгнө
+// Өгөгдөл нь 2020–2025 оны цаг тутмын dataset-ээс нэгтгэсэн realistic synthetic data
 
 export const monthlyEnergyData = [
-  { month: "1-р сар",  month_en: "Jan", usage: 4200, temperature: -18, hdd: 560, predicted: 4150 },
-  { month: "2-р сар",  month_en: "Feb", usage: 3900, temperature: -15, hdd: 510, predicted: 3850 },
-  { month: "3-р сар",  month_en: "Mar", usage: 3200, temperature: -5,  hdd: 420, predicted: 3100 },
-  { month: "4-р сар",  month_en: "Apr", usage: 2100, temperature: 5,   hdd: 280, predicted: 2050 },
-  { month: "5-р сар",  month_en: "May", usage: 1200, temperature: 14,  hdd: 120, predicted: 1180 },
-  { month: "6-р сар",  month_en: "Jun", usage: 800,  temperature: 20,  hdd: 30,  predicted: 820  },
-  { month: "7-р сар",  month_en: "Jul", usage: 750,  temperature: 22,  hdd: 10,  predicted: 780  },
-  { month: "8-р сар",  month_en: "Aug", usage: 780,  temperature: 21,  hdd: 15,  predicted: 800  },
-  { month: "9-р сар",  month_en: "Sep", usage: 1100, temperature: 12,  hdd: 150, predicted: 1080 },
-  { month: "10-р сар", month_en: "Oct", usage: 2400, temperature: 0,   hdd: 340, predicted: 2350 },
-  { month: "11-р сар", month_en: "Nov", usage: 3500, temperature: -10, hdd: 450, predicted: 3480 },
-  { month: "12-р сар", month_en: "Dec", usage: 4000, temperature: -16, hdd: 530, predicted: 3950 },
+  { month: "1-р сар", month_en: "Jan", usage: 165610, temperature: -20.3, hdd: 28521, predicted: 163126 },
+  { month: "2-р сар", month_en: "Feb", usage: 147808, temperature: -16.8, hdd: 23696, predicted: 146477 },
+  { month: "3-р сар", month_en: "Mar", usage: 95311, temperature: -5.7, hdd: 17598, predicted: 95025 },
+  { month: "4-р сар", month_en: "Apr", usage: 86206, temperature: 3.4, hdd: 10561, predicted: 86465 },
+  { month: "5-р сар", month_en: "May", usage: 86532, temperature: 9.9, hdd: 6289, predicted: 87311 },
+  { month: "6-р сар", month_en: "Jun", usage: 35197, temperature: 16.1, hdd: 2531, predicted: 34669 },
+  { month: "7-р сар", month_en: "Jul", usage: 36309, temperature: 18.6, hdd: 1188, predicted: 35982 },
+  { month: "8-р сар", month_en: "Aug", usage: 36264, temperature: 15.9, hdd: 2302, predicted: 36156 },
+  { month: "9-р сар", month_en: "Sep", usage: 91802, temperature: 10.4, hdd: 5740, predicted: 92077 },
+  { month: "10-р сар", month_en: "Oct", usage: 99375, temperature: 0.1, hdd: 13345, predicted: 100270 },
+  { month: "11-р сар", month_en: "Nov", usage: 104640, temperature: -10.2, hdd: 20306, predicted: 103071 },
+  { month: "12-р сар", month_en: "Dec", usage: 165810, temperature: -20.4, hdd: 28582, predicted: 164318 },
 ];
 
-// Static daily data — seeded to avoid chart flicker on hot-reload
-const _DAILY_USAGE     = [128,142,115,138,121,109,145,132,118,140,125,112,137,123,119,143,130,116,141,127,113,139,124,120,144,131,117,136,122,118];
-const _DAILY_TEMP      = [-19,-18,-20,-19,-17,-21,-18,-20,-19,-18,-20,-17,-19,-21,-18,-20,-19,-17,-21,-18,-20,-19,-18,-21,-17,-20,-18,-19,-20,-18];
-const _DAILY_PREDICTED = [122,138,110,133,116,104,140,127,114,135,119,108,132,118,115,138,125,111,136,122,109,134,119,116,139,126,113,131,117,114];
-export const dailyEnergyData = Array.from({ length: 30 }, (_, i) => ({
-  day:         `${i + 1}`,
-  usage:       _DAILY_USAGE[i],
-  temperature: _DAILY_TEMP[i],
-  predicted:   _DAILY_PREDICTED[i],
-}));
+// Өдрийн хэрэглээний chart-д ашиглана
+// Энэ нь 2025 оны 1-р сарын өдөр бүрийн хэрэглээний жишээ
+export const dailyEnergyData = [
+  { day: "1", usage: 7256, temperature: -23.4, predicted: 7147 },
+  { day: "2", usage: 3882, temperature: -22.9, predicted: 3847 },
+  { day: "3", usage: 4928, temperature: -20.1, predicted: 4914 },
+  { day: "4", usage: 6444, temperature: -20.5, predicted: 6464 },
+  { day: "5", usage: 5126, temperature: -18.8, predicted: 5173 },
+  { day: "6", usage: 4451, temperature: -17.2, predicted: 4384 },
+  { day: "7", usage: 5577, temperature: -16.2, predicted: 5526 },
+  { day: "8", usage: 6702, temperature: -25.8, predicted: 6681 },
+  { day: "9", usage: 4083, temperature: -24.9, predicted: 4096 },
+  { day: "10", usage: 5240, temperature: -22.8, predicted: 5287 },
+  { day: "11", usage: 6794, temperature: -23.6, predicted: 6693 },
+  { day: "12", usage: 4704, temperature: -21.9, predicted: 4662 },
+  { day: "13", usage: 4567, temperature: -19.4, predicted: 4553 },
+  { day: "14", usage: 6008, temperature: -22.2, predicted: 6026 },
+  { day: "15", usage: 5948, temperature: -16.2, predicted: 6001 },
+  { day: "16", usage: 4018, temperature: -15.2, predicted: 3957 },
+  { day: "17", usage: 5177, temperature: -15.9, predicted: 5130 },
+  { day: "18", usage: 7029, temperature: -16.3, predicted: 7007 },
+  { day: "19", usage: 3577, temperature: -14.6, predicted: 3588 },
+  { day: "20", usage: 4759, temperature: -16.5, predicted: 4802 },
+  { day: "21", usage: 6186, temperature: -18.7, predicted: 6093 },
+  { day: "22", usage: 5429, temperature: -16.0, predicted: 5380 },
+  { day: "23", usage: 4243, temperature: -14.8, predicted: 4231 },
+  { day: "24", usage: 5211, temperature: -11.8, predicted: 5227 },
+  { day: "25", usage: 6427, temperature: -14.6, predicted: 6485 },
+  { day: "26", usage: 4052, temperature: -25.1, predicted: 3991 },
+  { day: "27", usage: 5366, temperature: -26.8, predicted: 5318 },
+  { day: "28", usage: 6679, temperature: -24.1, predicted: 6659 },
+  { day: "29", usage: 5047, temperature: -24.9, predicted: 5062 },
+  { day: "30", usage: 4648, temperature: -21.6, predicted: 4690 },
+  { day: "31", usage: 6060, temperature: -24.4, predicted: 5970 },
+];
 
+// Жилийн хэрэглээний chart-д ашиглана
+// 2026–2027 оны usage null: ирээдүйн бодит хэрэглээ байхгүй, зөвхөн forecast утга
 export const yearlyEnergyData = [
-  { year: "2018", usage: 28000, predicted: 27500 },
-  { year: "2019", usage: 29500, predicted: 29000 },
-  { year: "2020", usage: 27000, predicted: 27200 },
-  { year: "2021", usage: 30000, predicted: 29800 },
-  { year: "2022", usage: 31500, predicted: 31200 },
-  { year: "2023", usage: 32000, predicted: 31900 },
-  { year: "2024", usage: 33000, predicted: 32800 },
-  { year: "2025", usage: 33500, predicted: 33300 },
-  { year: "2026", usage: null,  predicted: 34000 },
+  { year: "2020", usage: 1150855, predicted: 1133593 },
+  { year: "2021", usage: 1141547, predicted: 1131273 },
+  { year: "2022", usage: 1153439, predicted: 1149979 },
+  { year: "2023", usage: 1153391, predicted: 1156851 },
+  { year: "2024", usage: 1153893, predicted: 1164278 },
+  { year: "2025", usage: 1152059, predicted: 1134778 },
+  { year: "2026", usage: null,    predicted: 1172796 },
+  { year: "2027", usage: null,    predicted: 1185400 },
 ];
 
+// Машин сургалтын model ямар feature-үүдийг хамгийн их ашиглаж байгааг харуулна
 export const featureImportanceData = [
-  { feature: "Талбай (м²)",     feature_en: "Area (m²)",         importance: 0.28 },
-  { feature: "HDD",             feature_en: "HDD",                importance: 0.22 },
-  { feature: "Барилгасан он",   feature_en: "Year Built",         importance: 0.15 },
-  { feature: "Давхрын тоо",     feature_en: "Floors",             importance: 0.12 },
-  { feature: "Цонхны харьцаа",  feature_en: "Window Ratio",       importance: 0.10 },
-  { feature: "Ханын материал",  feature_en: "Wall Material",       importance: 0.08 },
-  { feature: "Халаалтын төрөл", feature_en: "Heating Type",        importance: 0.05 },
+  { feature: "Гадна температур", feature_en: "Outdoor Temperature", importance: 0.31 },
+  { feature: "Халаалтын улирал", feature_en: "Heating Season", importance: 0.21 },
+  { feature: "Өмнөх 24 цагийн хэрэглээ", feature_en: "Lag 24h Usage", importance: 0.16 },
+  { feature: "Цаг", feature_en: "Hour of Day", importance: 0.11 },
+  { feature: "Оргил цаг", feature_en: "Peak Hour", importance: 0.08 },
+  { feature: "Чийгшил", feature_en: "Humidity", importance: 0.07 },
+  { feature: "Салхины хурд", feature_en: "Wind Speed", importance: 0.06 },
 ];
 
+// SHAP explanation буюу тухайн таамагт feature бүр хэрхэн нөлөөлж байгааг харуулна
+// Эерэг impact нь хэрэглээг өсгөж, сөрөг impact нь хэрэглээг бууруулж байна гэсэн утгатай
 export const shapData = [
-  { feature: "Талбай: 1200м²",        feature_en: "Area: 1200m²",         impact:  2.5 },
-  { feature: "HDD: 4200",             feature_en: "HDD: 4200",             impact:  1.8 },
-  { feature: "Он: 1995",              feature_en: "Year: 1995",            impact:  1.2 },
-  { feature: "Цонх: 25%",             feature_en: "Window: 25%",           impact:  0.9 },
-  { feature: "Давхар: 9",             feature_en: "Floors: 9",             impact:  0.7 },
-  { feature: "Материал: Панель",      feature_en: "Material: Panel",       impact: -0.5 },
-  { feature: "Халаалт: Төвлөрсөн",   feature_en: "Heating: Central",      impact: -0.8 },
+  { feature: "Температур: -25°C", feature_en: "Temperature: -25°C", impact: 2.7 },
+  { feature: "Халаалтын улирал: тийм", feature_en: "Heating season: yes", impact: 2.1 },
+  { feature: "Өмнөх өдөр өндөр хэрэглээтэй", feature_en: "High lag-24 usage", impact: 1.4 },
+  { feature: "Оройн оргил цаг", feature_en: "Evening peak hour", impact: 0.9 },
+  { feature: "Амралтын өдөр", feature_en: "Weekend", impact: 0.4 },
+  { feature: "Зуны улирал", feature_en: "Summer season", impact: -1.8 },
+  { feature: "Температур: +20°C", feature_en: "Temperature: +20°C", impact: -2.4 },
 ];
 
+// Model-ийн үнэлгээний үзүүлэлтүүд
+// MAE/RMSE бага байх тусам сайн, R2 1-д ойр байх тусам сайн
 export const modelMetrics = {
-  mae: 245.3,
-  rmse: 312.7,
-  r2: 0.924,
-  mape: 8.2,
+  mae: 38.6,
+  rmse: 52.4,
+  r2: 0.941,
+  mape: 6.7,
 };
 
-// height = floors × 3m, volume = area × height, co2 = usage × 0.7 / 1000 (tonnes)
-// rating: A=2015+, B=2010-14, C=2004-09, D=1995-2003, E=1990-94, F=1983-89, G=<1983
+// Газрын зураг болон building list дээр харагдах барилгын мэдээлэл
+// Гол судалгааны барилга нь Баянмонгол-1 байр
 export const buildingsData = [
-  { id: 1,  name: "Сансар 15-р байр",        type: "apartment",  area: 2400,  usage: 38500,  year: 1992, district: "Чингэлтэй", lat: 47.915, lng: 106.915, floors: 9,  height: 27, volume: 64800,  co2: 27.0, rating: "E" },
-  { id: 2,  name: "Монгол Цахилгаан ХК",     type: "office",     area: 3200,  usage: 52000,  year: 2005, district: "Сүхбаатар", lat: 47.920, lng: 106.920, floors: 8,  height: 24, volume: 76800,  co2: 36.4, rating: "C" },
-  { id: 3,  name: "1-р Дунд сургууль",       type: "school",     area: 4500,  usage: 65000,  year: 1985, district: "Баянзүрх",  lat: 47.910, lng: 106.940, floors: 3,  height: 9,  volume: 40500,  co2: 45.5, rating: "F" },
-  { id: 4,  name: "Энхтайвны 5-р байр",      type: "apartment",  area: 1800,  usage: 29000,  year: 1998, district: "Баянгол",   lat: 47.905, lng: 106.890, floors: 5,  height: 15, volume: 27000,  co2: 20.3, rating: "D" },
-  { id: 5,  name: "Хан-Уул оффис",           type: "office",     area: 1500,  usage: 24500,  year: 2010, district: "Хан-Уул",   lat: 47.895, lng: 106.870, floors: 4,  height: 12, volume: 18000,  co2: 17.2, rating: "B" },
-  { id: 6,  name: "3-р эмнэлэг",             type: "hospital",   area: 6000,  usage: 98000,  year: 1988, district: "Сүхбаатар", lat: 47.925, lng: 106.930, floors: 6,  height: 18, volume: 108000, co2: 68.6, rating: "F" },
-  { id: 7,  name: "Нарантуул 8-р байр",      type: "apartment",  area: 3600,  usage: 58000,  year: 2001, district: "Чингэлтэй", lat: 47.918, lng: 106.900, floors: 12, height: 36, volume: 129600, co2: 40.6, rating: "D" },
-  { id: 8,  name: "Их Дэлгүүр",              type: "commercial", area: 8000,  usage: 125000, year: 2008, district: "Сүхбаатар", lat: 47.922, lng: 106.915, floors: 5,  height: 15, volume: 120000, co2: 87.5, rating: "C" },
-  { id: 9,  name: "Зайсан 12-р байр",        type: "apartment",  area: 5000,  usage: 75000,  year: 2015, district: "Хан-Уул",   lat: 47.888, lng: 106.865, floors: 16, height: 48, volume: 240000, co2: 52.5, rating: "A" },
-  { id: 10, name: "Технологийн Их Сургууль", type: "school",     area: 12000, usage: 185000, year: 1969, district: "Чингэлтэй", lat: 47.912, lng: 106.905, floors: 4,  height: 12, volume: 144000, co2: 129.5,rating: "G" },
+  {
+    id: 1,
+    name: "Баянмонгол-1 байр",
+    type: "apartment",
+    area: 8420,
+    usage: 1150864,
+    year: 2014,
+    district: "Баянзүрх",
+    lat: 47.9059,
+    lng: 106.9474,
+    floors: 12,
+    apartments: 82,
+    height: 36,
+    volume: 303120,
+    co2: 805.6,
+    rating: "B",
+  },
+  {
+    id: 2,
+    name: "Баянмонгол-2 байр",
+    type: "apartment",
+    area: 7900,
+    usage: 1048000,
+    year: 2013,
+    district: "Баянзүрх",
+    lat: 47.9065,
+    lng: 106.9481,
+    floors: 12,
+    apartments: 78,
+    height: 36,
+    volume: 284400,
+    co2: 733.6,
+    rating: "B",
+  },
+  {
+    id: 3,
+    name: "Баянмонгол үйлчилгээний төв",
+    type: "commercial",
+    area: 5200,
+    usage: 865000,
+    year: 2015,
+    district: "Баянзүрх",
+    lat: 47.9048,
+    lng: 106.9465,
+    floors: 5,
+    height: 15,
+    volume: 78000,
+    co2: 605.5,
+    rating: "A",
+  },
+  {
+    id: 4,
+    name: "Сансар 12 давхар байр",
+    type: "apartment",
+    area: 6800,
+    usage: 965000,
+    year: 2008,
+    district: "Баянзүрх",
+    lat: 47.9192,
+    lng: 106.9368,
+    floors: 12,
+    apartments: 72,
+    height: 36,
+    volume: 244800,
+    co2: 675.5,
+    rating: "C",
+  },
+  {
+    id: 5,
+    name: "Натур хотхон байр",
+    type: "apartment",
+    area: 9100,
+    usage: 1215000,
+    year: 2016,
+    district: "Баянзүрх",
+    lat: 47.9027,
+    lng: 106.9327,
+    floors: 16,
+    apartments: 96,
+    height: 48,
+    volume: 436800,
+    co2: 850.5,
+    rating: "A",
+  },
+  {
+    id: 6,
+    name: "13-р хороолол оффис",
+    type: "office",
+    area: 4300,
+    usage: 720000,
+    year: 2011,
+    district: "Баянзүрх",
+    lat: 47.9102,
+    lng: 106.9302,
+    floors: 8,
+    height: 24,
+    volume: 103200,
+    co2: 504.0,
+    rating: "B",
+  },
 ];
 
+// Дүүргийн filter/dropdown дээр ашиглагдана
 export const ulaanbaatarDistricts = [
-  "Баянгол", "Баянзүрх", "Чингэлтэй", "Сүхбаатар", "Сонгинохайрхан", "Хан-Уул", "Налайх", "Багануур", "Багахангай"
+  "Баянгол",
+  "Баянзүрх",
+  "Чингэлтэй",
+  "Сүхбаатар",
+  "Сонгинохайрхан",
+  "Хан-Уул",
+  "Налайх",
+  "Багануур",
+  "Багахангай",
 ];
 
+// Admin dashboard-ийн статистик хэсэгт ашиглагдана
+// Тайлбар: totalUsers / activeUsers / totalPredictions нь Demo статистик болно.
+// Бодит тоо нь backend/database интеграциас гарна.
 export const adminStats = {
-  totalUsers: 1247,
-  activeUsers: 389,
-  totalPredictions: 8432,
+  totalUsers: 1284,
+  activeUsers: 412,
+  totalPredictions: 52608,
   totalBuildings: buildingsData.length,
   systemUptime: "99.7%",
-  lastBackup: "2026-04-01 03:00",
+  lastBackup: "2026-04-27 03:00",
+  demoNote: "Demo статистик — бодит backend байхгүй тул эдгээр тоо нь жишиг утга болно",
 };
 
+// Өгөгдлийн тайлбар — chart болон тайлбар хэсэгт ашиглагдана
+export const dataDescription = {
+  mn: "Бодит нөхцөлд ойртуулсан синтетик өгөгдөл — Баянмонгол-1 байрны 2020–2025 оны цаг тутмын датасет (82 айл, 12 давхар, 8420 м²)",
+  en: "Realistic synthetic data — Bayanmongol-1 building hourly dataset 2020–2025 (82 apartments, 12 floors, 8,420 m²)",
+};

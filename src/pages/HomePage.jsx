@@ -36,7 +36,7 @@ export default function HomePage() {
   const allBuildings = React.useMemo(() => getAllBuildings(), []);
   const stats        = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
 
-  const DEMO_BADGE = { mn: "Demo өгөгдөл", en: "Demo data",     icon: FlaskConical, color: "#f4a261" };
+  const DEMO_BADGE = { mn: "Синтетик өгөгдөл", en: "Synthetic data", icon: FlaskConical, color: "#f4a261" };
   const REAL_BADGE = { mn: "Бодит үзүүлэлт", en: "Real metric", icon: CheckCircle,  color: "#2a9d8f" };
   const SYNT_BADGE = { mn: "Синтетик датасет", en: "Synthetic dataset", icon: FlaskConical, color: "#6c757d" };
 
@@ -202,7 +202,7 @@ export default function HomePage() {
                 </h3>
                 <span className="stat-data-badge" style={{ color: "#f4a261", borderColor: "rgba(244,162,97,0.4)", background: "rgba(244,162,97,0.1)" }}>
                   <FlaskConical size={10} />
-                  {lang === "mn" ? "Demo өгөгдөл" : "Demo data"}
+                  {lang === "mn" ? "Синтетик өгөгдөл" : "Synthetic data"}
                 </span>
               </div>
               <ResponsiveContainer width="100%" height={200}>

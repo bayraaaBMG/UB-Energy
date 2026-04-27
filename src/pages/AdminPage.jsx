@@ -108,6 +108,10 @@ function OverviewTab({ users, buildings, logs }) {
 
   return (
     <div>
+      <div className="adm-demo-note" style={{ background: "rgba(244,162,97,0.1)", border: "1px solid rgba(244,162,97,0.35)", borderRadius: 8, padding: "0.55rem 1rem", marginBottom: "1rem", fontSize: "0.8rem", color: "#f4a261", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <AlertTriangle size={14} />
+        <span><strong>Demo статистик</strong> — Хэрэглэгч, таамаглалын тоо нь бодит backend байхгүй тул localStorage-д суурилсан жишиг утга болно.</span>
+      </div>
       <div className="adm-stat-grid mb-3">
         {topStats.map(s => (
           <div key={s.label} className="card adm-stat-card">
