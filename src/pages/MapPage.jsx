@@ -629,6 +629,87 @@ function BuildingPanel({ building, lang, t }) {
         )}
       </div>
 
+      {/* ── Auto-computed result summary ─────────────────────────────── */}
+      <div className="osm-result-summary">
+
+        {/* Pipeline steps */}
+        <div className="osm-pipeline">
+          {[
+            { lbl: "Overpass API", color: "#3a8fd4" },
+            { lbl: building.source === "osm" ? "Shoelace" : "Талбай", color: "#9b72cf" },
+            { lbl: "ML OLS", color: "#f4a261" },
+            { lbl: mn ? "Үр дүн" : "Result", color: "#2a9d8f", active: true },
+          ].map((s, i, arr) => (
+            <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
+              <span className={`pipe-node${s.active ? " pipe-active" : ""}`}
+                style={{ borderColor: s.color, color: s.color }}>
+                {s.lbl}
+              </span>
+              {i < arr.length - 1 && <span className="pipe-arr">→</span>}
+            </span>
+          ))}
+        </div>
+
+        {/* 6 key metrics */}
+        <div className="osm-metrics-grid">
+          {/* Annual usage — full width */}
+          <div className="osm-m-card osm-m-big">
+            <div className="osm-m-val" style={{ color: "#f4a261" }}>{calc.total.toLocaleString()}</div>
+            <div className="osm-m-unit">kWh/жил</div>
+            <div className="osm-m-lbl">{mn ? "Жилийн нийт хэрэглээ" : "Annual total usage"}</div>
+          </div>
+          {/* 5 secondary metrics */}
+          {[
+            { val: Math.round(calc.total / 12).toLocaleString(), unit: "kWh/сар",  lbl: mn ? "Сарын дундаж" : "Monthly avg",    color: "#3a8fd4" },
+            { val: calc.co2,                                      unit: "т CO₂",    lbl: "CO₂",                                  color: calc.impactColor },
+            { val: calc.pm25.toLocaleString(),                    unit: "kg PM2.5", lbl: mn ? "Тоосонцор" : "Particulates",      color: "#e76f51" },
+            { val: calc.intensity,                                unit: "kWh/m²",   lbl: mn ? "Эрч хүч" : "Intensity",           color: "#9b72cf" },
+            { val: calc.grade,                                    unit: mn ? "зэрэглэл" : "grade", lbl: mn ? "Үр ашгийн анги" : "Eff. grade", color: GRADE_COLORS[calc.grade] },
+          ].map(({ val, unit, lbl, color }) => (
+            <div key={lbl} className="osm-m-card">
+              <div className="osm-m-val" style={{ color }}>{val}</div>
+              <div className="osm-m-unit">{unit}</div>
+              <div className="osm-m-lbl">{lbl}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Grade bar */}
+        <div style={{ padding: "0 0.75rem 0.4rem" }}>
+          <GradeRow grade={calc.grade} />
+        </div>
+
+        {/* Mini monthly chart */}
+        <div className="osm-mini-chart">
+          <div className="osm-mini-chart-title">
+            {mn ? "Сарын хуваарилалт (kWh)" : "Monthly distribution (kWh)"}
+          </div>
+          <ResponsiveContainer width="100%" height={72}>
+            <BarChart data={monthly} margin={{ top: 2, right: 4, left: -28, bottom: 0 }}>
+              <XAxis dataKey="m" tick={{ fill: "#667788", fontSize: 8 }}
+                axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip
+                contentStyle={{ background: "#0e1825", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 10 }}
+                formatter={v => [`${v.toLocaleString()} kWh`]}
+              />
+              <Bar dataKey="kwh" fill="#3a8fd4" radius={[2,2,0,0]} maxBarSize={16} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Shoelace / area note */}
+        {building.source === "osm" && (
+          <div className="osm-shoelace-note">
+            A = ½|Σ(xⱼ+xᵢ)(yⱼ−yᵢ)| = <strong>{building.area.toLocaleString()} m²</strong>
+            {(!building.yearKnown || !building.floorsKnown) &&
+              <span style={{ marginLeft: 6, color: "#e9c46a" }}>
+                · {mn ? "он/давхар таамаглал" : "year/floors estimated"}
+              </span>}
+          </div>
+        )}
+      </div>
+
       {/* Tabs */}
       <div className="bp-tabs">
         {TABS.map(tb => (
