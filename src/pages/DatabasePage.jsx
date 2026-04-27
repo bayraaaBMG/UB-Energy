@@ -11,10 +11,11 @@ import {
   History, Clock, Info, ChevronRight, AlertCircle,
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, ComposedChart, Line, Cell,
+  XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   CartesianGrid, ReferenceLine,
 } from "recharts";
-import { monthlyEnergyData } from "../data/mockData";
+import { monthlyEnergyData, yearlyEnergyData } from "../data/mockData";
 import { getAllBuildings, deleteUserBuilding } from "../utils/buildingStorage";
 import { toggleFavorite, getFavorites } from "../utils/userDataStorage";
 import "./DatabasePage.css";
@@ -33,6 +34,9 @@ const GRADE_COLORS = {
   A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20",
 };
 const GRADES = ["A","B","C","D","E","F","G"];
+
+// Base year for scaling building-level yearly trend
+const BASE_YEAR_USAGE = yearlyEnergyData.find(d => d.year === "2025")?.usage || 1152059;
 
 // Monthly climate fractions
 const CITY_ANNUAL = monthlyEnergyData.reduce((s, m) => s + m.usage, 0);
@@ -126,9 +130,23 @@ function ResultsModal({ building, lang, t, onClose }) {
 
   const typeLabel = t.predictor.building_types[building.type] || building.type;
 
+  // Yearly trend scaled to this building's predicted_kwh
+  const bldgYearlyData = yearlyEnergyData.map(d => ({
+    year: d.year,
+    usage:    d.usage    != null ? Math.round(totalKwh * d.usage    / BASE_YEAR_USAGE) : null,
+    forecast: d.usage    == null ? Math.round(totalKwh * (d.predicted || 0) / BASE_YEAR_USAGE) : null,
+  }));
+
+  // EUI factor labels
+  const EUI_BASE = { apartment: 175, office: 230, school: 155, hospital: 360, warehouse: 95, commercial: 275 };
+  const baseEUI  = EUI_BASE[building.type] || 175;
+  const ageFactor   = building.year ? (1 + Math.max(0, (2000 - building.year)) * 0.004).toFixed(3) : "1.000";
+  const insulFactor = INSUL_FACTOR[building.insulation_quality] || 1.0;
+  const winFactor   = WINDOW_FACTOR[building.window_type] || 1.0;
+  const heatLabels  = { central: "×1.00", local: "×1.25", electric: "×1.08", gas: "×0.88" };
+
   return (
-    <div className="preview-overlay" onClick={onClose}>
-      <div className="results-modal card" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+    <div className="building-detail-panel card" id="db-detail-panel">
 
         {/* Header */}
         <div className="res-header">
@@ -355,9 +373,124 @@ function ResultsModal({ building, lang, t, onClose }) {
             </ul>
           </div>
 
+          {/* ── Жилийн хандлага ба Forecast (2020–2027) ── */}
+          <div className="res-section">
+            <div className="res-section-title">
+              <TrendingUp size={14} />
+              {mn ? "Жилийн хэрэглээний хандлага ба прогноз (2020–2027)" : "Annual Trend & Forecast (2020–2027)"}
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "var(--text3)" }}>
+                <span style={{ width: 10, height: 10, background: "#3a8fd4", borderRadius: 2 }} />
+                {mn ? "Өнгөрсөн хэрэглээ (kWh)" : "Past usage (kWh)"}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "var(--text3)" }}>
+                <span style={{ width: 10, height: 10, background: "#f4a26188", borderRadius: 2, border: "1.5px dashed #f4a261" }} />
+                {mn ? "Прогноз (2026–2027)" : "Forecast (2026–2027)"}
+              </span>
+            </div>
+            <div className="res-chart-wrap">
+              <ResponsiveContainer width="100%" height={175}>
+                <ComposedChart data={bldgYearlyData} margin={{ top: 4, right: 12, left: -18, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="year" tick={{ fill: "#667788", fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#667788", fontSize: 9 }} axisLine={false} tickLine={false}
+                    tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    contentStyle={{ background: "#0e1825", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 11 }}
+                    formatter={(v, name) => [
+                      v != null ? `${v.toLocaleString()} kWh` : "—",
+                      name === "usage" ? (mn ? "Хэрэглээ" : "Usage") : (mn ? "Прогноз" : "Forecast"),
+                    ]}
+                  />
+                  <Bar dataKey="usage"    radius={[3,3,0,0]} maxBarSize={28} name="usage">
+                    {bldgYearlyData.map((d, i) => (
+                      <Cell key={i} fill={d.usage != null ? "#3a8fd4" : "transparent"} />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="forecast" radius={[3,3,0,0]} maxBarSize={28} name="forecast" fill="#f4a261" fillOpacity={0.55} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="res-method-note">
+              {mn
+                ? "Прогноз нь 2025 оны хэрэглээнд ±1.1% жилийн өсөлтийн хүчин зүйл хэрэглэж тооцсон. Цэнхэр = өнгөрсөн синтетик, шар = ML прогноз."
+                : "Forecast applies ±1.1% annual growth to 2025 baseline. Blue = past synthetic data, orange = ML forecast."}
+            </div>
+          </div>
+
+          {/* ── Тооцооллын алхамууд ── */}
+          <div className="res-section">
+            <div className="res-section-title">
+              <Info size={14} />
+              {mn ? "Яаж тооцоолсон бэ? — Тооцооллын алхамууд" : "How was this calculated? — Calculation steps"}
+            </div>
+            <div style={{ background: "rgba(58,143,212,0.07)", border: "1px solid rgba(58,143,212,0.2)", borderRadius: 8, padding: "0.85rem 1rem" }}>
+              <div style={{ display: "grid", gap: "0.55rem" }}>
+                {[
+                  {
+                    step: "1",
+                    color: "#3a8fd4",
+                    title: mn ? "Суурь EUI (Барилгын төрлөөс)" : "Base EUI (from building type)",
+                    formula: `${typeLabel} → ${baseEUI} kWh/m²`,
+                    note: mn
+                      ? "IEA 2022, БНТУ 23-02-09 норматив дээр суурилсан Улаанбаатарын барилгын суурь эрчим хүчний эрч"
+                      : "Baseline energy intensity for Ulaanbaatar buildings per IEA 2022, БНТУ 23-02-09",
+                  },
+                  {
+                    step: "2",
+                    color: "#2a9d8f",
+                    title: mn ? "Засварын коэффициентүүд" : "Adjustment factors",
+                    formula: `Он: ×${ageFactor}  |  Дулаалга: ×${insulFactor}  |  Цонх: ×${winFactor}  |  Халаалт: ${heatLabels[building.heating_type] || "×1.00"}`,
+                    note: mn
+                      ? "Барилгасан он (хуучин = бага үр ашигтай), дулаалгын чанар, цонхны төрөл, халаалтын систем"
+                      : "Year built (older = less efficient), insulation quality, window type, and heating system",
+                  },
+                  {
+                    step: "3",
+                    color: "#e9c46a",
+                    title: mn ? "OLS ML загварын таамаглал" : "OLS ML model prediction",
+                    formula: `${(building.area||0).toLocaleString()} м² × ${baseEUI} × (коэффициентүүд) ≈ ${totalKwh.toLocaleString()} kWh/жил`,
+                    note: mn
+                      ? "600 синтетик барилга дээр сургасан OLS регрессийн загвар — R² ≥ 0.87, MAE ≈ 5,400 kWh"
+                      : "OLS regression trained on 600 synthetic buildings — R² ≥ 0.87, MAE ≈ 5,400 kWh",
+                  },
+                  {
+                    step: "4",
+                    color: "#f4a261",
+                    title: mn ? "Сарын хуваарилалт" : "Monthly distribution",
+                    formula: `Сар_і = ${totalKwh.toLocaleString()} × w_і  |  w_і = Баянмонгол-1-ийн сарын харьцаа`,
+                    note: mn
+                      ? "УБ-ын жилийн сарын хэрэглээний хэв маяг — 1-р сар хамгийн их (14%), 7-р сар хамгийн бага (3%)"
+                      : "UB seasonal pattern — January highest (14%), July lowest (3%) of annual total",
+                  },
+                ].map(({ step, color, title, formula, note }) => (
+                  <div key={step} style={{ display: "flex", gap: "0.7rem", alignItems: "flex-start" }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: "50%", background: color,
+                      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "0.7rem", fontWeight: 700, flexShrink: 0, marginTop: 1,
+                    }}>{step}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: "0.78rem", color: "var(--text)", marginBottom: "0.2rem" }}>{title}</div>
+                      <code style={{ fontSize: "0.72rem", color: color, display: "block", background: "rgba(255,255,255,0.04)", borderRadius: 5, padding: "3px 7px", marginBottom: "0.2rem", wordBreak: "break-word" }}>
+                        {formula}
+                      </code>
+                      <div style={{ fontSize: "0.68rem", color: "var(--text3)", lineHeight: 1.5 }}>{note}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: "0.75rem", fontSize: "0.7rem", color: "var(--text3)", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "0.5rem" }}>
+                {mn
+                  ? "CO₂ = жилийн kWh × 0.0007 т CO₂/kWh (Монголын нүүрсний эрчим хүчний хүчин зүйл)"
+                  : "CO₂ = annual kWh × 0.0007 t CO₂/kWh (Mongolian coal-based electricity emission factor)"}
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
   );
 }
 
@@ -761,7 +894,12 @@ export default function DatabasePage() {
                         className="action-btn view results-btn"
                         title={t.database.view_results}
                         aria-label={t.database.view_results}
-                        onClick={() => setResultsBuilding(b)}
+                        onClick={() => {
+                          setResultsBuilding(b);
+                          setTimeout(() => {
+                            document.getElementById("db-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }, 80);
+                        }}
                       >
                         <BarChart2 size={14} />
                       </button>
@@ -834,16 +972,17 @@ export default function DatabasePage() {
             </div>
           </div>
         )}
-      </div>
 
-      {resultsBuilding && (
-        <ResultsModal
-          building={resultsBuilding}
-          lang={lang}
-          t={t}
-          onClose={() => setResultsBuilding(null)}
-        />
-      )}
+        {/* ── Building detail panel (inline, below pagination) ── */}
+        {resultsBuilding && (
+          <ResultsModal
+            building={resultsBuilding}
+            lang={lang}
+            t={t}
+            onClose={() => setResultsBuilding(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }
