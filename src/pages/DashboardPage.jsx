@@ -703,28 +703,110 @@ export default function DashboardPage() {
               {lang === "mn" ? "Тест өгөгдөл дээрх гүйцэтгэл" : "Performance on held-out test set"}
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={130}>
-            <BarChart
-              data={MODEL_COMPARISON.map(m => ({
-                name: lang === "mn" ? m.name_mn : m.name,
-                r2: m.r2,
-                id: m.id,
-              }))}
-              layout="vertical"
-              margin={{ top: 0, right: 55, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" horizontal={false} />
-              <XAxis type="number" domain={[0, 1]} tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} tickFormatter={v => v.toFixed(1)} />
-              <YAxis type="category" dataKey="name" tick={{ fill: "#a8c5e0", fontSize: 10 }} width={170} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
-                formatter={v => [v.toFixed(4), "R²"]}
-              />
-              <Bar dataKey="r2" radius={[0, 4, 4, 0]} label={{ position: "right", fill: "#a8c5e0", fontSize: 11, formatter: v => v.toFixed(3) }}>
-                {MODEL_COMPARISON.map(m => <Cell key={m.id} fill={m.color} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {/* ── Model scorecard cards ── */}
+          {(() => {
+            const maxMae   = Math.max(...MODEL_COMPARISON.map(m => m.mae));
+            const winnerId = MODEL_COMPARISON.reduce((a, b) => b.r2 > a.r2 ? b : a).id;
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))", gap: "0.7rem", marginBottom: "1rem" }}>
+                {MODEL_COMPARISON.map(m => {
+                  const isWinner = m.id === winnerId;
+                  const rows = [
+                    { lbl: "R²",                                          val: m.r2,              max: 1, fmt: m.r2.toFixed(4) },
+                    { lbl: lang === "mn" ? "Итгэлцлэл ±15%" : "Conf ±15%", val: m.confidence / 100, max: 1, fmt: `${m.confidence}%` },
+                    { lbl: "F1 оноо",                                     val: m.f1,              max: 1, fmt: m.f1.toFixed(4) },
+                    { lbl: "MAE (бага=сайн)",                             val: 1 - m.mae / maxMae, max: 1, fmt: `${m.mae.toLocaleString()} kWh` },
+                    { lbl: "MAPE (бага=сайн)",                            val: 1 - m.mape / 100,  max: 1, fmt: `${m.mape}%` },
+                  ];
+                  return (
+                    <div key={m.id} style={{
+                      border: `1.5px solid ${isWinner ? m.color : "rgba(255,255,255,0.09)"}`,
+                      borderRadius: 10, padding: "0.8rem",
+                      background: isWinner ? `${m.color}0e` : "rgba(255,255,255,0.02)",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.6rem" }}>
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, fontSize: "0.79rem", color: "var(--text)", flex: 1 }}>
+                          {lang === "mn" ? m.name_mn : m.name}
+                        </span>
+                        {isWinner && (
+                          <span style={{ fontSize: "0.63rem", background: `${m.color}28`, color: m.color, borderRadius: 5, padding: "2px 7px", fontWeight: 700 }}>
+                            {lang === "mn" ? "Шилдэг" : "Best"}
+                          </span>
+                        )}
+                      </div>
+                      {rows.map(({ lbl, val, max, fmt }) => {
+                        const pct = Math.max(0, Math.min(1, val / max)) * 100;
+                        return (
+                          <div key={lbl} style={{ marginBottom: "0.38rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.69rem", marginBottom: "0.15rem" }}>
+                              <span style={{ color: "var(--text3)" }}>{lbl}</span>
+                              <span style={{ color: "var(--text)", fontWeight: 600 }}>{fmt}</span>
+                            </div>
+                            <div style={{ height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 3 }}>
+                              <div style={{ height: "100%", width: `${pct}%`, background: m.color, borderRadius: 3 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p style={{ fontSize: "0.67rem", color: "var(--text3)", marginTop: "0.45rem", marginBottom: 0, lineHeight: 1.45 }}>
+                        {lang === "mn" ? m.note_mn : m.note_en}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* ── Multi-metric grouped bar chart ── */}
+          {(() => {
+            const mmData = [
+              { metric: "R² × 100",
+                ols:   +(MODEL_COMPARISON[0].r2 * 100).toFixed(1),
+                ridge: +(MODEL_COMPARISON[1].r2 * 100).toFixed(1),
+                dt:    +(MODEL_COMPARISON[2].r2 * 100).toFixed(1) },
+              { metric: lang === "mn" ? "Итгэлцлэл %" : "Confidence %",
+                ols:   MODEL_COMPARISON[0].confidence,
+                ridge: MODEL_COMPARISON[1].confidence,
+                dt:    MODEL_COMPARISON[2].confidence },
+              { metric: lang === "mn" ? "F1 × 100" : "F1 × 100",
+                ols:   +(MODEL_COMPARISON[0].f1 * 100).toFixed(1),
+                ridge: +(MODEL_COMPARISON[1].f1 * 100).toFixed(1),
+                dt:    +(MODEL_COMPARISON[2].f1 * 100).toFixed(1) },
+              { metric: lang === "mn" ? "Хамрах %" : "Coverage %",
+                ols:   MODEL_COMPARISON[0].coverage,
+                ridge: MODEL_COMPARISON[1].coverage,
+                dt:    MODEL_COMPARISON[2].coverage },
+            ];
+            const olsLbl   = lang === "mn" ? "OLS Регресс"      : "OLS Regression";
+            const ridgeLbl = lang === "mn" ? "Ридж Регресс"     : "Ridge Regression";
+            const dtLbl    = lang === "mn" ? "Шийдвэрийн Мод"   : "Decision Tree";
+            return (
+              <div style={{ marginBottom: "0.8rem" }}>
+                <div style={{ fontSize: "0.74rem", color: "var(--text3)", marginBottom: "0.4rem" }}>
+                  {lang === "mn"
+                    ? "3 загварын 4 метрикийн зэрэгцсэн харьцуулалт — бүх утга 0–100 хүртэл (R²×100, F1×100)"
+                    : "Side-by-side 4-metric comparison across all 3 models — values normalized 0–100 (R²×100, F1×100)"}
+                </div>
+                <ResponsiveContainer width="100%" height={148}>
+                  <BarChart data={mmData} margin={{ top: 4, right: 12, left: -18, bottom: 0 }} barCategoryGap="22%" barGap={2}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" />
+                    <XAxis dataKey="metric" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                      formatter={(v, name) => [`${v}`, name]}
+                    />
+                    <Legend wrapperStyle={{ color: "var(--text2)", fontSize: 10 }} />
+                    <Bar dataKey="ols"   name={olsLbl}   fill="#3a8fd4" radius={[3,3,0,0]} />
+                    <Bar dataKey="ridge" name={ridgeLbl} fill="#2a9d8f" radius={[3,3,0,0]} />
+                    <Bar dataKey="dt"    name={dtLbl}    fill="#e9c46a" radius={[3,3,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })()}
           <div className="mc-table-wrap">
             <table className="mc-table">
               <thead>
