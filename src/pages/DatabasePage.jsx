@@ -489,6 +489,241 @@ function ResultsModal({ building, lang, t, onClose }) {
             </div>
           </div>
 
+          {/* ── Зардал хэмнэх зөвлөгөө ── */}
+          {(() => {
+            const elecPrice = building.type === "apartment" ? 82.6
+              : building.type === "office" || building.type === "commercial" ? 145
+              : building.type === "school" || building.type === "hospital" ? 95
+              : 120;
+
+            const rlist = [];
+
+            // 1. Insulation
+            if (building.insulation_quality === "poor") {
+              const sk = Math.round(totalKwh * 0.25);
+              rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
+                icon: "🏠",
+                title: mn ? "Ханын дулаалгыг сайжруулах" : "Upgrade wall insulation",
+                desc:  mn ? `Одоогийн МУУ дулаалга жилийн хэрэглээнд ~25% нэмэлт зардал нэмж байна. Дулаалгыг САЙН түвшинд хүргэснээр ${sk.toLocaleString()} kWh хэмнэнэ.`
+                           : `Poor insulation adds ~25% to annual energy use. Upgrading to good standard saves ${sk.toLocaleString()} kWh/yr.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "3–8 сая ₮" : "3–8M MNT",
+                payback: mn ? "4–8 жил" : "4–8 yrs",
+                gov: mn ? "УБЕГ «Дулааны менежмент» хөтөлбөр — зардлын 30% хүртэл дэмжлэг боломжтой"
+                         : "UBEG 'Heat Management' program — up to 30% cost subsidy available",
+              });
+            } else if (building.insulation_quality === "medium") {
+              const sk = Math.round(totalKwh * 0.12);
+              rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
+                icon: "🏠",
+                title: mn ? "Ханын дулаалгыг сайжруулах" : "Improve wall insulation",
+                desc:  mn ? `ДУНД дулаалгыг САЙН болгосноор ${sk.toLocaleString()} kWh/жил хэмнэгдэнэ — голчлон өвлийн улирлын халаалтын зардал буурна.`
+                           : `Upgrading from medium to good insulation saves ${sk.toLocaleString()} kWh/yr — mainly winter heating costs.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "2–5 сая ₮" : "2–5M MNT",
+                payback: mn ? "4–7 жил" : "4–7 yrs",
+                gov: mn ? "УБЕГ дэмжлэг: 20–30% дэмжлэг боломжтой" : "UBEG subsidy: 20–30% available",
+              });
+            }
+
+            // 2. Window
+            if (building.window_type === "single") {
+              const sk = Math.round(totalKwh * 0.14);
+              rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
+                icon: "🪟",
+                title: mn ? "Цонхыг давхар шилтэй болгох" : "Replace single-pane windows",
+                desc:  mn ? `Нэг давхар цонх дулааны алдагдлын 25–30%-ийг үүсгэдэг. Давхар шил суурилуулснаар ${sk.toLocaleString()} kWh/жил хэмнэнэ.`
+                           : `Single-pane windows cause 25–30% of heat loss. Double-pane saves ${sk.toLocaleString()} kWh/yr.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "0.8–2 сая ₮ (цонх бүрт ~150–300к ₮)" : "0.8–2M MNT (~150–300k per window)",
+                payback: mn ? "3–6 жил" : "3–6 yrs",
+                gov: mn ? "Ногоон хөгжлийн сан: эрчим хүчний үр ашгийн зээл боломжтой" : "Green Development Fund: energy efficiency loan available",
+              });
+            } else if (building.window_type === "double") {
+              const sk = Math.round(totalKwh * 0.07);
+              rlist.push({ pri: 3, priLabel: mn ? "Урт хугацааны" : "Long-term", priColor: "#2a9d8f",
+                icon: "🪟",
+                title: mn ? "Цонхыг вакуум шилтэй болгох" : "Upgrade to triple/vacuum-pane windows",
+                desc:  mn ? `Давхар цонхноос вакуум шил руу шилжсэнээр ${sk.toLocaleString()} kWh/жил хэмнэгдэнэ — удаан хугацааны хөрөнгө оруулалт.`
+                           : `Upgrading from double to vacuum-pane saves ${sk.toLocaleString()} kWh/yr — long-term investment.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "1.5–4 сая ₮" : "1.5–4M MNT",
+                payback: mn ? "8–15 жил" : "8–15 yrs",
+                gov: null,
+              });
+            }
+
+            // 3. Heating upgrade
+            if (building.heating_type === "electric") {
+              const sk = Math.round(totalKwh * 0.35);
+              rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
+                icon: "🔥",
+                title: mn ? "Цахилгаан халаалтаас төвлөрсөн халаалт руу шилжих" : "Switch from electric to district heating",
+                desc:  mn ? `Цахилгаан халаалт нь хамгийн үнэтэй. Төвлөрсөн халаалт руу шилжсэнээр ${sk.toLocaleString()} kWh/жил (≈ ${Math.round(sk * elecPrice / 1000000 * 10) / 10}M ₮/жил) хэмнэнэ.`
+                           : `Electric heating is the most expensive. District heating saves ${sk.toLocaleString()} kWh/yr (≈ ${Math.round(sk * elecPrice / 1000000 * 10) / 10}M MNT/yr).`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "Байршлаас хамаарна — УБЦТС-д хандах" : "Location-dependent — contact UBCTS",
+                payback: mn ? "2–4 жил" : "2–4 yrs",
+                gov: mn ? "УБЕГ холболтын зардлын дэмжлэг боломжтой" : "UBEG connection cost subsidy available",
+              });
+            } else if (building.heating_type === "local") {
+              const sk = Math.round(totalKwh * 0.12);
+              rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
+                icon: "🔥",
+                title: mn ? "Орон нутгийн халаалтаас төвлөрсөн руу шилжих" : "Local to district heating",
+                desc:  mn ? `Орон нутгийн халаалтыг солиход ${sk.toLocaleString()} kWh/жил хэмнэнэ — дулааны алдагдал болон үр ашиггүй шаталт буурна.`
+                           : `Switching saves ${sk.toLocaleString()} kWh/yr by reducing heat loss and inefficient combustion.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "0.5–2 сая ₮" : "0.5–2M MNT",
+                payback: mn ? "3–5 жил" : "3–5 yrs",
+                gov: null,
+              });
+            }
+
+            // 4. Smart thermostat (always)
+            {
+              const sk = Math.round(totalKwh * 0.07);
+              rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
+                icon: "🌡️",
+                title: mn ? "Ухаалаг термостат суурилуулах" : "Install smart thermostat",
+                desc:  mn ? `Өрөө бүрийн температурыг зохицуулснаар ${sk.toLocaleString()} kWh/жил хэмнэнэ. Шөнийн цагаар 16°C, өдрийн хооронд 18°C байлгах нь оновчтой.`
+                           : `Room-by-room temperature control saves ${sk.toLocaleString()} kWh/yr. Optimal: 16°C at night, 18°C during day.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "150,000–400,000 ₮" : "150–400k MNT",
+                payback: mn ? "1–2 жил" : "1–2 yrs",
+                gov: null,
+              });
+            }
+
+            // 5. LED lighting (always)
+            {
+              const sk = Math.round(totalKwh * 0.09);
+              rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
+                icon: "💡",
+                title: mn ? "Бүх гэрэлтүүлгийг LED болгох" : "Full LED lighting upgrade",
+                desc:  mn ? `Уламжлалт чийдэнгийн оронд LED хэрэглэснээр ${sk.toLocaleString()} kWh/жил хэмнэнэ. LED-ийн наслалт 25,000 цаг — 10 дахин удаан.`
+                           : `Replacing all bulbs with LED saves ${sk.toLocaleString()} kWh/yr. LED lifespan 25,000 hrs — 10× longer.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "50,000–300,000 ₮ (барилгын хэмжээнээс хамаарна)" : "50–300k MNT",
+                payback: mn ? "6 сар – 1.5 жил" : "6 mo – 1.5 yrs",
+                gov: null,
+              });
+            }
+
+            // 6. Solar (long-term, apartment/office/commercial)
+            if (["apartment","office","commercial","school"].includes(building.type)) {
+              const sk = Math.round(totalKwh * 0.15);
+              rlist.push({ pri: 3, priLabel: mn ? "Урт хугацааны" : "Long-term", priColor: "#2a9d8f",
+                icon: "☀️",
+                title: mn ? "Нарны цахилгааны панел суурилуулах" : "Install rooftop solar panels",
+                desc:  mn ? `Дээвэрт нарны панел суурилуулснаар ${sk.toLocaleString()} kWh/жил цахилгааны хэрэглээ орлоно. УБ-ын жилийн нарны цацраг ~2,300 цаг — Монгол дэлхийн хамгийн нарлаг газруудын нэг.`
+                           : `Rooftop solar offsets ${sk.toLocaleString()} kWh/yr. UB gets ~2,300 solar hours/yr — Mongolia is one of the sunniest countries.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "8–20 сая ₮ (3–10 кВт систем)" : "8–20M MNT (3–10 kW system)",
+                payback: mn ? "7–12 жил" : "7–12 yrs",
+                gov: mn ? "Монгол Улсын Засгийн газрын «Ногоон эрчим хүч» хөтөлбөр — 30% татаас боломжтой"
+                         : "Government 'Green Energy' program — 30% subsidy possible",
+              });
+            }
+
+            // 7. Behavioral changes (free)
+            {
+              const sk = Math.round(totalKwh * 0.05);
+              rlist.push({ pri: 3, priLabel: mn ? "Үнэгүй" : "Free", priColor: "#57cc99",
+                icon: "✅",
+                title: mn ? "Зан үйлийн өөрчлөлт (зардалгүй)" : "Behavioural changes (no cost)",
+                desc:  mn ? `Ашиглагдахгүй байх үед унтраах, шөнийн цагт халаалтыг бууруулах, цонх нэмэлт хаах зэргээр ${sk.toLocaleString()} kWh/жил (≈ ${Math.round(sk * elecPrice / 1000).toLocaleString()}к ₮) хэмнэнэ.`
+                           : `Turn off unused devices, lower heating at night, seal gaps — saves ${sk.toLocaleString()} kWh/yr with no investment.`,
+                sk, smnt: Math.round(sk * elecPrice), co2: Math.round(sk * 0.0007),
+                invest: mn ? "0 ₮ — нэмэлт зардалгүй" : "0 MNT — no investment",
+                payback: mn ? "Шууд" : "Immediate",
+                gov: null,
+              });
+            }
+
+            rlist.sort((a, b) => a.pri - b.pri);
+
+            const totalSaveKwh = rlist.reduce((s, r) => s + r.sk, 0);
+            const totalSaveMnt = rlist.reduce((s, r) => s + r.smnt, 0);
+
+            return (
+              <div className="res-section">
+                <div className="res-section-title">
+                  <TrendingDown size={14} />
+                  {mn ? "Зардал хэмнэх зөвлөгөө — Бодит тооцоолол" : "Energy Savings Recommendations — With Real Numbers"}
+                </div>
+
+                {/* Summary banner */}
+                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.85rem", flexWrap: "wrap" }}>
+                  {[
+                    { label: mn ? "Нийт боломжит хэмнэлт" : "Total potential savings", val: `${totalSaveKwh.toLocaleString()} kWh/жил`, color: "#3a8fd4" },
+                    { label: mn ? "Мөнгөн хэмнэлт" : "Money savings", val: `≈ ${(totalSaveMnt / 1_000_000).toFixed(1)} сая ₮/жил`, color: "#2a9d8f" },
+                    { label: mn ? "Цахилгааны тариф" : "Elec. tariff used", val: `${elecPrice} ₮/kWh`, color: "#e9c46a" },
+                  ].map(({ label, val, color }) => (
+                    <div key={label} style={{ background: `${color}12`, border: `1px solid ${color}30`, borderRadius: 8, padding: "0.4rem 0.75rem", flex: 1, minWidth: 140 }}>
+                      <div style={{ fontSize: "0.67rem", color: "var(--text3)", marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recommendation cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                  {rlist.map((r, i) => (
+                    <div key={i} style={{
+                      border: `1px solid ${r.priColor}30`,
+                      borderLeft: `3px solid ${r.priColor}`,
+                      borderRadius: 8, padding: "0.7rem 0.85rem",
+                      background: `${r.priColor}07`,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                        <span style={{ fontSize: "1rem", flexShrink: 0, marginTop: 1 }}>{r.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
+                            <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--text)" }}>{r.title}</span>
+                            <span style={{ fontSize: "0.62rem", fontWeight: 700, background: `${r.priColor}22`, color: r.priColor, borderRadius: 5, padding: "1px 7px" }}>
+                              {r.priLabel}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: "0.72rem", color: "var(--text2)", margin: 0, lineHeight: 1.55 }}>{r.desc}</p>
+                        </div>
+                      </div>
+
+                      {/* Savings metrics row */}
+                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.4rem" }}>
+                        {[
+                          { icon: "⚡", label: "kWh/жил", val: r.sk.toLocaleString() },
+                          { icon: "💰", label: mn ? "₮/жил" : "MNT/yr", val: `${(r.smnt / 1000).toFixed(0)}к` },
+                          { icon: "🌿", label: "CO₂ т/жил", val: r.co2.toFixed(2) },
+                          { icon: "🔧", label: mn ? "Хөрөнгө оруулалт" : "Investment", val: r.invest },
+                          { icon: "📅", label: mn ? "Нөхөн төлөгдөх" : "Payback", val: r.payback },
+                        ].map(({ icon, label, val }) => (
+                          <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 6, padding: "0.25rem 0.5rem", fontSize: "0.68rem" }}>
+                            <span style={{ marginRight: 3 }}>{icon}</span>
+                            <span style={{ color: "var(--text3)" }}>{label}: </span>
+                            <span style={{ color: "var(--text)", fontWeight: 600 }}>{val}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {r.gov && (
+                        <div style={{ marginTop: "0.4rem", fontSize: "0.67rem", color: "#2a9d8f", background: "rgba(42,157,143,0.08)", borderRadius: 5, padding: "0.25rem 0.5rem" }}>
+                          🏛️ {r.gov}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: "0.65rem", fontSize: "0.67rem", color: "var(--text3)", lineHeight: 1.5 }}>
+                  {mn
+                    ? `* Тооцоолол нь УБЦТС 2024 оны тариф (${elecPrice} ₮/kWh), ML загварын таамаглал болон БНТУ норматив дээр суурилсан. Бодит хэмнэлт байшингийн нөхцөл, хэрэглэгчийн зан үйл, цаг уурын нөхцөлөөс хамаарч өөрчлөгдөнө.`
+                    : `* Calculations based on UBCTS 2024 tariff (${elecPrice} MNT/kWh), ML model prediction, and БНТУ standards. Actual savings depend on building condition, occupant behaviour, and weather.`}
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </div>
   );
