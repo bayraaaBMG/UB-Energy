@@ -192,15 +192,15 @@
   .nav-link {
     width: 100%;
     padding: 1.1rem 1.25rem;
-    font-size: 1.1rem;
+    font-size: 0.92rem;
     border-radius: var(--radius-sm);
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .nav-link svg {
     flex-shrink: 0;
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
   }
 
   .nav-badge {
@@ -240,5 +240,5 @@
   .btn { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
   .navbar-links { top: 56px; }
   .menu-toggle { width: 40px; height: 40px; }
-  .nav-link { font-size: 1.05rem; padding: 1rem 1.1rem; }
+  .nav-link { font-size: 0.92rem; padding: 1rem 1.1rem; }
 }
