@@ -502,7 +502,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             if (building.insulation_quality === "poor") {
               const sk = Math.round(totalKwh * 0.25);
               rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
-                icon: "🏠",
                 title: mn ? "Ханын дулаалгыг сайжруулах" : "Upgrade wall insulation",
                 desc:  mn ? `Одоогийн МУУ дулаалга жилийн хэрэглээнд ~25% нэмэлт зардал нэмж байна. Дулаалгыг САЙН түвшинд хүргэснээр ${sk.toLocaleString()} kWh хэмнэнэ.`
                            : `Poor insulation adds ~25% to annual energy use. Upgrading to good standard saves ${sk.toLocaleString()} kWh/yr.`,
@@ -515,7 +514,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             } else if (building.insulation_quality === "medium") {
               const sk = Math.round(totalKwh * 0.12);
               rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
-                icon: "🏠",
                 title: mn ? "Ханын дулаалгыг сайжруулах" : "Improve wall insulation",
                 desc:  mn ? `ДУНД дулаалгыг САЙН болгосноор ${sk.toLocaleString()} kWh/жил хэмнэгдэнэ — голчлон өвлийн улирлын халаалтын зардал буурна.`
                            : `Upgrading from medium to good insulation saves ${sk.toLocaleString()} kWh/yr — mainly winter heating costs.`,
@@ -530,7 +528,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             if (building.window_type === "single") {
               const sk = Math.round(totalKwh * 0.14);
               rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
-                icon: "🪟",
                 title: mn ? "Цонхыг давхар шилтэй болгох" : "Replace single-pane windows",
                 desc:  mn ? `Нэг давхар цонх дулааны алдагдлын 25–30%-ийг үүсгэдэг. Давхар шил суурилуулснаар ${sk.toLocaleString()} kWh/жил хэмнэнэ.`
                            : `Single-pane windows cause 25–30% of heat loss. Double-pane saves ${sk.toLocaleString()} kWh/yr.`,
@@ -542,7 +539,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             } else if (building.window_type === "double") {
               const sk = Math.round(totalKwh * 0.07);
               rlist.push({ pri: 3, priLabel: mn ? "Урт хугацааны" : "Long-term", priColor: "#2a9d8f",
-                icon: "🪟",
                 title: mn ? "Цонхыг вакуум шилтэй болгох" : "Upgrade to triple/vacuum-pane windows",
                 desc:  mn ? `Давхар цонхноос вакуум шил руу шилжсэнээр ${sk.toLocaleString()} kWh/жил хэмнэгдэнэ — удаан хугацааны хөрөнгө оруулалт.`
                            : `Upgrading from double to vacuum-pane saves ${sk.toLocaleString()} kWh/yr — long-term investment.`,
@@ -557,7 +553,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             if (building.heating_type === "electric") {
               const sk = Math.round(totalKwh * 0.35);
               rlist.push({ pri: 1, priLabel: mn ? "Тэргүүлэх" : "High", priColor: "#e76f51",
-                icon: "🔥",
                 title: mn ? "Цахилгаан халаалтаас төвлөрсөн халаалт руу шилжих" : "Switch from electric to district heating",
                 desc:  mn ? `Цахилгаан халаалт нь хамгийн үнэтэй. Төвлөрсөн халаалт руу шилжсэнээр ${sk.toLocaleString()} kWh/жил (≈ ${Math.round(sk * elecPrice / 1000000 * 10) / 10}M ₮/жил) хэмнэнэ.`
                            : `Electric heating is the most expensive. District heating saves ${sk.toLocaleString()} kWh/yr (≈ ${Math.round(sk * elecPrice / 1000000 * 10) / 10}M MNT/yr).`,
@@ -569,7 +564,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             } else if (building.heating_type === "local") {
               const sk = Math.round(totalKwh * 0.12);
               rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
-                icon: "🔥",
                 title: mn ? "Орон нутгийн халаалтаас төвлөрсөн руу шилжих" : "Local to district heating",
                 desc:  mn ? `Орон нутгийн халаалтыг солиход ${sk.toLocaleString()} kWh/жил хэмнэнэ — дулааны алдагдал болон үр ашиггүй шаталт буурна.`
                            : `Switching saves ${sk.toLocaleString()} kWh/yr by reducing heat loss and inefficient combustion.`,
@@ -584,7 +578,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             {
               const sk = Math.round(totalKwh * 0.07);
               rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
-                icon: "🌡️",
                 title: mn ? "Ухаалаг термостат суурилуулах" : "Install smart thermostat",
                 desc:  mn ? `Өрөө бүрийн температурыг зохицуулснаар ${sk.toLocaleString()} kWh/жил хэмнэнэ. Шөнийн цагаар 16°C, өдрийн хооронд 18°C байлгах нь оновчтой.`
                            : `Room-by-room temperature control saves ${sk.toLocaleString()} kWh/yr. Optimal: 16°C at night, 18°C during day.`,
@@ -599,7 +592,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             {
               const sk = Math.round(totalKwh * 0.09);
               rlist.push({ pri: 2, priLabel: mn ? "Дунд" : "Medium", priColor: "#e9c46a",
-                icon: "💡",
                 title: mn ? "Бүх гэрэлтүүлгийг LED болгох" : "Full LED lighting upgrade",
                 desc:  mn ? `Уламжлалт чийдэнгийн оронд LED хэрэглэснээр ${sk.toLocaleString()} kWh/жил хэмнэнэ. LED-ийн наслалт 25,000 цаг — 10 дахин удаан.`
                            : `Replacing all bulbs with LED saves ${sk.toLocaleString()} kWh/yr. LED lifespan 25,000 hrs — 10× longer.`,
@@ -614,7 +606,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             if (["apartment","office","commercial","school"].includes(building.type)) {
               const sk = Math.round(totalKwh * 0.15);
               rlist.push({ pri: 3, priLabel: mn ? "Урт хугацааны" : "Long-term", priColor: "#2a9d8f",
-                icon: "☀️",
                 title: mn ? "Нарны цахилгааны панел суурилуулах" : "Install rooftop solar panels",
                 desc:  mn ? `Дээвэрт нарны панел суурилуулснаар ${sk.toLocaleString()} kWh/жил цахилгааны хэрэглээ орлоно. УБ-ын жилийн нарны цацраг ~2,300 цаг — Монгол дэлхийн хамгийн нарлаг газруудын нэг.`
                            : `Rooftop solar offsets ${sk.toLocaleString()} kWh/yr. UB gets ~2,300 solar hours/yr — Mongolia is one of the sunniest countries.`,
@@ -630,7 +621,6 @@ function ResultsModal({ building, lang, t, onClose }) {
             {
               const sk = Math.round(totalKwh * 0.05);
               rlist.push({ pri: 3, priLabel: mn ? "Үнэгүй" : "Free", priColor: "#57cc99",
-                icon: "✅",
                 title: mn ? "Зан үйлийн өөрчлөлт (зардалгүй)" : "Behavioural changes (no cost)",
                 desc:  mn ? `Ашиглагдахгүй байх үед унтраах, шөнийн цагт халаалтыг бууруулах, цонх нэмэлт хаах зэргээр ${sk.toLocaleString()} kWh/жил (≈ ${Math.round(sk * elecPrice / 1000).toLocaleString()}к ₮) хэмнэнэ.`
                            : `Turn off unused devices, lower heating at night, seal gaps — saves ${sk.toLocaleString()} kWh/yr with no investment.`,
@@ -677,7 +667,6 @@ function ResultsModal({ building, lang, t, onClose }) {
                       background: `${r.priColor}07`,
                     }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.4rem" }}>
-                        <span style={{ fontSize: "1rem", flexShrink: 0, marginTop: 1 }}>{r.icon}</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
                             <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--text)" }}>{r.title}</span>
@@ -692,14 +681,13 @@ function ResultsModal({ building, lang, t, onClose }) {
                       {/* Savings metrics row */}
                       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.4rem" }}>
                         {[
-                          { icon: "⚡", label: "kWh/жил", val: r.sk.toLocaleString() },
-                          { icon: "💰", label: mn ? "₮/жил" : "MNT/yr", val: `${(r.smnt / 1000).toFixed(0)}к` },
-                          { icon: "🌿", label: "CO₂ т/жил", val: r.co2.toFixed(2) },
-                          { icon: "🔧", label: mn ? "Хөрөнгө оруулалт" : "Investment", val: r.invest },
-                          { icon: "📅", label: mn ? "Нөхөн төлөгдөх" : "Payback", val: r.payback },
-                        ].map(({ icon, label, val }) => (
+                          { label: "kWh/жил", val: r.sk.toLocaleString() },
+                          { label: mn ? "₮/жил" : "MNT/yr", val: `${(r.smnt / 1000).toFixed(0)}к` },
+                          { label: "CO₂ т/жил", val: r.co2.toFixed(2) },
+                          { label: mn ? "Хөрөнгө оруулалт" : "Investment", val: r.invest },
+                          { label: mn ? "Нөхөн төлөгдөх" : "Payback", val: r.payback },
+                        ].map(({ label, val }) => (
                           <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 6, padding: "0.25rem 0.5rem", fontSize: "0.68rem" }}>
-                            <span style={{ marginRight: 3 }}>{icon}</span>
                             <span style={{ color: "var(--text3)" }}>{label}: </span>
                             <span style={{ color: "var(--text)", fontWeight: 600 }}>{val}</span>
                           </div>
@@ -708,7 +696,7 @@ function ResultsModal({ building, lang, t, onClose }) {
 
                       {r.gov && (
                         <div style={{ marginTop: "0.4rem", fontSize: "0.67rem", color: "#2a9d8f", background: "rgba(42,157,143,0.08)", borderRadius: 5, padding: "0.25rem 0.5rem" }}>
-                          🏛️ {r.gov}
+                          {r.gov}
                         </div>
                       )}
                     </div>
