@@ -422,6 +422,95 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
+        {/* ── Синтетик хэрэглээ vs Загварын таамаглал харьцуулалт ── */}
+        <div className="card mb-3">
+          <div className="chart-header flex-between" style={{ marginBottom: "0.5rem" }}>
+            <div>
+              <h3 className="section-title" style={{ marginBottom: 4 }}>
+                {lang === "mn"
+                  ? "Синтетик хэрэглээ vs Загварын таамаглал — сарын харьцуулалт"
+                  : "Synthetic Usage vs Model Prediction — Monthly Comparison"}
+              </h3>
+              <p style={{ fontSize: "0.76rem", color: "var(--text3)", margin: 0 }}>
+                {lang === "mn"
+                  ? "Баянмонгол-1 · 2025 он · 2 багана хэр ойрхон байна вэ? Ойр байх тусам загвар нарийвчлалтай."
+                  : "Bayanmongol-1 · 2025 · How close are the two bars? Closer = more accurate model."}
+              </p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", alignItems: "flex-end" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text2)" }}>
+                <span style={{ width: 12, height: 12, borderRadius: 2, background: "#1a6eb5", display: "inline-block" }} />
+                {lang === "mn" ? "Синтетик хэрэглээ (kWh)" : "Synthetic usage (kWh)"}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text2)" }}>
+                <span style={{ width: 12, height: 12, borderRadius: 2, background: "#2a9d8f", display: "inline-block" }} />
+                {lang === "mn" ? "Загварын таамаглал (kWh)" : "Model prediction (kWh)"}
+              </span>
+            </div>
+          </div>
+
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={monthlyData}
+              margin={{ top: 8, right: 10, left: -10, bottom: 0 }}
+              barGap={2}
+              barCategoryGap="28%"
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" />
+              <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+              <YAxis
+                tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false}
+                tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+              />
+              <Tooltip
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={(v, name) => [`${v != null ? v.toLocaleString() : "—"} kWh`, name]}
+              />
+              <Legend wrapperStyle={{ color: "var(--text2)", fontSize: 11 }} />
+              <Bar dataKey="usage"     fill="#1a6eb5" name={lang === "mn" ? "Синтетик хэрэглээ" : "Synthetic usage"}  radius={[3,3,0,0]} />
+              <Bar dataKey="predicted" fill="#2a9d8f" name={lang === "mn" ? "Загварын таамаглал" : "Model prediction"} radius={[3,3,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Per-month % error row */}
+          <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.85rem", flexWrap: "wrap", paddingLeft: 2 }}>
+            <span style={{ fontSize: "0.7rem", color: "var(--text3)", alignSelf: "center", marginRight: 4 }}>
+              {lang === "mn" ? "Алдааны хувь:" : "Error %:"}
+            </span>
+            {monthlyEnergyData.map(d => {
+              const err = d.usage > 0 ? Math.abs(d.predicted - d.usage) / d.usage * 100 : 0;
+              const col = err < 1.5 ? "#2a9d8f" : err < 4 ? "#e9c46a" : "#e76f51";
+              return (
+                <div key={d.month_en} style={{ textAlign: "center", minWidth: 36 }}>
+                  <div style={{ fontSize: "0.67rem", color: col, fontWeight: 700, lineHeight: 1.2 }}>
+                    {err.toFixed(1)}%
+                  </div>
+                  <div style={{ fontSize: "0.6rem", color: "var(--text3)" }}>
+                    {lang === "mn" ? d.month.replace("-р сар", "") : d.month_en}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+              {[["#2a9d8f", lang === "mn" ? "<1.5% (маш сайн)" : "<1.5% (excellent)"],
+                ["#e9c46a", lang === "mn" ? "1.5–4% (сайн)" : "1.5–4% (good)"],
+                ["#e76f51", lang === "mn" ? ">4% (дунд)" : ">4% (moderate)"]
+              ].map(([c, lbl]) => (
+                <span key={lbl} style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.68rem", color: "var(--text3)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: c, display: "inline-block" }} />
+                  {lbl}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <p className="avp-note" style={{ marginTop: "0.75rem" }}>
+            {lang === "mn"
+              ? `Баяны загвар ба синтетик хэрэглээний дундаж алдаа: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Багана хоёр ижил өндөрт байх тусам загвар нарийвчлалтай гэсэн үг. Синтетик өгөгдлийн хувьд хоёр утга ойрхон байх нь загварын дотоод нийцтэй байдлыг нотолно.`
+              : `Model vs synthetic data mean error: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Equal bar heights = accurate prediction. For synthetic data, close values confirm the model's internal consistency.`}
+          </p>
+        </div>
+
         {/* Weather correlation + Model performance */}
         <div className="grid grid-2 mb-3">
           <div className="card">
@@ -673,6 +762,158 @@ export default function DashboardPage() {
             {lang === "mn"
               ? "Бүх загвар нэг тест өгөгдөл дээр үнэлэгдсэн. R² өндөр, MAE бага байх тусам загвар сайн."
               : "All models evaluated on the same held-out test set. Higher R² and lower MAE = better model."}
+          </p>
+        </div>
+
+        {/* ── ML аргын сонголт ── */}
+        <div className="card mb-3">
+          <h3 className="section-title" style={{ marginBottom: "0.75rem" }}>
+            {lang === "mn"
+              ? "Яагаад OLS Регресс сонгов? — Монголын нөхцөлд тохирсон шалтгаан"
+              : "Why OLS Regression? — Justification for Mongolian Context"}
+          </h3>
+
+          {/* Chosen model highlight */}
+          <div style={{
+            border: "1.5px solid rgba(42,157,143,0.45)", borderRadius: 10,
+            padding: "0.9rem 1rem", marginBottom: "1rem",
+            background: "rgba(42,157,143,0.07)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.65rem" }}>
+              <Award size={16} style={{ color: "#2a9d8f", flexShrink: 0 }} />
+              <span style={{ fontWeight: 700, color: "#2a9d8f", fontSize: "0.92rem" }}>
+                {lang === "mn"
+                  ? `Сонгосон загвар: OLS Шугаман Регресс  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`
+                  : `Chosen model: OLS Linear Regression  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`}
+              </span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "0.5rem" }}>
+              {[
+                {
+                  mn: "Тайлбарлах боломжтой",
+                  en: "Interpretable model",
+                  desc_mn: "β-коэффициент бүр барилгын параметрийн нөлөөг шууд харуулна. Захиргааны шийдвэр гаргахад тохиромжтой.",
+                  desc_en: "Each β coefficient directly shows each parameter's impact. Suitable for regulatory and reporting use.",
+                },
+                {
+                  mn: "Монголын HDD-тэй нийцнэ",
+                  en: "Fits Mongolian HDD pattern",
+                  desc_mn: "УБ-ын ~4500 HDD нь энергийн хэрэглээтэй шугаман хамааралтай — шугаман загвар физикийн томьёотой давхцана.",
+                  desc_en: "UB's ~4,500 HDD has near-linear relationship with energy. Linear model aligns with physics formula.",
+                },
+                {
+                  mn: "Жижиг датасетэд тохиромжтой",
+                  en: "Works with small datasets",
+                  desc_mn: "600 синтетик барилга дээр хэт тохируулалт (overfitting) гарахгүй. Монголд бодит өгөгдөл хомс.",
+                  desc_en: "No overfitting on 600 synthetic buildings. Real Mongolian building data is scarce.",
+                },
+                {
+                  mn: "Хөтөч дотор ажиллана",
+                  en: "Browser-deployable",
+                  desc_mn: "~5мс сургалт, backend server шаардлагагүй. Vercel дээр ажиллах боломжтой.",
+                  desc_en: "~5ms training, no backend server needed. Fully deployable on Vercel.",
+                },
+              ].map(item => (
+                <div key={item.mn} style={{
+                  background: "rgba(42,157,143,0.09)", borderRadius: 8,
+                  padding: "0.5rem 0.7rem",
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: "0.8rem", color: "var(--text)", marginBottom: 3 }}>
+                    {lang === "mn" ? item.mn : item.en}
+                  </div>
+                  <div style={{ fontSize: "0.71rem", color: "var(--text3)", lineHeight: 1.5 }}>
+                    {lang === "mn" ? item.desc_mn : item.desc_en}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rejected methods table */}
+          <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text2)", marginBottom: "0.6rem" }}>
+            {lang === "mn"
+              ? "Яагаад бусад машин сургалтын аргыг ашиглаагүй вэ?"
+              : "Why were other ML methods not used?"}
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table className="mc-table">
+              <thead>
+                <tr>
+                  <th>{lang === "mn" ? "Арга" : "Method"}</th>
+                  <th>{lang === "mn" ? "Монголын нөхцөлд тохирохгүй шалтгаан" : "Why unsuitable for Mongolian conditions"}</th>
+                  <th>{lang === "mn" ? "Гол асуудал" : "Core issue"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  {
+                    method: "Random Forest / XGBoost",
+                    color: "#e76f51",
+                    reason_mn: "10,000+ бодит дата шаардана. Синтетик 600 дата дээр хэт тохируулна. Хар хайрцаг — регуляторт тайлбарлах боломжгүй. Хөтөч дотор ажиллуулахад хэт хүнд.",
+                    reason_en: "Requires 10,000+ real records. Overfits 600 synthetic samples. Black-box — cannot explain to regulators. Too heavy for browser.",
+                    issue_mn: "Өгөгдлийн хомсдол + тайлбарлах боломжгүй",
+                    issue_en: "Data scarcity + uninterpretable",
+                  },
+                  {
+                    method: "Neural Network (MLP / LSTM)",
+                    color: "#e76f51",
+                    reason_mn: "10,000+ сургалтын дата шаардана. GPU шаардлагатай. LSTM нь цаг цувааны загвар — барилгын нэг удаагийн таамаглалд тохиромжгүй. Үр дүнг тайлбарлах аргагүй.",
+                    reason_en: "Needs 10,000+ samples. GPU required. LSTM is sequential — not suited for one-off building prediction. Results are unexplainable.",
+                    issue_mn: "Тооцооллын зардал + буруу загварын хэлбэр",
+                    issue_en: "Compute cost + wrong architecture",
+                  },
+                  {
+                    method: "Support Vector Regression (SVR)",
+                    color: "#f4a261",
+                    reason_mn: "Сургалт O(n²–n³) хугацаа шаардана — 600+ дата дээр удаан. Хөтөч дотор deployment боломжгүй. Hyperparameter тохируулах нарийн ажил шаардана.",
+                    reason_en: "Training is O(n²–n³) — slow on 600+ samples. Not browser-deployable. Requires careful hyperparameter tuning.",
+                    issue_mn: "Deployment боломжгүй",
+                    issue_en: "Not deployable in browser",
+                  },
+                  {
+                    method: "K-Nearest Neighbors (KNN)",
+                    color: "#f4a261",
+                    reason_mn: "Монголын барилгын бодит 'хөрш' дата байхгүй. 30+ хэмжээст орон зайд алдаа нэмэгдэнэ (dimension's curse). Inference бүрт бүх датасетыг харьцуулна — удаан.",
+                    reason_en: "No real Mongolian building neighbors available. Accuracy degrades in 30+ dimensions (curse of dimensionality). Requires full dataset comparison at inference.",
+                    issue_mn: "Лавлах дата байхгүй + хэмжээт асуудал",
+                    issue_en: "No reference data + dimensionality",
+                  },
+                  {
+                    method: "Gaussian Process (GP)",
+                    color: "#e9c46a",
+                    reason_mn: "O(n³) тооцооллын нарийвчлал — 600+ дата дээр маш удаан. Хөтөч дотор ажиллах боломжгүй. Монголын нөхцөлд цөөхөн дата + уян хатан kernel сонголт шаардана.",
+                    reason_en: "O(n³) complexity — extremely slow on 600+ samples. Not browser-feasible. Needs careful kernel selection for Mongolian context.",
+                    issue_mn: "Тооцооллын хязгаар",
+                    issue_en: "Computational limit",
+                  },
+                ].map(row => (
+                  <tr key={row.method}>
+                    <td style={{ whiteSpace: "nowrap", fontWeight: 600, fontSize: "0.82rem" }}>
+                      <span className="mc-model-dot" style={{ background: row.color }} />
+                      {row.method}
+                    </td>
+                    <td style={{ fontSize: "0.76rem", color: "var(--text2)", lineHeight: 1.55 }}>
+                      {lang === "mn" ? row.reason_mn : row.reason_en}
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <span style={{
+                        background: `${row.color}25`, color: row.color,
+                        borderRadius: 6, padding: "2px 9px",
+                        fontSize: "0.71rem", fontWeight: 600,
+                      }}>
+                        {lang === "mn" ? row.issue_mn : row.issue_en}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="avp-note" style={{ marginTop: "0.8rem" }}>
+            {lang === "mn"
+              ? "OLS регресс нь Монголын барилгын эрчим хүчний тооцооллын физикийн томьёотой (IEA 2022, БНТУ 23-02-09) нийцдэг, тайлбарлах боломжтой, жижиг синтетик датасетэд тогтвортой загвар юм. Ridge λ=0.01 нь тооны тогтворгүй байдлаас хамгаална. Ирээдүйд бодит НЭТЕГ өгөгдөл ирэхэд Random Forest руу шилжих боломжтой."
+              : "OLS regression aligns with Mongolia's physics-based EUI formula (IEA 2022, БНТУ 23-02-09), is interpretable, and stable on small synthetic datasets. Ridge λ=0.01 prevents numerical instability. Once real НЭТЭГ data becomes available, migration to Random Forest is feasible."}
           </p>
         </div>
 
