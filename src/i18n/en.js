@@ -16,6 +16,7 @@ const en = {
     badge_new: "New",
     profile: "Profile",
     mySpace: "My Space",
+    about: "About",
   },
   common: {
     usage: "Usage",

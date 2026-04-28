@@ -5,7 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   Home, LogIn, Brain, LayoutDashboard, Upload, Database,
   Settings, Accessibility, Lightbulb, Map, Menu, X, Globe, LogOut, Zap,
-  CloudSun, BarChart2, Package
+  CloudSun, BarChart2, Package, Info
 } from "lucide-react";
 import { APP_NAME } from "../../config/constants";
 import "./Navbar.css";
@@ -13,12 +13,12 @@ import "./Navbar.css";
 const navItems = (t, user) => [
   // ── Public ──
   { path: "/", label: t.nav.home, icon: Home },
-  { path: "/weather", label: t.nav.weather, icon: CloudSun, badge: t.nav.badge_new },
+  { path: "/about", label: t.nav.about, icon: Info },
   { path: "/predictor", label: t.nav.predictor, icon: Brain },
   { path: "/map", label: t.nav.map, icon: Map },
-  { path: "/owid", label: t.nav.owid, icon: BarChart2, badge: t.nav.badge_new },
+  { path: "/weather", label: t.nav.weather, icon: CloudSun },
+  { path: "/owid", label: t.nav.owid, icon: BarChart2 },
   { path: "/recommendations", label: t.nav.recommendations, icon: Lightbulb },
-  { path: "/accessibility", label: t.nav.accessibility, icon: Accessibility },
   // ── Private (login required) ──
   ...(user ? [
     { path: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },

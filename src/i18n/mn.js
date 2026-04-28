@@ -16,6 +16,7 @@ const mn = {
     badge_new: "Шинэ",
     profile: "Профайл",
     mySpace: "Миний орон зай",
+    about: "Системийн тухай",
   },
   common: {
     usage: "Хэрэглээ",

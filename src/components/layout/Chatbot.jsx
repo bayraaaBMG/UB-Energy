@@ -157,8 +157,44 @@ const KB = [
   },
   {
     keys: ["баярлалаа", "thanks", "thank you", "болоо", "хангалттай"],
-    mn: "Баярлалаа! Цааш ч асуух зүйл байвал чөлөөтэй асуугаарай. UB Energy-г ашигласанд баярлалаа! 🌱",
-    en: "Thank you! Feel free to ask anything else anytime. Thanks for using UB Energy! 🌱",
+    mn: "Баярлалаа! Цааш ч асуух зүйл байвал чөлөөтэй асуугаарай. UB Energy-г ашигласанд баярлалаа!",
+    en: "Thank you! Feel free to ask anything else anytime. Thanks for using UB Energy!",
+    sources: [],
+  },
+  {
+    keys: ["систем юу хийдэг", "систем тухай", "системийн тухай", "about", "about the system", "юу хийдэг систем"],
+    mn: `**UB Energy AI** — Монгол Улсын барилгын эрчим хүчний хэрэглээг ML-аар тооцоолох судалгааны тавцан.\n\nГол боломжууд:\n\n| Хуудас | Зориулалт |\n|--------|----------|\n| Таамаглагч | Барилгын ML тооцоолол |\n| Газрын зураг | OSM дээр барилга дарж харах |\n| Хяналтын самбар | Нийт дүн шинжилгээ |\n| Дата сан | Барилгуудын удирдлага |\n| Цаг уур | HDD, температур |\n\nAгшин зуурын тооцоолол, нэвтрэлгүй ч ашиглагдана.\n\nДэлгэрэнгүй: **/about** хуудсанд орно уу.`,
+    en: `**UB Energy AI** — Research platform for ML-based building energy prediction in Mongolia.\n\nKey features:\n\n| Page | Purpose |\n|------|--------|\n| Predictor | ML energy calculation |\n| Map | Click OSM buildings |\n| Dashboard | Analytics & trends |\n| Database | Manage buildings |\n| Weather | HDD & temperature |\n\nInstant calculation, no login needed for core features.\n\nSee the full guide at **/about**.`,
+    sources: [],
+  },
+  {
+    keys: ["яаж ашиглах", "how to use", "хэрхэн ашиглах", "эхлэх", "get started", "яаж эхлэх"],
+    mn: `**UB Energy-г хэрхэн ашиглах:**\n\n**① Нэвтрэлгүй** — Таамаглагч хуудсанд очиж жишээ сценари сонго:\n• Орон сууц (96м², 1995 он)\n• Оффис (350м², 2005 он)\n• Сургуулийн байр (600м², 1980 он)\n\n**② Нэвтэрсэний дараа:**\n• /data-input → Өөрийн барилга нэм\n• /dashboard → Нийт дүн шинжилгээ\n• /database → Барилгуудаа удирда\n\n**③ Газрын зураг:**\n• Zoom ≥ 14 → барилга дар → үр дүн гарна\n\nТусламж хэрэгтэй бол энд бичнэ үү!`,
+    en: `**How to use UB Energy:**\n\n**① Without login** — Go to Predictor and try a sample:\n• Apartment (96m², 1995)\n• Office (350m², 2005)\n• School (600m², 1980)\n\n**② After login:**\n• /data-input → Add your building\n• /dashboard → Full analytics\n• /database → Manage buildings\n\n**③ Map page:**\n• Zoom ≥ 14 → click a building → instant results\n\nAsk me anything else!`,
+    sources: [],
+  },
+  {
+    keys: ["таамаглагч", "predictor", "барилга оруулах", "ml тооцоолол", "prediction хэрхэн"],
+    mn: `**Таамаглагч хуудасны заавар:**\n\n1. **Жишээ сценари** дарна — Орон сууц / Оффис / Сургууль\n2. **"Таамаглал хийх"** товч дарна\n3. Үр дүн:\n   • Жилийн хэрэглээ (кВт·цаг)\n   • Сарын дундаж\n   • CO₂ ялгарал\n   • A–G зэрэглэл\n   • 2026–2027 прогноз\n   • Зардал хэмнэх зөвлөмж\n\nОрон сууцны жишээ (96м², 1995, панель):\n→ Жилийн хэрэглээ ≈ **20,000–25,000 кВт·цаг**\n→ Зэрэглэл: **E** (200–250 кВт·цаг/м²)`,
+    en: `**Predictor page guide:**\n\n1. Click a **sample scenario** — Apartment / Office / School\n2. Click **"Predict"**\n3. Results include:\n   • Annual usage (kWh)\n   • Monthly average\n   • CO₂ emissions\n   • A–G grade\n   • 2026–2027 forecast\n   • Energy-saving tips\n\nApartment example (96m², 1995, panel):\n→ Annual usage ≈ **20,000–25,000 kWh**\n→ Grade: **E** (200–250 kWh/m²)`,
+    sources: [],
+  },
+  {
+    keys: ["газрын зураг", "map", "osm", "barилга зурагт", "барилга дарах", "map дээр"],
+    mn: `**Газрын зургийн хуудасны заавар:**\n\n1. Zoom ≥ 14 болго → барилгууд автоматаар ачаалагдана (5–25 секунд)\n2. Барилга дарна → баруун талын панел нээгдэнэ\n3. Үр дүн:\n   • Жилийн кВт·цаг\n   • CO₂, PM2.5\n   • Эрчим хүч (кВт·цаг/м²)\n   • A–G зэрэглэл\n   • Сарын mini chart\n\nӨнгийн горим солих:\n• **Энерги**: ногоон→улаан (бага→их)\n• **Зэрэглэл**: A ногоон, G улаан\n• **PM2.5**: агаарын бохирдол\n\n**Анхааруулга:** Overpass API-аас татдаг тул интернэт холболт шаардлагатай.`,
+    en: `**Map page guide:**\n\n1. Zoom to level ≥ 14 → buildings auto-load (5–25 sec)\n2. Click a building → right panel opens\n3. Results:\n   • Annual kWh\n   • CO₂, PM2.5\n   • Energy intensity (kWh/m²)\n   • A–G grade\n   • Monthly mini chart\n\nColor modes:\n• **Energy**: green→red (low→high)\n• **Grade**: A=green, G=red\n• **PM2.5**: air pollution\n\n**Note:** Loads from Overpass API — internet required.`,
+    sources: [],
+  },
+  {
+    keys: ["csv", "файл оруулах", "template", "загвар файл", "import", "өгөгдөл оруулах заавар"],
+    mn: `**Өгөгдөл оруулах (CSV):**\n\n1. /data-input хуудсанд очно\n2. **"CSV загвар татах"** товч дарж жишээ файл авна\n3. Файлыг Excel-д нээж мэдээллийг бөглөнө:\n\n| Баганын нэр | Жишээ |\n|-------------|-------|\n| building_name | Баянмонгол-1 байр |\n| area | 8420 |\n| building_type | apartment |\n| year | 2014 |\n| floors | 12 |\n| insulation_quality | medium |\n\n4. Файлаа хадгалаад буцааж upload хийнэ\n5. Амжилттай бол Dashboard-д харагдана`,
+    en: `**Data Input (CSV):**\n\n1. Go to /data-input\n2. Click **"Download CSV template"**\n3. Open in Excel and fill in data:\n\n| Column | Example |\n|--------|--------|\n| building_name | Bayanmongol-1 |\n| area | 8420 |\n| building_type | apartment |\n| year | 2014 |\n| floors | 12 |\n| insulation_quality | medium |\n\n4. Save and re-upload\n5. Appears in Dashboard on success`,
+    sources: [],
+  },
+  {
+    keys: ["бүртгүүлэх", "нэвтрэх", "register", "login", "sign up", "account", "бүртгэл"],
+    mn: `**Бүртгэл ба нэвтрэлт:**\n\n/login хуудсанд очно:\n\n| Хийх зүйл | Тайлбар |\n|-----------|--------|\n| Шинэ бүртгэл | Нэр, и-мэйл, нууц үг оруулна |\n| Нэвтрэх | И-мэйл + нууц үгээр |\n\n**Нэвтрэлгүй хийж болох зүйлс:**\n• Таамаглагч (жишээ сценари)\n• Газрын зураг\n• Цаг уур\n• Зөвлөмж харах\n\n**Нэвтэрсний дараа нэмэгдэх боломжууд:**\n• Өөрийн барилга нэмэх, хадгалах\n• Dashboard, Дата сан\n• Таамаглалын түүх, сценари\n• Миний орон зай\n\nМэдээлэл таны хөтөч дотор л хадгалагдана.`,
+    en: `**Registration & Login:**\n\nGo to /login:\n\n| Action | Details |\n|--------|--------|\n| New account | Name, email, password |\n| Login | Email + password |\n\n**Without login:**\n• Predictor (sample scenarios)\n• Map, Weather, Recommendations\n\n**After login:**\n• Add and save your buildings\n• Dashboard, Database\n• Prediction history, scenarios\n• My Space\n\nAll data stays in your browser only.`,
     sources: [],
   },
 ];
@@ -229,12 +265,12 @@ function renderText(text) {
 
 // ─── Quick chips config ───────────────────────────────────────────────────────
 const CHIP_CONFIG = [
-  { icon: <Zap size={11} />,           mn: "Цахилгааны тариф", en: "Electricity tariff" },
-  { icon: <ThermometerSun size={11} />, mn: "HDD тооцоолол",    en: "HDD calculation" },
-  { icon: <Home size={11} />,           mn: "Дулаалгын хэмнэлт",en: "Insulation savings" },
-  { icon: <BarChart2 size={11} />,      mn: "ML загварын нарийвчлал", en: "ML model accuracy" },
-  { icon: <Leaf size={11} />,           mn: "Нарны эрчим хүч",  en: "Solar energy" },
-  { icon: <HelpCircle size={11} />,     mn: "Эрчим хүч хэмнэх", en: "How to save energy" },
+  { icon: <HelpCircle size={11} />,     mn: "Яаж ашиглах вэ?",       en: "How to use?" },
+  { icon: <BarChart2 size={11} />,      mn: "Таамаглагч заавар",      en: "Predictor guide" },
+  { icon: <Home size={11} />,           mn: "Газрын зураг заавар",    en: "Map guide" },
+  { icon: <Zap size={11} />,            mn: "Цахилгааны тариф",       en: "Electricity tariff" },
+  { icon: <ThermometerSun size={11} />, mn: "HDD тооцоолол",          en: "HDD calculation" },
+  { icon: <Leaf size={11} />,           mn: "Дулаалгын хэмнэлт",      en: "Insulation savings" },
 ];
 
 // ─── Chatbot component ────────────────────────────────────────────────────────
@@ -314,7 +350,7 @@ export default function Chatbot() {
                 <span className="chatbot-status">
                   <span className="chatbot-status-dot" />
                   {t.chatbot.online}
-                  <span className="chatbot-kb-badge">KB · 22 сэдэв</span>
+                  <span className="chatbot-kb-badge">KB · 29 сэдэв</span>
                 </span>
               </div>
             </div>

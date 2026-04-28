@@ -18,6 +18,7 @@ const DataInputPage      = lazy(() => import("./pages/DataInputPage"));
 const DatabasePage       = lazy(() => import("./pages/DatabasePage"));
 const AdminPage          = lazy(() => import("./pages/AdminPage"));
 const AccessibilityPage  = lazy(() => import("./pages/AccessibilityPage"));
+const AboutPage          = lazy(() => import("./pages/AboutPage"));
 const RecommendationsPage = lazy(() => import("./pages/RecommendationsPage"));
 const MapPage            = lazy(() => import("./pages/MapPage"));
 const WeatherPage        = lazy(() => import("./pages/WeatherPage"));
@@ -81,6 +82,7 @@ export default function App() {
                 <Route path="/owid" element={<OWIDPage />} />
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/accessibility" element={<AccessibilityPage />} />
+                <Route path="/about" element={<AboutPage />} />
                 <Route path="/building/:id" element={<BuildingDetailPage />} />
                 <Route path="/smart-home" element={<Navigate to="/recommendations" replace />} />
 
