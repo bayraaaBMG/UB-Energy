@@ -890,11 +890,11 @@ export default function DashboardPage() {
                 {MODEL_COMPARISON.map(m => {
                   const isWinner = m.id === winnerId;
                   const rows = [
-                    { lbl: "R²",                                          val: m.r2,              max: 1, fmt: m.r2.toFixed(4) },
-                    { lbl: lang === "mn" ? "Итгэлцлэл ±15%" : "Conf ±15%", val: m.confidence / 100, max: 1, fmt: `${m.confidence}%` },
-                    { lbl: "F1 оноо",                                     val: m.f1,              max: 1, fmt: m.f1.toFixed(4) },
-                    { lbl: "MAE (бага=сайн)",                             val: 1 - m.mae / maxMae, max: 1, fmt: `${m.mae.toLocaleString()} kWh` },
-                    { lbl: "MAPE (бага=сайн)",                            val: 1 - m.mape / 100,  max: 1, fmt: `${m.mape}%` },
+                    { lbl: "R²",                                                      val: m.r2,              max: 1, fmt: m.r2.toFixed(4) },
+                    { lbl: lang === "mn" ? "Итгэлцлэл ±15%" : "Confidence ±15%",   val: m.confidence / 100, max: 1, fmt: `${m.confidence}%` },
+                    { lbl: lang === "mn" ? "F1 оноо" : "F1 score",                 val: m.f1,              max: 1, fmt: m.f1.toFixed(4) },
+                    { lbl: lang === "mn" ? "MAE (бага = сайн)" : "MAE (lower = better)", val: 1 - m.mae / maxMae, max: 1, fmt: `${m.mae.toLocaleString()} kWh` },
+                    { lbl: lang === "mn" ? "MAPE (бага = сайн)" : "MAPE (lower = better)", val: 1 - m.mape / 100, max: 1, fmt: `${m.mape}%` },
                   ];
                   return (
                     <div key={m.id} style={{

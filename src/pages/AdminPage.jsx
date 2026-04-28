@@ -108,9 +108,9 @@ function OverviewTab({ users, buildings, logs }) {
 
   return (
     <div>
-      <div className="adm-demo-note" style={{ background: "rgba(244,162,97,0.1)", border: "1px solid rgba(244,162,97,0.35)", borderRadius: 8, padding: "0.55rem 1rem", marginBottom: "1rem", fontSize: "0.8rem", color: "#f4a261", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className="adm-demo-note" style={{ background: "rgba(58,143,212,0.08)", border: "1px solid rgba(58,143,212,0.25)", borderRadius: 8, padding: "0.55rem 1rem", marginBottom: "1rem", fontSize: "0.8rem", color: "var(--primary-light)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <AlertTriangle size={14} />
-        <span><strong>Demo статистик</strong> — Хэрэглэгч, таамаглалын тоо нь бодит backend байхгүй тул localStorage-д суурилсан жишиг утга болно.</span>
+        <span><strong>Судалгааны тавцан</strong> — Хэрэглэгч болон барилгын тоо нь browser localStorage-д хадгалагдана. Backend интеграц нэмснээр бодит дата ашиглах боломжтой.</span>
       </div>
       <div className="adm-stat-grid mb-3">
         {topStats.map(s => (

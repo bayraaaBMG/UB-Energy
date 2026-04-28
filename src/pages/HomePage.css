@@ -447,3 +447,52 @@
   .stats-section { padding: 1.5rem 0; }
   .features-section { padding: 1.5rem 0 2.5rem; }
 }
+
+/* ─── ML Credibility section ─────────────────────────────────────────────── */
+.ml-cred-section {
+  padding: 3rem 0;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.ml-cred-header { text-align: center; margin-bottom: 1.75rem; }
+.ml-cred-sub {
+  color: var(--text3);
+  font-size: 0.88rem;
+  margin-top: 0.4rem;
+}
+.ml-cred-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.ml-cred-card { padding: 1rem 1.1rem; }
+.mlc-label { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.3rem; }
+.mlc-value { font-size: 1.35rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.25rem; }
+.mlc-sub   { font-size: 0.72rem; color: var(--text2); line-height: 1.5; }
+
+.ml-cred-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: rgba(58,143,212,0.06);
+  border: 1px solid rgba(58,143,212,0.18);
+  border-radius: var(--radius);
+}
+.mlc-flow-node { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.mlc-flow-step { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.mlc-flow-desc { font-size: 0.65rem; color: var(--text3); }
+.mlc-flow-arr  { font-size: 1.1rem; color: var(--text3); }
+
+@media (max-width: 768px) {
+  .ml-cred-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .ml-cred-grid { grid-template-columns: 1fr; }
+  .ml-cred-flow { gap: 0.3rem; }
+  .mlc-flow-arr { display: none; }
+}

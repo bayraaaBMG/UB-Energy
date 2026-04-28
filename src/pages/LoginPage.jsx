@@ -82,14 +82,15 @@ function SecurityNotice({ lang }) {
           <div className="sec-row warn">
             <AlertTriangle size={12} />
             {lang === "mn"
-              ? "Энэ бол demo систем. Бодит мэдээлэл оруулахгүй байхыг зөвлөж байна."
-              : "This is a demo system. We recommend not entering real personal data."}
+              ? "Судалгааны тавцан — мэдээлэл зөвхөн таны төхөөрөмжид хадгалагдана."
+              : "Research platform — your data is stored only in your browser."}
           </div>
           <div className="sec-row warn">
             <AlertTriangle size={12} />
             {lang === "mn"
-              ? "Admin бүртгэл нь demo зориулалттай бөгөөд production түвшинд backend auth шаардагдана."
-              : "Admin account is demo-only. Production use requires backend authentication."}
+              ? "Администратор эрх нь судалгааны зориулалттай — backend интеграц хийснээр бүрэн эрхийн удирдлага нэмэгдэнэ."
+              : "Admin access is for research purposes — full auth management requires backend integration."}
+
           </div>
         </div>
       )}
@@ -389,12 +390,12 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Demo hint — no real credentials shown */}
+            {/* Research system notice */}
             <div className="demo-hint">
               <span>
                 {lang === "mn"
-                  ? "Demo: шинэ бүртгэл үүсгэх эсвэл admin@ubenergy.mn-ээр нэвтэрнэ үү."
-                  : "Demo: create a new account or sign in with admin@ubenergy.mn."}
+                  ? "Судалгааны систем — шинэ бүртгэл үүсгэж эхлэх боломжтой."
+                  : "Research system — create a new account to get started."}
               </span>
             </div>
 

@@ -26,6 +26,7 @@ const FEATURES = (t) => [
 
 export default function HomePage() {
   const { t, lang } = useLang();
+  const mn = lang === "mn";
   usePageTitle(t.nav.home);
   const { user } = useAuth();
   const monthlyData = monthlyEnergyData.map(d => ({
@@ -76,7 +77,7 @@ export default function HomePage() {
         <div className="container hero-content animate-fade">
           <div className="hero-badge">
             <Zap size={14} />
-            <span>EUI Model · Random Forest · Open-Meteo</span>
+            <span>OLS Regression · EUI Model · Open-Meteo · {mn ? "Монголын нөхцөлд" : "Mongolia-adapted"}</span>
           </div>
           {user && (
             <div className="hero-welcome">
@@ -185,7 +186,7 @@ export default function HomePage() {
                 {t.home.intro_text}
               </p>
               <div className="tech-tags">
-                {["Random Forest", "Gradient Boosting", "XGBoost", "EUI Model", "SHAP", "Open-Meteo API"].map(tag => (
+                {["OLS Regression", "EUI Formula", "Ridge Regression", "Open-Meteo API", "БНТУ норм", "Shoelace Area"].map(tag => (
                   <span key={tag} className="tech-tag">{tag}</span>
                 ))}
               </div>
@@ -257,6 +258,82 @@ export default function HomePage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ── ML Credibility section ── */}
+      <section className="ml-cred-section">
+        <div className="container">
+          <div className="ml-cred-header">
+            <h2 className="section-title">{mn ? "Машин сургалтын загварын тухай" : "About the ML model"}</h2>
+            <p className="ml-cred-sub">
+              {mn
+                ? "Энэ систем үнэхээр машин сургалтын аргыг ашиглаж байна уу? — Тийм. Доор тайлбарласан."
+                : "Does this system actually use machine learning? — Yes. Details below."}
+            </p>
+          </div>
+          <div className="ml-cred-grid">
+            {[
+              {
+                label: mn ? "Ашигласан арга" : "Method used",
+                value: "OLS Linear Regression",
+                sub:   mn ? "(Ordinary Least Squares — Ridge λ=0.01)" : "(Ordinary Least Squares — Ridge λ=0.01)",
+                color: "#3a8fd4",
+              },
+              {
+                label: mn ? "Сургалтын өгөгдөл" : "Training data",
+                value: "600",
+                sub:   mn ? "синтетик Монгол барилга (EUI физик томьёо + ±12% дуу чимээ)" : "synthetic Mongolian buildings (physics EUI + ±12% noise)",
+                color: "#2a9d8f",
+              },
+              {
+                label: mn ? "Нарийвчлал (R²)" : "Accuracy (R²)",
+                value: `${(METRICS.r2 * 100).toFixed(1)}%`,
+                sub:   mn ? `MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%` : `MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`,
+                color: "#9b72cf",
+              },
+              {
+                label: mn ? "Оролтын хувьсагч" : "Input features",
+                value: "30+",
+                sub:   mn ? "талбай, нас, давхар, дулаалга, цонх, халаалт, материал, HDD..." : "area, age, floors, insulation, window, heating, material, HDD...",
+                color: "#e9c46a",
+              },
+              {
+                label: mn ? "Монголын нөхцөл" : "Mongolia-specific",
+                value: "УБ HDD",
+                sub:   mn ? "~4,500 HDD/жил · Панель барилга · Нүүрсний хүчин зүйл 0.73 kg CO₂/kWh" : "~4,500 HDD/yr · Panel buildings · Coal factor 0.73 kg CO₂/kWh",
+                color: "#e76f51",
+              },
+              {
+                label: mn ? "Тайлбарлах боломж" : "Explainability",
+                value: mn ? "Бүрэн" : "Full",
+                sub:   mn ? "β-коэффициент бүр параметрийн нөлөөг харуулна · SHAP-lite дашбордод байна" : "Each β shows parameter impact · SHAP-lite available in dashboard",
+                color: "#57cc99",
+              },
+            ].map(({ label, value, sub, color }) => (
+              <div key={label} className="ml-cred-card card">
+                <div className="mlc-label">{label}</div>
+                <div className="mlc-value" style={{ color }}>{value}</div>
+                <div className="mlc-sub">{sub}</div>
+              </div>
+            ))}
+          </div>
+          <div className="ml-cred-flow">
+            {[
+              { step: mn ? "Оролт" : "Input",      desc: mn ? "Барилгын параметр" : "Building parameters" },
+              { step: "OLS Model",                  desc: mn ? "β·x тооцоолол" : "β·x computation" },
+              { step: mn ? "Таамаглал" : "Output",  desc: mn ? "kWh, зэрэглэл, CO₂" : "kWh, grade, CO₂" },
+              { step: mn ? "Зөвлөмж" : "Actions",  desc: mn ? "Хэмнэлтийн санал" : "Savings recommendations" },
+            ].map(({ step, desc }, i, arr) => (
+              <span key={step} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span className="mlc-flow-node">
+                  <span className="mlc-flow-step">{step}</span>
+                  <span className="mlc-flow-desc">{desc}</span>
+                </span>
+                {i < arr.length - 1 && <span className="mlc-flow-arr">→</span>}
+              </span>
+            ))}
           </div>
         </div>
       </section>
