@@ -102,7 +102,7 @@ const en = {
     error_invalid: "Invalid login credentials.",
     error_password_mismatch: "Passwords do not match.",
     error_email_taken: "This email address is already registered.",
-    demo_hint: "Demo: admin@test.mn / admin123",
+    demo_hint: "Research platform — create a new account to get started.",
     show_password: "Show password",
     hide_password: "Hide password",
     forgot_link: "Forgot password?",

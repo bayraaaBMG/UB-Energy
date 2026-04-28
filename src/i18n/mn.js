@@ -102,7 +102,7 @@ const mn = {
     error_invalid: "Нэвтрэх мэдээлэл буруу байна.",
     error_password_mismatch: "Нууц үг таарахгүй байна.",
     error_email_taken: "Энэ и-мэйл хаяг аль хэдийн бүртгэгдсэн байна.",
-    demo_hint: "Demo: admin@test.mn / admin123",
+    demo_hint: "Судалгааны систем — шинэ бүртгэл үүсгэж эхлэх боломжтой.",
     show_password: "Нууц үг харуулах",
     hide_password: "Нууц үг нуух",
     forgot_link: "Нууц үг мартсан?",

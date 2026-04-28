@@ -1010,9 +1010,28 @@ export default function DataInputPage() {
   return (
     <div className="data-input-page">
       <div className="container">
-        <div className="page-header">
-          <h1><Upload size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.dataInput.title}</h1>
-          <p>{t.dataInput.subtitle}</p>
+        <div className="page-header flex-between" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
+          <div>
+            <h1><Upload size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.dataInput.title}</h1>
+            <p>{t.dataInput.subtitle}</p>
+          </div>
+          <button
+            className="btn btn-secondary"
+            style={{ flexShrink: 0 }}
+            onClick={() => {
+              const header = "building_name,district,area,building_type,year,floors,rooms,wall_material,heating_type,insulation_quality,window_type,window_ratio";
+              const example = "Баянмонгол-1 байр,Баянзүрх,8420,apartment,2014,12,3,panel,central,medium,double,25";
+              const csv = `﻿${header}\n${example}`;
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement("a");
+              a.href = url; a.download = "ubenergy_template.csv"; a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <FileText size={15} />
+            {lang === "mn" ? "CSV загвар татах" : "Download CSV template"}
+          </button>
         </div>
 
         {/* Тарифын тайлбар */}

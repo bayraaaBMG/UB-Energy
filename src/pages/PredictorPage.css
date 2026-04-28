@@ -359,13 +359,53 @@
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
+/* ── Demo scenarios ── */
+.pred-demo-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+.pred-demo-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: 0.55rem;
+}
+.pred-demo-btns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+.pred-demo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.55rem 0.65rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: left;
+}
+.pred-demo-btn:hover { background: var(--bg3); }
+.pred-demo-btn.active { background: rgba(155,114,207,0.07); }
+.pdb-label { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+.pdb-desc  { font-size: 0.62rem; color: var(--text3); line-height: 1.4; }
+
 @media (max-width: 1100px) {
   .predictor-layout { grid-template-columns: 1fr; }
+  .pred-demo-btns   { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 640px) {
   .result-metrics { grid-template-columns: 1fr; }
   .result-metric.main-metric { grid-column: 1; }
+  .pred-demo-btns { grid-template-columns: 1fr; }
 }
 
 /* ── Scenario modal ── */

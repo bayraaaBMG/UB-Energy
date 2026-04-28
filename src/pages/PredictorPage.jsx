@@ -32,6 +32,52 @@ const BUILDING_COLORS = {
   hospital: "#e63946", warehouse: "#a8c5e0", commercial: "#f4a261"
 };
 
+// ─── 3 Demo scenarios for thesis defense ─────────────────────────────────────
+const DEMO_SCENARIOS = [
+  {
+    id: "apartment",
+    color: "#3a8fd4",
+    label_mn: "Орон сууц",    label_en: "Apartment",
+    desc_mn:  "12 давхар · 96 м² · 1995 он · панель",
+    desc_en:  "12-floor · 96 m² · 1995 · panel",
+    form: {
+      building_name: "Орон сууц (жишээ)",
+      district: "Баянзүрх", area: 96, building_type: "apartment",
+      year: 1995, floors: 12, rooms: 3, window_ratio: 25,
+      wall_material: "panel", heating_type: "central",
+      insulation_quality: "medium", window_type: "double",
+    },
+  },
+  {
+    id: "office",
+    color: "#2a9d8f",
+    label_mn: "Оффис",        label_en: "Office",
+    desc_mn:  "6 давхар · 350 м² · 2005 он · бетон",
+    desc_en:  "6-floor · 350 m² · 2005 · concrete",
+    form: {
+      building_name: "Оффис (жишээ)",
+      district: "Сүхбаатар", area: 350, building_type: "office",
+      year: 2005, floors: 6, rooms: 15, window_ratio: 30,
+      wall_material: "concrete", heating_type: "central",
+      insulation_quality: "good", window_type: "double",
+    },
+  },
+  {
+    id: "school",
+    color: "#e9c46a",
+    label_mn: "Сургуулийн байр", label_en: "School",
+    desc_mn:  "3 давхар · 600 м² · 1980 он · тоосго",
+    desc_en:  "3-floor · 600 m² · 1980 · brick",
+    form: {
+      building_name: "Сургуулийн байр (жишээ)",
+      district: "Чингэлтэй", area: 600, building_type: "school",
+      year: 1980, floors: 3, rooms: 20, window_ratio: 20,
+      wall_material: "brick", heating_type: "central",
+      insulation_quality: "poor", window_type: "single",
+    },
+  },
+];
+
 // Hourly consumption weight profile (sums to 24 — average weight = 1.0)
 // Represents typical UB apartment load curve (heating-heavy winter city)
 const HOUR_W = [0.52, 0.44, 0.40, 0.38, 0.40, 0.62, 1.10, 1.45, 1.35, 1.15, 1.10, 1.05,
@@ -228,6 +274,7 @@ export default function PredictorPage() {
   const [userBuildings, setUserBuildings] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [scenarioLoaded, setScenarioLoaded] = useState(false);
+  const [demoScenario,   setDemoScenario]   = useState(null);
   const [result, setResult] = useState(null);
   const [heating, setHeating] = useState(null);
   const [recs, setRecs] = useState([]);
@@ -279,8 +326,10 @@ export default function PredictorPage() {
     setRecs([]);
   };
 
+  const canRun = !!(selectedId || scenarioLoaded || demoScenario);
+
   const runModel = () => {
-    if (!selectedId && !scenarioLoaded) return;
+    if (!canRun) return;
     setLoading(true);
     setResultTab("elec");
     setTimeout(() => {
@@ -347,6 +396,34 @@ export default function PredictorPage() {
           {/* ── Left: Building picker ─────────────────────────────── */}
           <div className="card predictor-form-card">
 
+            {/* ── Demo scenarios ── */}
+            <div className="pred-demo-section">
+              <div className="pred-demo-label">
+                <Brain size={13} style={{ color: "#9b72cf" }} />
+                <span>{lang === "mn" ? "Жишээ сценариар туршиж үзэх" : "Try with sample scenarios"}</span>
+              </div>
+              <div className="pred-demo-btns">
+                {DEMO_SCENARIOS.map(s => (
+                  <button
+                    key={s.id}
+                    className={`pred-demo-btn${demoScenario === s.id ? " active" : ""}`}
+                    style={{ borderColor: demoScenario === s.id ? s.color : undefined,
+                             color:       demoScenario === s.id ? s.color : undefined }}
+                    onClick={() => {
+                      setForm(f => ({ ...f, ...s.form }));
+                      setDemoScenario(s.id);
+                      setSelectedId(null);
+                      setScenarioLoaded(false);
+                      setResult(null); setHeating(null); setRecs([]);
+                    }}
+                  >
+                    <span className="pdb-label">{lang === "mn" ? s.label_mn : s.label_en}</span>
+                    <span className="pdb-desc">{lang === "mn" ? s.desc_mn : s.desc_en}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Building selector */}
             <div className="pred-picker-header">
               <Building2 size={17} style={{ color: "var(--primary-light)" }} />
@@ -391,7 +468,7 @@ export default function PredictorPage() {
             )}
 
             {/* ── Bill calculator (optional, shown when building selected or scenario loaded) ── */}
-            {(selectedId || scenarioLoaded) && (
+            {canRun && (
             <Section icon={DollarSign} title={lang === "mn" ? "Сарын зардалаас тооцоолох" : "Estimate from monthly costs"} defaultOpen={false}>
               <p style={{ fontSize: "0.82rem", color: "var(--text2)", marginBottom: "0.9rem", lineHeight: 1.6 }}>
                 {lang === "mn"
@@ -468,7 +545,7 @@ export default function PredictorPage() {
 
             )}
 
-            {(selectedId || scenarioLoaded) && (
+            {canRun && (
             <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
               <button
                 className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}

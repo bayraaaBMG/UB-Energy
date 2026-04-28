@@ -390,13 +390,8 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Research system notice */}
             <div className="demo-hint">
-              <span>
-                {lang === "mn"
-                  ? "Судалгааны систем — шинэ бүртгэл үүсгэж эхлэх боломжтой."
-                  : "Research system — create a new account to get started."}
-              </span>
+              <span>{t.login.demo_hint}</span>
             </div>
 
             {/* Security notice accordion */}
