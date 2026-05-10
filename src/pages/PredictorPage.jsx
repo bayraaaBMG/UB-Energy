@@ -274,8 +274,12 @@ export default function PredictorPage() {
         </div>
 
         <div className="predictor-layout">
-          {/* ── Left: Building picker ─────────────────────────────── */}
+          {/* ── Form card ────────────────────────────────────────── */}
           <div className="card predictor-form-card">
+            <div className="pred-form-inner">
+
+            {/* ── Left col: Demo + Building picker ── */}
+            <div className="pred-form-col">
 
             {/* ── Demo scenarios ── */}
             <div className="pred-demo-section">
@@ -347,6 +351,11 @@ export default function PredictorPage() {
                 ))}
               </div>
             )}
+
+            </div>{/* /pred-form-col left */}
+
+            {/* ── Right col: Bill calculator + Predict ── */}
+            <div className="pred-form-col">
 
             {/* ── Bill calculator (optional, shown when building selected or scenario loaded) ── */}
             {canRun && (
@@ -454,9 +463,11 @@ export default function PredictorPage() {
               )}
             </div>
             )}
+            </div>{/* /pred-form-col right */}
+            </div>{/* /pred-form-inner */}
           </div>
 
-          {/* ── Right: Results ───────────────────────────────────── */}
+          {/* ── Results (below form, full-width) ─────────────────── */}
           <div className="predictor-right">
 
             {result && (
@@ -624,7 +635,7 @@ export default function PredictorPage() {
                 {/* Monthly chart */}
                 <h4 className="chart-sub-title">{t.predictor.monthly_breakdown}</h4>
                 <div className="result-chart">
-                  <ResponsiveContainer width="100%" height={170}>
+                  <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={result.chart_data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
                       <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} />

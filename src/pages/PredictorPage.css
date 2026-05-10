@@ -19,10 +19,9 @@
 }
 
 .predictor-layout {
-  display: grid;
-  grid-template-columns: 1fr 400px;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  align-items: start;
 }
 
 /* ── Section accordion ──────────────────────────────────────────────────────── */
@@ -143,7 +142,25 @@
   display: inline-block;
 }
 
-/* ── Right panel ────────────────────────────────────────────────────────────── */
+/* ── Form inner 2-column grid ───────────────────────────────────────────────── */
+.pred-form-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.pred-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (max-width: 768px) {
+  .pred-form-inner { grid-template-columns: 1fr; }
+}
+
+/* ── Results panel (below form, full-width) ─────────────────────────────────── */
 .predictor-right { display: flex; flex-direction: column; gap: 1.5rem; }
 
 /* ── Floor plan ─────────────────────────────────────────────────────────────── */
@@ -182,14 +199,14 @@
 /* ── Result card ────────────────────────────────────────────────────────────── */
 .result-metrics {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem;
   margin: 0.85rem 0;
 }
 
 .result-metric {
   text-align: center;
-  padding: 0.75rem 0.5rem;
+  padding: 0.85rem 0.75rem;
   background: var(--bg3);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -199,6 +216,7 @@
   grid-column: 1 / -1;
   background: rgba(26,110,181,0.1);
   border-color: rgba(26,110,181,0.3);
+  padding: 1rem;
 }
 
 .metric-value {
@@ -398,8 +416,12 @@
 .pdb-desc  { font-size: 0.62rem; color: var(--text3); line-height: 1.4; }
 
 @media (max-width: 1100px) {
-  .predictor-layout { grid-template-columns: 1fr; }
-  .pred-demo-btns   { grid-template-columns: repeat(3, 1fr); }
+  .pred-demo-btns { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .result-metrics { grid-template-columns: 1fr 1fr; }
+  .result-metric.main-metric { grid-column: 1 / -1; }
 }
 
 @media (max-width: 640px) {
