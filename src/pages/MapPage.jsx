@@ -423,7 +423,9 @@ function loadUserMapBuildings(userId = null) {
       floors:   b.floors || 1,
       year:     b.year || 2000,
       district: b.district || "Улаанбаатар",
-      osmGeom:  mockGeom(b.latitude || 47.9184, b.longitude || 106.9177, b.area || 100),
+      osmGeom:  (b.latitude && b.longitude)
+        ? mockGeom(b.latitude, b.longitude, b.area || 100)
+        : null,
       tags:     {},
       source:   b.source || "user",
       insulation_quality: b.insulation_quality,
@@ -587,7 +589,7 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 // ─── Building side panel ───────────────────────────────────────────────────────
-function BuildingPanel({ building, lang, t }) {
+function BuildingPanel({ building, lang, t, onClose }) {
   const [tab, setTab] = useState("energy");
   const calc   = useMemo(() => calcBuilding(building), [building]);
   const recs   = useMemo(() => getRecommendations(building, calc, lang), [building, calc, lang]);
@@ -652,6 +654,11 @@ function BuildingPanel({ building, lang, t }) {
           <span className="meta-yr" title={!building.yearKnown && building.source === "osm" ? (mn ? "OSM-д он байхгүй — таамаглал" : "Year not in OSM — estimated") : ""}>
             {building.year}{!building.yearKnown && building.source === "osm" ? "~" : ""}
           </span>
+          {onClose && (
+            <button className="bp-close-btn" onClick={onClose} title={mn ? "Хаах" : "Close"}>
+              ×
+            </button>
+          )}
         </div>
         {/* OSM data completeness warning */}
         {building.source === "osm" && (!building.yearKnown || !building.floorsKnown) && (
@@ -1440,7 +1447,7 @@ export default function MapPage() {
             {/* Viewport-based building loader + zoom tracker */}
             <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} onZoom={setMapZoom} />
 
-            {filtered.map(b => {
+            {filtered.filter(b => b.osmGeom).map(b => {
               const active   = selected?.id === b.id;
               const isMine   = b.source === "user" || b.source === "predictor";
               const typeColor = TYPE_COLOR[b.type] || "#3a8fd4";
@@ -1706,14 +1713,18 @@ export default function MapPage() {
             showSmog={showSmog}
             onToggleSmog={() => setShowSmog(s => !s)}
           />
-        </div>
 
-        {/* Side panel */}
-        <div className="map-panel">
-          {selected
-            ? <BuildingPanel building={selected} lang={lang} t={t} />
-            : <NoSelection t={t} />
-          }
+          {/* Building info overlay panel (Google Maps style) */}
+          <div className={`map-panel${selected ? " open" : ""}`}>
+            {selected && (
+              <BuildingPanel
+                building={selected}
+                lang={lang}
+                t={t}
+                onClose={() => setSelected(null)}
+              />
+            )}
+          </div>
         </div>
       </div>
 
