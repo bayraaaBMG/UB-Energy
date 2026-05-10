@@ -1,12 +1,10 @@
-import { useState, useEffect, lazy, Suspense } from "react";
-
-const Building3DInterior = lazy(() => import("../components/Building3DInterior"));
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Brain, Zap, TrendingUp,
-  Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
+  Building2, ChevronRight, ChevronDown, ChevronUp,
   Home, Info, X, Bookmark,
   Flame, Lightbulb, CheckCircle, DollarSign, FlaskConical,
   Clock, Upload, AlertTriangle,
@@ -81,119 +79,6 @@ const DEMO_SCENARIOS = [
 const HOUR_W = [0.52, 0.44, 0.40, 0.38, 0.40, 0.62, 1.10, 1.45, 1.35, 1.15, 1.10, 1.05,
                 1.00, 1.00, 1.00, 1.08, 1.18, 1.42, 1.55, 1.52, 1.30, 1.12, 0.90, 0.67];
 const HOUR_W_SUM = HOUR_W.reduce((a, b) => a + b, 0); // ≈ 24
-
-// ─── SVG Isometric Building ───────────────────────────────────────────────────
-function Building3D({ floors, area, buildingType }) {
-  const color = BUILDING_COLORS[buildingType] || "#3a8fd4";
-  const W = 120;
-  const dx = 48, dy = 28;                              // depth in screen px (30° oblique)
-  const H = Math.min(Math.max(floors * 20, 80), 240);
-  const svgW = W + dx, svgH = dy + H;
-
-  const nFloors = Math.min(floors, 10);
-  const floorH = H / nFloors;
-  const winCols = Math.min(4, Math.max(2, Math.floor(W / 35)));
-  const winW = Math.max(8, (W - (winCols + 1) * 10) / winCols);
-  const winH = Math.max(6, floorH * 0.4);
-
-  // Parametric point on side face: u ∈ [0,1] depth, v ∈ [0,1] height
-  const spt = (u, v) => `${W + u * dx},${dy * (1 - u) + v * H}`;
-
-  const id = buildingType;
-
-  return (
-    <svg viewBox={`0 0 ${svgW} ${svgH}`} width={svgW} height={svgH}
-      style={{ display: "block", margin: "0 auto", overflow: "visible" }}>
-      <defs>
-        <linearGradient id={`fg-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.82" />
-          <stop offset="100%" stopColor={color} stopOpacity="1" />
-        </linearGradient>
-        <clipPath id={`cf-${id}`}>
-          <polygon points={`0,${dy} ${W},${dy} ${W},${dy + H} 0,${dy + H}`} />
-        </clipPath>
-        <clipPath id={`cs-${id}`}>
-          <polygon points={`${W},${dy} ${W+dx},0 ${W+dx},${H} ${W},${dy+H}`} />
-        </clipPath>
-      </defs>
-
-      {/* ── Top (roof) face ── */}
-      <polygon points={`${dx},0 ${W+dx},0 ${W},${dy} 0,${dy}`}
-        fill={color} opacity={0.38}
-        stroke="rgba(255,255,255,0.4)" strokeWidth={0.6} />
-
-      {/* Roof HVAC accent */}
-      <polygon points={`${dx+8},4 ${dx+26},4 ${dx+22},${dy-4} ${dx+4},${dy-4}`}
-        fill="rgba(255,255,255,0.18)" />
-
-      {/* ── Front face ── */}
-      <polygon points={`0,${dy} ${W},${dy} ${W},${dy+H} 0,${dy+H}`}
-        fill={`url(#fg-${id})`}
-        stroke="rgba(255,255,255,0.25)" strokeWidth={0.5} />
-
-      {/* Front floor lines */}
-      {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => (
-        <line key={`fl-${i}`}
-          x1={0} y1={dy + (i + 1) * floorH}
-          x2={W} y2={dy + (i + 1) * floorH}
-          stroke="rgba(255,255,255,0.18)" strokeWidth={0.7} />
-      ))}
-
-      {/* Front windows */}
-      {Array.from({ length: nFloors }, (_, row) =>
-        Array.from({ length: winCols }, (_, col) => (
-          <rect key={`fw-${row}-${col}`}
-            x={10 + col * (winW + 10)}
-            y={dy + row * floorH + (floorH - winH) * 0.28}
-            width={winW} height={winH}
-            fill="rgba(200,235,255,0.55)" rx={1.5}
-            clipPath={`url(#cf-${id})`} />
-        ))
-      )}
-
-      {/* Front door */}
-      <rect x={W / 2 - 9} y={dy + H - Math.max(22, floorH * 0.65)}
-        width={18} height={Math.max(22, floorH * 0.65)}
-        fill="rgba(0,0,0,0.32)" rx={2}
-        clipPath={`url(#cf-${id})`} />
-
-      {/* ── Right side face ── */}
-      <polygon points={`${W},${dy} ${W+dx},0 ${W+dx},${H} ${W},${dy+H}`}
-        fill={color} opacity={0.6}
-        stroke="rgba(255,255,255,0.12)" strokeWidth={0.5} />
-
-      {/* Side floor lines */}
-      {nFloors > 1 && Array.from({ length: nFloors - 1 }, (_, i) => {
-        const v = (i + 1) / nFloors;
-        return (
-          <line key={`sl-${i}`}
-            x1={W} y1={dy + v * H}
-            x2={W + dx} y2={v * H}
-            stroke="rgba(255,255,255,0.12)" strokeWidth={0.7} />
-        );
-      })}
-
-      {/* Side windows */}
-      {Array.from({ length: Math.min(nFloors, 8) }, (_, row) => {
-        const v0 = (row * floorH + floorH * 0.3) / H;
-        const v1 = (row * floorH + floorH * 0.72) / H;
-        return (
-          <polygon key={`sw-${row}`}
-            points={[spt(0.22, v0), spt(0.72, v0), spt(0.72, v1), spt(0.22, v1)].join(" ")}
-            fill="rgba(180,220,255,0.28)" rx={1}
-            clipPath={`url(#cs-${id})`} />
-        );
-      })}
-
-      {/* Area label */}
-      <text x={W + dx * 0.5} y={H * 0.88}
-        textAnchor="middle" dominantBaseline="middle"
-        fill="rgba(255,255,255,0.5)" fontSize={8} fontWeight="700">
-        {Math.round(area)}m²
-      </text>
-    </svg>
-  );
-}
 
 // ─── Section accordion ────────────────────────────────────────────────────────
 function Section({ icon: Icon, title, children, defaultOpen = true }) {
@@ -283,7 +168,6 @@ export default function PredictorPage() {
   const [scenLabel, setScenLabel] = useState("");
   const [showScenModal, setShowScenModal] = useState(false);
   const [scenSaved, setScenSaved] = useState(false);
-  const [show3D, setShow3D] = useState(false);
 
   // Load user's buildings from storage
   useEffect(() => {
@@ -572,60 +456,8 @@ export default function PredictorPage() {
             )}
           </div>
 
-          {/* ── Right: Floor plan + Results ──────────────────────── */}
+          {/* ── Right: Results ───────────────────────────────────── */}
           <div className="predictor-right">
-            <div className="card floor-plan-card">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
-                <h3 className="section-title" style={{ fontSize: "1rem", margin: 0 }}>
-                  <Building2 size={16} style={{ marginLeft: 8 }} />
-                  {show3D ? (lang === "mn" ? "3D Дотоод харагдац" : "3D Interior View") : t.predictor.floor_plan}
-                </h3>
-                <div className="pred-view-toggle">
-                  <button
-                    className={`pred-vtoggle-btn${!show3D ? " active" : ""}`}
-                    onClick={() => setShow3D(false)}
-                    title={lang === "mn" ? "Гадна харагдац" : "Exterior"}
-                  >
-                    <Building2 size={13} />
-                  </button>
-                  <button
-                    className={`pred-vtoggle-btn${show3D ? " active" : ""}`}
-                    onClick={() => setShow3D(true)}
-                    title={lang === "mn" ? "3D дотоод" : "3D Interior"}
-                  >
-                    <Layers size={13} />
-                    <span style={{ fontSize: "0.72rem" }}>3D</span>
-                  </button>
-                </div>
-              </div>
-
-              {show3D ? (
-                <Suspense fallback={
-                  <div style={{ height: 340, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div className="wl-spinner" />
-                  </div>
-                }>
-                  <Building3DInterior form={form} />
-                  <p style={{ fontSize: "0.7rem", color: "var(--text3)", textAlign: "center", marginTop: "0.5rem" }}>
-                    {lang === "mn" ? "Чирж эргүүлэх • Scroll томруулах / жижигрүүлэх" : "Drag to orbit • Scroll to zoom"}
-                  </p>
-                </Suspense>
-              ) : (
-                <div className="floor-plan-container">
-                  <Building3D
-                    floors={form.floors}
-                    area={form.area}
-                    buildingType={form.building_type}
-                  />
-                </div>
-              )}
-
-              <div className="building-info-tags">
-                <span className="info-tag"><Layers size={12} /> {form.floors} {t.common.floors_unit}</span>
-                <span className="info-tag"><Building2 size={12} /> {form.area} {t.common.units_sqm}</span>
-                <span className="info-tag"><Home size={12} /> {form.rooms} {t.common.rooms_unit}</span>
-              </div>
-            </div>
 
             {result && (
               <div className="result-card card animate-fade" aria-live="polite" aria-atomic="true">
