@@ -2,10 +2,8 @@ import { useState, useEffect, lazy, Suspense } from "react";
 
 const Building3DInterior = lazy(() => import("../components/Building3DInterior"));
 import { useNavigate, useLocation } from "react-router-dom";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, Zap, TrendingUp,
   Building2, Layers, ChevronRight, ChevronDown, ChevronUp,
@@ -252,9 +250,8 @@ function GradeBar({ grade }) {
 }
 
 export default function PredictorPage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   usePageTitle(t.nav.predictor);
-  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({

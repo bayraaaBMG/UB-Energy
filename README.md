@@ -1,16 +1,54 @@
-# React + Vite
+# UB-Energy — Улаанбаатарын барилгын эрчим хүчний платформ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Монголын барилгуудын эрчим хүчний хэрэглээг урьдчилан таамаглаж, харьцуулж, дүн шинжилгээ хийх вэб платформ.
 
-Currently, two official plugins are available:
+## Онцлог
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **ML загвар** — OLS regression, R² ≈ 0.96, 30 орцтой
+- **Интерактив газрын зураг** — Leaflet + OpenStreetMap OSM дата
+- **Цаг агаар** — Цаг агаарын урьдчилсан мэдээ + HDD тооцоолол
+- **Dashboard** — Recharts ашиглан барилгын эрчим хүчний дүрслэл
+- **Хэрэглэгчийн систем** — Бүртгэл, нэвтрэлт, өөрийн орон зай
+- **Олон хэл** — Монгол / Англи
+- **Хүртээмж** — WCAG 2.1 AA, өндөр контраст, хэмжээ тохируулга
 
-## React Compiler
+## Технологи
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Хэсэг | Хэрэгсэл |
+|-------|----------|
+| UI Framework | React 19 + Vite 8 |
+| Routing | React Router 7 |
+| Charts | Recharts 3 |
+| Map | Leaflet + React-Leaflet |
+| 3D | Three.js + React Three Fiber |
+| Icons | Lucide-React |
+| Deploy | Vercel |
 
-## Expanding the ESLint configuration
+## Хөгжүүлэлт
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+## Байршуулах
+
+```bash
+npm run build
+```
+
+Vercel дээр автоматаар CI/CD тохируулагдсан байна.
+
+## Бүтэц
+
+```
+src/
+├── components/    # Navbar, Footer, Chatbot, ErrorBoundary, Building3D
+├── contexts/      # Auth, Language, Theme
+├── hooks/         # useApp, usePageTitle, useConfirm
+├── pages/         # 17 хуудас
+├── utils/         # storage, buildingStorage, userDataStorage
+├── ml/            # OLS regression загвар
+├── i18n/          # mn.js, en.js орчуулга
+└── data/          # mockData.js
+```

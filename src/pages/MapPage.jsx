@@ -3,11 +3,10 @@ import { MapContainer, TileLayer, Polygon, Tooltip as LeafletTooltip, ZoomContro
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { storageGetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
   Database, Calculator, Leaf, BarChart2, Award, Lightbulb,
@@ -1325,9 +1324,8 @@ function WeatherWidget({ lang, pm25, showSmog, onToggleSmog }) {
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MapPage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   usePageTitle(t.nav.map);
-  const { user } = useAuth();
 
   // Building cache: Map<id, building> — pre-seeded with mock + user buildings
   const buildingCache = useRef(new Map([

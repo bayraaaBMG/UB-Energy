@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-import { useAuth } from "../contexts/AuthContext";
 import {
   Upload, CheckCircle, MapPin, Building2, FileText, FileSpreadsheet,
   File, Link2, X, CloudUpload, FilePlus, Trash2, Eye, ArrowRight, Info,
@@ -760,9 +758,8 @@ function BillResults({ elecBill, heatBill, lang }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   usePageTitle(t.nav.dataInput);
-  const { user } = useAuth();
   const fileRef = useRef(null);
   const navigate = useNavigate();
 

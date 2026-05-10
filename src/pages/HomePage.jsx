@@ -1,9 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-import { useAuth } from "../contexts/AuthContext";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
   Building2, Zap, Database, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
@@ -25,10 +23,9 @@ const FEATURES = (t) => [
 ];
 
 export default function HomePage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   const mn = lang === "mn";
   usePageTitle(t.nav.home);
-  const { user } = useAuth();
   const monthlyData = monthlyEnergyData.map(d => ({
     ...d,
     month: lang === "mn" ? d.month : d.month_en,

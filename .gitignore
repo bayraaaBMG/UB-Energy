@@ -25,3 +25,7 @@ dist-ssr
 .claude
 
 .vercel
+
+# Installer files
+*.exe
+*.msi

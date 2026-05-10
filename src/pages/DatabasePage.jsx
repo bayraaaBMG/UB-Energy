@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useConfirm } from "../hooks/useConfirm";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
@@ -734,9 +733,8 @@ const PAGE_SIZES = [10, 25, 50, 100];
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DatabasePage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   usePageTitle(t.nav.database);
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");

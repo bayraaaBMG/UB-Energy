@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-import { useAuth } from "../contexts/AuthContext";
 import {
   Settings, Users, BarChart2, Database, Shield,
   CheckCircle, TrendingUp, Trash2, Lock, History,
@@ -684,9 +683,8 @@ function SettingsTab() {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const { t } = useLang();
+  const { t, user } = useApp();
   usePageTitle(t.nav.admin);
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [tick, setTick] = useState(0);
   const refresh = () => setTick(n => n + 1);

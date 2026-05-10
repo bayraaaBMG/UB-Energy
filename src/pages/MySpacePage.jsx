@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Package, Building2, Database, History, Bookmark, Star,
@@ -1054,8 +1054,7 @@ function ReportsTab({ t, user, buildings, predictions, scenarios }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MySpacePage() {
-  const { t } = useLang();
-  const { user } = useAuth();
+  const { t, user } = useApp();
   const navigate = useNavigate();
   usePageTitle(t.nav.mySpace);
 

@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { useLang } from "../contexts/LanguageContext";
+import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard, AlertTriangle, TrendingUp, TrendingDown,
@@ -88,9 +86,8 @@ function exportCSV(buildings, lang) {
 }
 
 export default function DashboardPage() {
-  const { t, lang } = useLang();
+  const { t, lang, user } = useApp();
   usePageTitle(t.nav.dashboard);
-  const { user } = useAuth();
   const [period, setPeriod]         = useState("monthly");
   const [showAlert, setShowAlert]   = useState(true);
   const [showNote, setShowNote]     = useState(true);
