@@ -1323,68 +1323,80 @@ export default function DataInputPage() {
                 </div>
               </div>
 
-              {/* Location */}
+              {/* Location — coordinates auto-filled via geocoding, not shown to user */}
               <div className="form-section">
                 <div className="form-section-header" style={{ borderColor: "#3a8fd4" }}>
                   <MapPin size={14} style={{ color: "#3a8fd4" }} />
                   <span className="form-section-title" style={{ color: "#3a8fd4" }}>
                     {t.dataInput.section_location}
                   </span>
-                  {/* Geocode status badge */}
+                </div>
+
+                {/* Geocode result row */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  {geocodeStatus === "idle" && (
+                    <span style={{ fontSize: "0.72rem", color: "var(--text3)" }}>
+                      {lang === "mn"
+                        ? "\"Байршил\" талбарыг бөглөөд гарахад координат автоматаар тодорхойлогдоно."
+                        : "Fill in the address field and click away — location found automatically."}
+                    </span>
+                  )}
                   {geocodeStatus === "loading" && (
-                    <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: "0.7rem", color: "#3a8fd4" }}>
-                      <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem", color: "#3a8fd4" }}>
+                      <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
                       {lang === "mn" ? "Байршил хайж байна..." : "Finding location..."}
                     </span>
                   )}
                   {geocodeStatus === "found" && (
-                    <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: "0.7rem", color: "#2a9d8f" }}>
-                      <CheckCircle size={12} />
-                      {lang === "mn" ? "Координат олдлоо" : "Coordinates found"}
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem", color: "#2a9d8f" }}>
+                      <CheckCircle size={13} />
+                      {lang === "mn"
+                        ? `Координат олдлоо · ${parseFloat(form.latitude).toFixed(4)}°, ${parseFloat(form.longitude).toFixed(4)}°`
+                        : `Location found · ${parseFloat(form.latitude).toFixed(4)}°, ${parseFloat(form.longitude).toFixed(4)}°`}
                     </span>
                   )}
                   {geocodeStatus === "error" && (
-                    <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: "0.7rem", color: "#e63946" }}>
-                      <AlertTriangle size={12} />
-                      {lang === "mn" ? "Байршил олдсонгүй — гараар оруулна уу" : "Not found — enter manually"}
+                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.72rem", color: "#e63946" }}>
+                      <AlertTriangle size={13} />
+                      {lang === "mn" ? "Байршил олдсонгүй" : "Location not found"}
                     </span>
                   )}
+
+                  {/* Retry / manual toggle button */}
+                  <button
+                    type="button"
+                    onClick={() => geocodeLocation(form.address.trim() || form.building_name.trim())}
+                    disabled={geocodeStatus === "loading" || (!form.address.trim() && !form.building_name.trim())}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5, marginLeft: "auto",
+                      padding: "0.25rem 0.7rem",
+                      background: "rgba(58,143,212,0.1)", border: "1px solid rgba(58,143,212,0.3)",
+                      borderRadius: 5, color: "#3a8fd4", fontSize: "0.7rem", fontWeight: 600,
+                      cursor: "pointer", opacity: geocodeStatus === "loading" ? 0.5 : 1,
+                    }}
+                  >
+                    {geocodeStatus === "loading"
+                      ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+                      : <MapPin size={11} />}
+                    {lang === "mn" ? "Хайх" : "Search"}
+                  </button>
                 </div>
-                <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginBottom: "0.5rem" }}>
-                  {lang === "mn"
-                    ? "\"Байршил\" талбарыг бөглөөд гарахад координат автоматаар тодорхойлогдоно."
-                    : "Fill in the address field and click away — coordinates are found automatically."}
-                </div>
-                <div className="grid grid-2">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="di-latitude">{t.dataInput.latitude}</label>
-                    <input id="di-latitude" name="latitude" value={form.latitude} onChange={handleChange}
-                      className="form-input" placeholder="автомат / auto" />
+
+                {/* Manual override — shown only when geocoding failed */}
+                {geocodeStatus === "error" && (
+                  <div className="grid grid-2" style={{ marginTop: "0.5rem" }}>
+                    <div className="form-group">
+                      <label className="form-label">{t.dataInput.latitude}</label>
+                      <input name="latitude" value={form.latitude} onChange={handleChange}
+                        className="form-input" placeholder="47.9xxx" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">{t.dataInput.longitude}</label>
+                      <input name="longitude" value={form.longitude} onChange={handleChange}
+                        className="form-input" placeholder="106.9xxx" />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="di-longitude">{t.dataInput.longitude}</label>
-                    <input id="di-longitude" name="longitude" value={form.longitude} onChange={handleChange}
-                      className="form-input" placeholder="автомат / auto" />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => geocodeLocation(form.address.trim() || form.building_name.trim())}
-                  disabled={geocodeStatus === "loading" || (!form.address.trim() && !form.building_name.trim())}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    marginTop: "0.4rem", padding: "0.35rem 0.9rem",
-                    background: "rgba(58,143,212,0.12)", border: "1px solid rgba(58,143,212,0.35)",
-                    borderRadius: 6, color: "#3a8fd4", fontSize: "0.75rem", fontWeight: 600,
-                    cursor: "pointer", transition: "opacity 0.15s",
-                    opacity: geocodeStatus === "loading" ? 0.6 : 1,
-                  }}
-                >
-                  {geocodeStatus === "loading"
-                    ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
-                    : <MapPin size={13} />}
-                  {lang === "mn" ? "Координат олох" : "Find coordinates"}
-                </button>
+                )}
               </div>
 
               <button type="submit" className="btn btn-primary submit-btn mt-2">
