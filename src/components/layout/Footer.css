@@ -33,15 +33,6 @@
   max-width: 500px;
 }
 
-.footer-thesis {
-  font-size: 0.78rem;
-  color: var(--primary-light);
-  opacity: 0.75;
-  max-width: 600px;
-  text-align: center;
-  line-height: 1.5;
-}
-
 .footer-copy {
   font-size: 0.78rem;
   color: var(--text3);
