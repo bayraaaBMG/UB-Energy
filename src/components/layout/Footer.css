@@ -46,3 +46,8 @@
   font-size: 0.78rem;
   color: var(--text3);
 }
+
+/* On small screens leave room for the floating chatbot button */
+@media (max-width: 600px) {
+  .footer { padding-bottom: 5rem; }
+}

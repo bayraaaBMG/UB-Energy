@@ -332,8 +332,19 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 480px) {
-  .chatbot-box { width: calc(100vw - 1.5rem); max-height: 78vh; }
+@media (max-width: 600px) {
+  .chatbot-box { width: calc(100vw - 1.5rem); max-height: 75vh; }
   .chatbot-wrapper { right: 0.75rem; bottom: 0.75rem; }
   .chatbot-toggle { width: 52px; height: 52px; }
+  .chatbot-input { font-size: 16px; } /* prevents iOS zoom on focus */
+}
+
+@media (max-width: 480px) {
+  .chatbot-box { width: calc(100vw - 1rem); max-height: 78vh; }
+  .chatbot-wrapper { right: 0.5rem; bottom: 0.5rem; }
+}
+
+/* Always show copy button on touch devices — no hover available */
+@media (hover: none) {
+  .chat-copy-btn { opacity: 0.6; }
 }

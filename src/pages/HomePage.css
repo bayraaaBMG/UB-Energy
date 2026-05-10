@@ -339,6 +339,10 @@
 /* Chart preview */
 .chart-preview { padding: 2rem 0; }
 
+.chart-preview-grid {
+  grid-template-columns: 1fr 1.4fr;
+}
+
 .intro-card {
   display: flex;
   flex-direction: column;
@@ -419,10 +423,18 @@
   .hero { padding: 3rem 0 2.5rem; }
   .hero-title { font-size: 1.75rem; }
   .hero-subtitle { font-size: 1rem; }
-  .chart-preview .grid { grid-template-columns: 1fr !important; }
+  .chart-preview-grid { grid-template-columns: 1fr; }
   .ssb-row { grid-template-columns: 80px 1fr; }
   .ssb-src { grid-column: 1 / -1; padding-left: 0; }
   .stat-value { font-size: 1.6rem; }
+}
+
+@media (hover: none) {
+  .stat-card:hover, .feature-card:hover {
+    transform: none;
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 @media (max-width: 600px) {

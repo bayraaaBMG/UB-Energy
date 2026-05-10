@@ -175,7 +175,7 @@ export default function HomePage() {
       {/* ── Chart + Intro ── */}
       <section className="chart-preview">
         <div className="container">
-          <div className="grid grid-2 gap-3" style={{ gridTemplateColumns: "1fr 1.4fr" }}>
+          <div className="grid chart-preview-grid gap-3">
 
             <div className="card intro-card">
               <h2 className="section-title">{t.home.intro_title}</h2>

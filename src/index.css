@@ -71,8 +71,13 @@ body {
 
 a { color: var(--primary-light); text-decoration: none; }
 a:hover { color: var(--accent); }
-button { cursor: pointer; font-family: inherit; }
+button { cursor: pointer; font-family: inherit; touch-action: manipulation; }
 input, select, textarea { font-family: inherit; }
+
+/* Ensure minimum 44px touch targets on interactive elements */
+button, [role="button"], .btn, .nav-link, .lang-btn {
+  min-height: 44px;
+}
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
@@ -187,6 +192,14 @@ input, select, textarea { font-family: inherit; }
 .data-table td { padding: 0.8rem 1rem; border-bottom: 1px solid rgba(42,74,107,0.4); color: var(--text); }
 .data-table tr:hover td { background: var(--bg3); }
 .data-table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+
+/* Disable transform-based hover effects on touch devices to prevent "stuck" state */
+@media (hover: none) {
+  .card:hover, .btn:hover, .nav-link:hover {
+    transform: none !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+}
 
 @keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
