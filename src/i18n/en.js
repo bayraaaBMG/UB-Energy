@@ -326,7 +326,7 @@ const en = {
     link_unit: "link",
     elec_hint: "Take this from your electricity bill or supplier data.",
     tariff_note_title: "Unit Conversion Guide: Monetary Amounts to Energy Units",
-    tariff_note_p1: "Most households are familiar with their energy costs in monetary terms and may not know their consumption in technical units such as kWh or Gcal (Energy Regulatory Commission). In Mongolia, residential electricity is billed under a tiered tariff structure, with a unit price of approximately 140–280 MNT per kWh (УБЦТС ТӨХК). To estimate electricity consumption from a monetary amount, use the following formula: Electricity (kWh) ≈ Amount paid ÷ Tariff (УБЦТС ТӨХК).",
+    tariff_note_p1: "Most households are familiar with their energy costs in monetary terms and may not know their consumption in technical units such as kWh or Gcal (Energy Regulatory Commission). In Mongolia, residential electricity uses a tiered tariff: 0–150 kWh → 175₮, 150–300 kWh → 256₮, 300+ kWh → 285₮ per kWh (УБЦТС ТӨХК). To estimate electricity consumption from a monetary amount, use the following formula: Electricity (kWh) ≈ Amount paid ÷ Tariff (УБЦТС ТӨХК).",
     tariff_note_p2: "District heating charges for residential apartments are calculated per unit floor area, at approximately 3,000–6,000 MNT per m² per month (Ulaanbaatar Heating Network ТӨХК). Water consumption is measured in cubic metres, with hot water priced at approximately 1,500–3,000 MNT/m³ (УСУГ). Where consumption figures in physical units are unavailable, tariff-based conversion from monetary amounts should be applied; actual meter readings are preferred for greater accuracy (Energy Regulatory Commission).",
   },
   database: {
