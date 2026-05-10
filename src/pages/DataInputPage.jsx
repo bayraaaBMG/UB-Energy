@@ -1269,56 +1269,146 @@ export default function DataInputPage() {
                 {/* Live results */}
                 {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && <BillResults elecBill={elecBill} heatBill={heatBill} lang={lang} />}
 
-                {/* Formula explanation */}
-                <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, fontSize: "0.78rem", lineHeight: 1.8, color: "var(--text2)" }}>
-                  <strong style={{ display: "block", marginBottom: "0.4rem", color: "var(--text)" }}>
-                    {lang === "mn" ? "Томьёо — хэрхэн тооцоолсон?" : "How are these calculated?"}
+                {/* Tariff reference card */}
+                <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, fontSize: "0.78rem", lineHeight: 1.7, color: "var(--text2)" }}>
+                  <strong style={{ display: "block", marginBottom: "0.6rem", color: "var(--text)", fontSize: "0.85rem" }}>
+                    {lang === "mn" ? "🔌 Цахилгааны тариф — УБЦТС ТӨХК" : "🔌 Electricity Tariff — УБЦТС ТӨХК"}
                   </strong>
-                  <div style={{ display: "grid", gap: "0.5rem" }}>
-                    <div>
-                      <span style={{ color: "#1a6eb5", fontWeight: 700 }}>{lang === "mn" ? "Цахилгаан (шаталсан тариф):" : "Electricity (tiered tariff):"}</span>
-                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
-                        {lang === "mn"
-                          ? "0–150 кВт·цаг → 140₮/кВт·цаг (шат 1)"
-                          : "0–150 kWh → 140₮/kWh (tier 1)"}
+
+                  {/* Stat row */}
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.8rem" }}>
+                    {[["45%","351,100","≤150 кВт·ц","#3a8fd4"],["40%","318,200","150–300 кВт·ц","#9b72cf"],["15%","118,900",">300 кВт·ц","#e63946"]].map(([pct,hh,lbl,color])=>(
+                      <div key={pct} style={{ flex:1, minWidth:80, background:"var(--bg2)", borderRadius:8, padding:"0.4rem 0.6rem", textAlign:"center", border:`1px solid ${color}44` }}>
+                        <div style={{ fontWeight:800, fontSize:"1rem", color }}>{pct}</div>
+                        <div style={{ fontSize:"0.65rem", color:"var(--text3)" }}>{hh} {lang==="mn"?"өрх":"HH"}</div>
+                        <div style={{ fontSize:"0.65rem", color }}>{lbl}</div>
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text3)" }}>
-                        {lang === "mn"
-                          ? "151–250 кВт·цаг → 180₮/кВт·цаг (шат 2)"
-                          : "151–250 kWh → 180₮/kWh (tier 2)"}
+                    ))}
+                  </div>
+
+                  {/* Tariff tables side by side */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:"0.5rem" }}>
+
+                    {/* Энгийн тоолуур */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.3rem 0.6rem", fontSize:"0.7rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "Энгийн тоолуур" : "Standard meter"}
+                        <span style={{ float:"right", color:"#f4a261", fontSize:"0.65rem" }}>7–34% {lang==="mn"?"хэмнэлт":"saving"}</span>
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--text3)" }}>
-                        {lang === "mn"
-                          ? "251+ кВт·цаг → 280₮/кВт·цаг (шат 3)"
-                          : "251+ kWh → 280₮/kWh (tier 3)"}
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.68rem" }}>
+                        <thead><tr style={{ background:"rgba(255,255,255,0.04)" }}>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"left", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Ангилал":"Range"}</th>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Тариф":"Rate"}</th>
+                        </tr></thead>
+                        <tbody>
+                          {[["<150 кВт·ц","175₮"],["150–300 кВт·ц","256₮"],[">300 кВт·ц","285₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>{p}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* 2 тариф тоолуур */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.3rem 0.6rem", fontSize:"0.7rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "2 тариф тоолуур" : "2-zone meter"}
+                        <span style={{ float:"right", color:"#f4a261", fontSize:"0.65rem" }}>7–29% {lang==="mn"?"хэмнэлт":"saving"}</span>
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: 2 }}>
-                        {lang === "mn"
-                          ? "Урвуу тооцоолол: кВт·цаг = Мөнгө ÷ тариф (шаталсан)"
-                          : "Inverse calc: kWh = Bill ÷ rate (tiered)"}
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.68rem" }}>
+                        <thead><tr style={{ background:"rgba(255,255,255,0.04)" }}>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"left", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Цаг / Ангилал":"Time / Range"}</th>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Тариф":"Rate"}</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr style={{ borderTop:"1px solid var(--border)", background:"rgba(58,143,212,0.06)" }}>
+                            <td colSpan={2} style={{ padding:"0.15rem 0.5rem", fontSize:"0.63rem", color:"#7ec8ff", fontWeight:600 }}>06:00–21:00</td>
+                          </tr>
+                          {[["<150 кВт·ц","182₮"],["150–300 кВт·ц","225₮"],[">300 кВт·ц","265₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem 0.2rem 1rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>{p}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop:"1px solid var(--border)", background:"rgba(30,30,60,0.3)" }}>
+                            <td colSpan={2} style={{ padding:"0.15rem 0.5rem", fontSize:"0.63rem", color:"#9b9bff", fontWeight:600 }}>21:00–06:00</td>
+                          </tr>
+                          {[["<150 кВт·ц","147₮"],["150–300 кВт·ц","160₮"],[">300 кВт·ц","160₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem 0.2rem 1rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#2a9d8f" }}>{p}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* 3 тариф тоолуур */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.3rem 0.6rem", fontSize:"0.7rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "3 тариф тоолуур" : "3-zone meter"}
+                        <span style={{ float:"right", color:"#f4a261", fontSize:"0.65rem" }}>3–60% {lang==="mn"?"хэмнэлт":"saving"}</span>
+                      </div>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.68rem" }}>
+                        <thead><tr style={{ background:"rgba(255,255,255,0.04)" }}>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"left", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Цаг / Ангилал":"Time / Range"}</th>
+                          <th style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)", fontWeight:600 }}>{lang==="mn"?"Тариф":"Rate"}</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr style={{ borderTop:"1px solid var(--border)", background:"rgba(58,143,212,0.06)" }}>
+                            <td colSpan={2} style={{ padding:"0.15rem 0.5rem", fontSize:"0.63rem", color:"#7ec8ff", fontWeight:600 }}>06:00–17:00</td>
+                          </tr>
+                          {[["<150 кВт·ц","170₮"],["150–300 кВт·ц","190₮"],[">300 кВт·ц","220₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem 0.2rem 1rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>{p}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop:"1px solid var(--border)", background:"rgba(230,57,70,0.08)" }}>
+                            <td colSpan={2} style={{ padding:"0.15rem 0.5rem", fontSize:"0.63rem", color:"#ff7e8a", fontWeight:600 }}>17:00–21:00 (оргил / peak)</td>
+                          </tr>
+                          {[["<150 кВт·ц","280₮"],["150–300 кВт·ц","290₮"],[">300 кВт·ц","300₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem 0.2rem 1rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#e63946" }}>{p}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop:"1px solid var(--border)", background:"rgba(30,30,60,0.3)" }}>
+                            <td colSpan={2} style={{ padding:"0.15rem 0.5rem", fontSize:"0.63rem", color:"#9b9bff", fontWeight:600 }}>21:00–06:00</td>
+                          </tr>
+                          {[["<150 кВт·ц","113₮"],["150–300 кВт·ц","113₮"],[">300 кВт·ц","113₮"]].map(([r,p])=>(
+                            <tr key={r} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem 0.2rem 1rem", color:"var(--text2)" }}>{r}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#2a9d8f" }}>{p}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Heating & water */}
+                  <div style={{ marginTop:"0.6rem", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.5rem" }}>
+                    <div style={{ background:"var(--bg2)", borderRadius:8, padding:"0.4rem 0.6rem", border:"1px solid var(--border)" }}>
+                      <span style={{ color:"#f4a261", fontWeight:700, fontSize:"0.7rem" }}>{lang==="mn" ? "🔥 Дулаан (УБ ДС ТӨХК):" : "🔥 Heating:"}</span>
+                      <div style={{ fontFamily:"monospace", fontSize:"0.68rem", color:"var(--text3)", marginTop:2 }}>
+                        {lang==="mn" ? "72% × нийлбэр ÷ 160,000₮/Гкал" : "72% × bill ÷ 160,000₮/Gcal"}
                       </div>
                     </div>
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
-                      <span style={{ color: "#f4a261", fontWeight: 700 }}>{lang === "mn" ? "Дулаан (УБ ДС ТӨХК):" : "Heating (UB DHN ТӨХК):"}</span>
-                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
-                        {lang === "mn"
-                          ? "Дулаан (Гкал) = Мөнгө × 72% ÷ 160,000₮/Гкал"
-                          : "Heating (Gcal) = Bill × 72% ÷ 160,000₮/Gcal"}
-                      </div>
-                    </div>
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
-                      <span style={{ color: "#2a9d8f", fontWeight: 700 }}>{lang === "mn" ? "Ус (УСУГ):" : "Water (УСУГ):"}</span>
-                      <div style={{ fontFamily: "monospace", fontSize: "0.75rem", marginTop: 2, color: "var(--text3)" }}>
-                        {lang === "mn"
-                          ? "Ус (м³) = Мөнгө × 28% ÷ 2,100₮/м³"
-                          : "Water (m³) = Bill × 28% ÷ 2,100₮/m³"}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, padding:"0.4rem 0.6rem", border:"1px solid var(--border)" }}>
+                      <span style={{ color:"#2a9d8f", fontWeight:700, fontSize:"0.7rem" }}>{lang==="mn" ? "💧 Ус (УСУГ):" : "💧 Water:"}</span>
+                      <div style={{ fontFamily:"monospace", fontSize:"0.68rem", color:"var(--text3)", marginTop:2 }}>
+                        {lang==="mn" ? "28% × нийлбэр ÷ 2,100₮/м³" : "28% × bill ÷ 2,100₮/m³"}
                       </div>
                     </div>
                   </div>
-                  <div style={{ marginTop: "0.6rem", fontSize: "0.7rem", color: "var(--text3)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>
+
+                  <div style={{ marginTop:"0.6rem", fontSize:"0.67rem", color:"var(--text3)", borderTop:"1px solid var(--border)", paddingTop:"0.5rem" }}>
                     {lang === "mn"
-                      ? "Эх сурвалж: УБЦТС ТӨХК тарифын журам 2024 (цахилгаан) · Улаанбаатар Дулааны Сүлжээ ТӨХК 2024 (дулаан) · УСУГ норматив 2024 (ус)"
-                      : "Sources: УБЦТС ТӨХК Tariff Schedule 2024 (electricity) · Ulaanbaatar Heating Network ТӨХК 2024 (heating) · УСУГ norm 2024 (water)"}
+                      ? <>Эх сурвалж: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Айл өрхийн цахилгааны хэрэглээний бүтэц</a> · Улаанбаатар Дулааны Сүлжээ ТӨХК 2024 · УСУГ норматив 2024</>
+                      : <>Source: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Household Electricity Consumption Structure</a> · UB Heating Network ТӨХК 2024 · УСУГ norm 2024</>}
                   </div>
                 </div>
               </div>

@@ -507,26 +507,42 @@ export function predict(form) {
 // Export GRADE_COLORS so PredictorPage doesn't need to redefine
 export { GRADE_COLORS, DATASET };
 
-// ─── 13. Tiered electricity tariff (УБЦТС 2024) ──────────────────────────────
-// Source: УБЦТС ТӨХК тарифын журам 2024
+// ─── 13. Tiered electricity tariff ────────────────────────────────────────────
+// Source: УБЦТС ТӨХК — Энгийн тоолуур (стандарт тариф)
+// https://www.facebook.com/share/p/1ZAbUwfoq1/
 export const TARIFF_TIERS = [
-  { upto: 150, rate: 140, label: '0–150 кВт·цаг' },
-  { upto: 250, rate: 180, label: '151–250 кВт·цаг' },
-  { upto: Infinity, rate: 280, label: '251+ кВт·цаг' },
+  { upto: 150,      rate: 175, label: '0–150 кВт·цаг' },
+  { upto: 300,      rate: 256, label: '151–300 кВт·цаг' },
+  { upto: Infinity, rate: 285, label: '301+ кВт·цаг' },
 ];
 
-// Inverse tariff: monthly ₮ → estimated monthly kWh + annual kWh
+// 2-тариф тоолуурын тарифууд (цагийн бүсээр)
+export const TARIFF_2ZONE = {
+  day:   { label: '06:00–21:00', tiers: [{ upto:150,rate:182 },{ upto:300,rate:225 },{ upto:Infinity,rate:265 }] },
+  night: { label: '21:00–06:00', tiers: [{ upto:150,rate:147 },{ upto:300,rate:160 },{ upto:Infinity,rate:160 }] },
+  saving: '7–29%',
+};
+
+// 3-тариф тоолуурын тарифууд (цагийн бүсээр)
+export const TARIFF_3ZONE = {
+  peak:    { label: '17:00–21:00', tiers: [{ upto:150,rate:280 },{ upto:300,rate:290 },{ upto:Infinity,rate:300 }] },
+  day:     { label: '06:00–17:00', tiers: [{ upto:150,rate:170 },{ upto:300,rate:190 },{ upto:Infinity,rate:220 }] },
+  night:   { label: '21:00–06:00', tiers: [{ upto:150,rate:113 },{ upto:300,rate:113 },{ upto:Infinity,rate:113 }] },
+  saving: '3–60%',
+};
+
+// Inverse tariff: monthly ₮ → estimated monthly kWh + annual kWh (энгийн тоолуур)
 export function convertElecMoneyToKwh(tugrug_monthly) {
   const t = +tugrug_monthly;
-  const tier1_cost = 150 * 140;           // 21,000₮
-  const tier2_cost = tier1_cost + 100 * 180; // 39,000₮
+  const tier1_cost = 150 * 175;                    // 26,250₮
+  const tier2_cost = tier1_cost + 150 * 256;       // 64,650₮
   let kwh, tier, effective_rate;
   if (t <= tier1_cost) {
-    kwh = t / 140; tier = 1; effective_rate = 140;
+    kwh = t / 175; tier = 1; effective_rate = 175;
   } else if (t <= tier2_cost) {
-    kwh = 150 + (t - tier1_cost) / 180; tier = 2; effective_rate = 180;
+    kwh = 150 + (t - tier1_cost) / 256; tier = 2; effective_rate = 256;
   } else {
-    kwh = 250 + (t - tier2_cost) / 280; tier = 3; effective_rate = 280;
+    kwh = 300 + (t - tier2_cost) / 285; tier = 3; effective_rate = 285;
   }
   return {
     kwh_monthly: Math.round(kwh),
