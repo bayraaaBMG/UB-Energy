@@ -184,7 +184,7 @@ export default function WeatherPage() {
   }, []);
 
   // ── Render states ──
-  if (weatherLoading && !weatherData)
+  if (!weatherData && !weatherError)
     return (
       <div className="weather-page">
         <div className="weather-loading" aria-live="polite" aria-busy="true">
