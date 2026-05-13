@@ -135,7 +135,7 @@ function GradeBar({ grade }) {
 
 export default function PredictorPage() {
   const { t, lang, user } = useApp();
-  const { buildings, addPrediction, addScenario, setLastPrediction } = useData();
+  const { buildings, addPrediction, addScenario, setLastPrediction, currentHdd } = useData();
   usePageTitle(t.nav.predictor);
   const navigate = useNavigate();
   const location = useLocation();
@@ -215,7 +215,7 @@ export default function PredictorPage() {
       const appPer100 = { apartment: 8, office: 5, school: 4, hospital: 10, commercial: 6, warehouse: 3 };
       const enriched = {
         ...form,
-        hdd:       4500,
+        hdd:       currentHdd,
         residents: Math.max(1, Math.round(form.area / 100 * (resPer100[form.building_type] || 4))),
         // Cap at 15 — training data has appliances in [2,15]; exceeding this causes out-of-distribution scaling that clamps OLS output to 0
         appliances: Math.min(15, Math.max(2, Math.round(form.area / 100 * (appPer100[form.building_type] || 6)))),

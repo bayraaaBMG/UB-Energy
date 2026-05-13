@@ -86,7 +86,7 @@ const PM25_HEAT_FACTOR = { central: 1.0, local: 2.4, electric: 0.15 };
 // Insulation multiplier: worse insulation = more fuel burned = more PM2.5
 const PM25_INSUL_FACTOR = { poor: 1.3, medium: 1.0, good: 0.8 };
 
-function calcBuilding(b) {
+function calcBuilding(b, hdd = 4500) {
   const eui    = TYPE_EUI[b.type] || TYPE_EUI.apartment;
   const height = b.floors * FLOOR_HEIGHT;
   const volume = b.area * height;
@@ -102,7 +102,7 @@ function calcBuilding(b) {
     year:               b.year || 1990,
     floors:             b.floors,
     rooms:              b.rooms || Math.max(1, Math.round(b.area / 50)),
-    hdd:                4500,
+    hdd,
     window_ratio:       25,
     residents:          Math.max(1, Math.round(b.area / 30)),
     appliances:         5,
@@ -629,9 +629,9 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 // ─── Building side panel ───────────────────────────────────────────────────────
-function BuildingPanel({ building, lang, t, onClose }) {
+function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
   const [tab, setTab] = useState("energy");
-  const calc   = useMemo(() => calcBuilding(building), [building]);
+  const calc   = useMemo(() => calcBuilding(building, hdd), [building, hdd]);
   const recs   = useMemo(() => getRecommendations(building, calc, lang), [building, calc, lang]);
   const types  = t.predictor.building_types;
   const typeLbl = types[building.type] || building.type;
@@ -651,7 +651,7 @@ function BuildingPanel({ building, lang, t, onClose }) {
     const type = building.type || "apartment";
     return predict({
       building_type: type, area: building.area, year: wi.year,
-      floors: building.floors, hdd: 4500, window_ratio: 25,
+      floors: building.floors, hdd, window_ratio: 25,
       rooms: building.rooms || Math.max(1, Math.round(building.area / 50)),
       residents: Math.max(1, Math.round(building.area / 100 * (resPer100[type] || 4))),
       appliances: Math.min(50, Math.max(2, Math.round(building.area / 100 * (appPer100[type] || 6)))),
@@ -1354,41 +1354,56 @@ function SmogOverlay({ pm25 }) {
 }
 
 // ─── Weather widget ────────────────────────────────────────────────────────────
-function WeatherWidget({ lang, pm25, showSmog, onToggleSmog }) {
+function WeatherWidget({ lang, pm25, showSmog, onToggleSmog, weather }) {
   const mn = lang === "mn";
+  const liveTemp = weather?.temp;
+  const liveWind = weather?.wind;
+  const liveAqi  = weather?.aqi;
+  const liveHdd  = weather?.hdd;
+
+  const displayPm25 = liveAqi != null ? Math.round(liveAqi * 0.6) : pm25;
   const pm25Color =
-    pm25 > 150 ? "#9b1d20" :
-    pm25 > 55  ? "#e63946" :
-    pm25 > 35  ? "#f4a261" : "#2a9d8f";
+    displayPm25 > 150 ? "#9b1d20" :
+    displayPm25 > 55  ? "#e63946" :
+    displayPm25 > 35  ? "#f4a261" : "#2a9d8f";
   const pm25Label =
-    pm25 > 150 ? (mn ? "Маш аюултай" : "Hazardous") :
-    pm25 > 55  ? (mn ? "Аюултай" : "Unhealthy") :
-    pm25 > 35  ? (mn ? "Дунд" : "Moderate") :
-                 (mn ? "Цэвэр" : "Clean");
+    displayPm25 > 150 ? (mn ? "Маш аюултай" : "Hazardous") :
+    displayPm25 > 55  ? (mn ? "Аюултай" : "Unhealthy") :
+    displayPm25 > 35  ? (mn ? "Дунд" : "Moderate") :
+                        (mn ? "Цэвэр" : "Clean");
 
   return (
     <div className="weather-widget">
       <div className="ww-top">
         <span className="ww-city">{mn ? "Улаанбаатар" : "Ulaanbaatar"}</span>
-        <span className="ww-temp">−4°C</span>
+        <span className="ww-temp">
+          {liveTemp != null ? `${liveTemp > 0 ? "+" : ""}${liveTemp}°C` : "—"}
+        </span>
       </div>
+      {liveHdd != null && (
+        <div className="ww-row" style={{ color: "#f4a261", fontWeight: 600 }}>
+          <Zap size={11} style={{ color: "#f4a261" }} />
+          <span>HDD {liveHdd}</span>
+        </div>
+      )}
       <div className="ww-row">
         <Wind size={11} style={{ color: "#8899aa" }} />
-        <span>12 km/h</span>
+        <span>{liveWind != null ? `${liveWind} km/h` : "—"}</span>
       </div>
       <div className="ww-pm">
-        <span className="ww-pm-label">PM2.5</span>
-        <span className="ww-pm-val" style={{ color: pm25Color }}>{pm25} μg/m³</span>
+        <span className="ww-pm-label">AQI</span>
+        <span className="ww-pm-val" style={{ color: pm25Color }}>{liveAqi ?? "—"}</span>
         <span className="ww-pm-badge" style={{ background: `${pm25Color}22`, color: pm25Color, borderColor: `${pm25Color}55` }}>
           {pm25Label}
         </span>
       </div>
-      {/* Smog toggle */}
       <button className={`ww-smog-btn${showSmog ? " active" : ""}`} onClick={onToggleSmog}>
         <span className="ww-smog-dot" />
         {showSmog ? (mn ? "Утаа харагдаж байна" : "Smog ON") : (mn ? "Утаа нуусан" : "Smog OFF")}
       </button>
-      <div className="ww-note">{mn ? "Жишиг · бодит биш" : "Demo · not real-time"}</div>
+      <div className="ww-note" style={{ color: liveTemp != null ? "#2a9d8f" : undefined }}>
+        {liveTemp != null ? (mn ? "Бодит цаг · Open-Meteo" : "Live · Open-Meteo") : (mn ? "Уур амьсгал ачааллаж байна…" : "Loading weather…")}
+      </div>
     </div>
   );
 }
@@ -1396,7 +1411,7 @@ function WeatherWidget({ lang, pm25, showSmog, onToggleSmog }) {
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MapPage() {
   const { t, lang, user } = useApp();
-  const { buildings: ctxBuildings } = useData();
+  const { buildings: ctxBuildings, currentHdd, weatherData } = useData();
   usePageTitle(t.nav.map);
 
   // Building cache: Map<id, building> — pre-seeded with mock + user buildings
@@ -1479,7 +1494,7 @@ export default function MapPage() {
     });
     return Object.entries(groups)
       .map(([district, bs]) => {
-        const calcs = bs.map(b => calcBuilding(b));
+        const calcs = bs.map(b => calcBuilding(b, currentHdd));
         const avgIntens = Math.round(calcs.reduce((s, c) => s + c.intensity, 0) / calcs.length);
         const counts = {};
         calcs.forEach(c => { counts[c.grade] = (counts[c.grade] || 0) + 1; });
@@ -1488,12 +1503,12 @@ export default function MapPage() {
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
-  }, [buildings]);
+  }, [buildings, currentHdd]);
 
   // Stats for analysis strip — computed from all loaded buildings
   const analysisStats = useMemo(() => {
     if (buildings.length === 0) return null;
-    const calcs = buildings.map(b => ({ b, c: calcBuilding(b) }));
+    const calcs = buildings.map(b => ({ b, c: calcBuilding(b, currentHdd) }));
     const totalKwh  = calcs.reduce((s, { c }) => s + c.total, 0);
     const totalCo2  = calcs.reduce((s, { c }) => s + c.co2, 0);
     const avgIntens = Math.round(calcs.reduce((s, { c }) => s + c.intensity, 0) / calcs.length);
@@ -1506,7 +1521,7 @@ export default function MapPage() {
       .slice(0, 3)
       .map(({ b, c }) => ({ name: b.name, intensity: c.intensity, grade: c.grade, type: b.type }));
     return { totalKwh, totalCo2: +totalCo2.toFixed(0), avgIntens, gradeCounts, topHigh, count: calcs.length };
-  }, [buildings]);
+  }, [buildings, currentHdd]);
 
   return (
     <div className="map-outer">
@@ -1533,11 +1548,11 @@ export default function MapPage() {
               // Color by mode
               const polyColor = (() => {
                 if (colorMode === "grade") {
-                  const calc = calcBuilding(b);
+                  const calc = calcBuilding(b, currentHdd);
                   return GRADE_COLORS[calc.grade] || typeColor;
                 }
                 if (colorMode === "energy") {
-                  const calc = calcBuilding(b);
+                  const calc = calcBuilding(b, currentHdd);
                   // continuous gradient green→yellow→red based on kWh/m² (0–300)
                   const t = Math.min(1, calc.intensity / 300);
                   if (t < 0.5) {
@@ -1555,7 +1570,7 @@ export default function MapPage() {
                   }
                 }
                 if (colorMode === "pm25") {
-                  const calc = calcBuilding(b);
+                  const calc = calcBuilding(b, currentHdd);
                   // PM2.5 per m² → normalize 0-1 on 0–2000 kg/yr/m² scale
                   const perM2 = calc.pm25 / Math.max(1, b.area);
                   const t = Math.min(1, perM2 / 2);
@@ -1594,7 +1609,7 @@ export default function MapPage() {
                 >
                   <LeafletTooltip sticky direction="top" offset={[0, -4]}>
                     {(() => {
-                      const c = calcBuilding(b);
+                      const c = calcBuilding(b, currentHdd);
                       return (
                         <div style={{ fontSize: 12, lineHeight: 1.55, minWidth: 140 }}>
                           <strong style={{ display: "block", marginBottom: 2 }}>{b.name}</strong>
@@ -1812,6 +1827,7 @@ export default function MapPage() {
             pm25={DEMO_PM25}
             showSmog={showSmog}
             onToggleSmog={() => setShowSmog(s => !s)}
+            weather={weatherData?.todayData}
           />
 
           {/* Building info overlay panel (Google Maps style) */}
@@ -1822,6 +1838,7 @@ export default function MapPage() {
                 lang={lang}
                 t={t}
                 onClose={() => setSelected(null)}
+                hdd={currentHdd}
               />
             )}
           </div>
