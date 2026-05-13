@@ -35,6 +35,19 @@ const TILES = {
 
 const UB_CENTER = [47.9184, 106.9177];
 
+// District centroid coordinates for fallback positioning of user buildings
+const DISTRICT_COORDS = {
+  "Баянгол":          [47.9055, 106.9100],
+  "Баянзүрх":         [47.9190, 106.9580],
+  "Чингэлтэй":        [47.9230, 106.9170],
+  "Сүхбаатар":        [47.9220, 106.9360],
+  "Сонгинохайрхан":   [47.9350, 106.8400],
+  "Хан-Уул":          [47.8800, 106.9100],
+  "Налайх":           [47.7680, 107.2600],
+  "Багануур":         [47.7550, 108.2800],
+  "Багахангай":       [47.8290, 107.7440],
+};
+
 // Multiple Overpass mirrors — tried in order until one works
 const OVERPASS_MIRRORS = [
   "https://overpass-api.de/api/interpreter",
@@ -328,8 +341,8 @@ function inferFloors(area, tags) {
   return 3;
 }
 
-// Infer construction year — try multiple OSM date tags
-function inferYear(tags) {
+// Infer construction year — try multiple OSM date tags, then fall back to type-based range
+function inferYear(tags, osmId, type) {
   const candidates = [
     tags["start_date"],
     tags["construction_date"],
@@ -341,7 +354,26 @@ function inferYear(tags) {
     const y = parseInt(c.slice(0, 4));
     if (!isNaN(y) && y >= 1920 && y <= 2025) return { year: y, yearKnown: true };
   }
-  return { year: 1985, yearKnown: false }; // UB median for unknown buildings
+  // Type-based realistic range — deterministic via OSM element ID
+  const ranges = {
+    apartment:  [1985, 2023],
+    office:     [1990, 2022],
+    school:     [1965, 2010],
+    hospital:   [1975, 2015],
+    commercial: [1980, 2020],
+    warehouse:  [1975, 2015],
+  };
+  const [lo, hi] = ranges[type] || [1975, 2015];
+  const seed = Math.abs((osmId || 0) % 1000) / 1000; // 0.0–1.0 deterministic
+  // Weighted distribution: 50% early, 30% mid, 20% late within the range
+  const span = hi - lo;
+  const m1   = lo + span * 0.5;  // end of early band (50%)
+  const m2   = lo + span * 0.8;  // end of mid band  (80%)
+  let year;
+  if (seed < 0.5)       year = Math.round(lo + (seed / 0.5)        * (m1 - lo));
+  else if (seed < 0.8)  year = Math.round(m1 + ((seed - 0.5) / 0.3) * (m2 - m1));
+  else                  year = Math.round(m2 + ((seed - 0.8) / 0.2) * (hi - m2));
+  return { year, yearKnown: false };
 }
 
 // Tags that indicate a non-building large area accidentally tagged with building
@@ -369,7 +401,7 @@ function osmToBuilding(el) {
 
   const type    = osmBuildingType(tags);
   const floors  = inferFloors(area, tags);
-  const { year, yearKnown } = inferYear(tags);
+  const { year, yearKnown } = inferYear(tags, el.id, type);
   const floorsKnown = !isNaN(parseInt(tags["building:levels"] || tags["levels"] || ""));
   const nameTag = tags.name || tags["name:mn"] || tags["name:en"] || "";
   const addrStr = [tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ");
@@ -423,9 +455,16 @@ function loadUserMapBuildings(userId = null) {
       floors:   b.floors || 1,
       year:     b.year || 2000,
       district: b.district || "Улаанбаатар",
-      osmGeom:  (b.latitude && b.longitude)
-        ? mockGeom(b.latitude, b.longitude, b.area || 100)
-        : null,
+      osmGeom:  (() => {
+        if (b.latitude && b.longitude)
+          return mockGeom(b.latitude, b.longitude, b.area || 100);
+        // Fallback: use district centroid with a small deterministic offset per building
+        const dc = DISTRICT_COORDS[b.district];
+        const base = dc || UB_CENTER;
+        const seed = String(b.id || "").charCodeAt(0) || 0;
+        const offset = (seed % 20) / 10000;
+        return mockGeom(base[0] + offset, base[1] + offset, b.area || 100);
+      })(),
       tags:     {},
       source:   b.source || "user",
       insulation_quality: b.insulation_quality,
@@ -892,6 +931,30 @@ function BuildingPanel({ building, lang, t, onClose }) {
               value={calc.total.toLocaleString()} unit="kWh/жил" highlight />
             <CalcRow label={t.map.row_intens}
               value={calc.intensity} unit="kWh/m²" />
+
+            {/* Electricity cost estimate — 175/256/285₮ tiered tariff */}
+            {(() => {
+              const mKwh = Math.round(calc.electric / 12);
+              const mCost = mKwh <= 150
+                ? mKwh * 175
+                : mKwh <= 300
+                ? 150 * 175 + (mKwh - 150) * 256
+                : 150 * 175 + 150 * 256 + (mKwh - 300) * 285;
+              const annualCost  = Math.round(mCost * 12);
+              const monthlyCost = Math.round(mCost);
+              return (<>
+                <CalcRow
+                  label={mn ? "Цахилгааны зардал (таамаг)" : "Est. electricity cost (estimate)"}
+                  formula="175/256/285₮ тариф · EUI-д суурилсан"
+                  value={`≈ ${annualCost.toLocaleString()}`}
+                  unit="₮/жил"
+                  highlight
+                />
+                <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: "-0.1rem", marginBottom: "0.4rem", paddingLeft: "0.25rem" }}>
+                  ≈ {monthlyCost.toLocaleString()} ₮/{mn ? "сар" : "mo"} · {mn ? "Таамаг — бодит нэхэмжлэл биш" : "Estimate — not actual billing"}
+                </div>
+              </>);
+            })()}
 
             <div style={{ marginTop: "0.75rem" }}>
               <div className="cr-label" style={{ marginBottom: "0.4rem" }}>{t.map.energy_grade}</div>
@@ -1448,9 +1511,10 @@ export default function MapPage() {
             <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} onZoom={setMapZoom} />
 
             {filtered.filter(b => b.osmGeom).map(b => {
-              const active   = selected?.id === b.id;
-              const isMine   = b.source === "user" || b.source === "predictor";
+              const active    = selected?.id === b.id;
+              const isMine    = b.source === "user" || b.source === "predictor";
               const typeColor = TYPE_COLOR[b.type] || "#3a8fd4";
+              const USER_RED  = "#e63946";
               // Color by mode
               const polyColor = (() => {
                 if (colorMode === "grade") {
@@ -1497,18 +1561,19 @@ export default function MapPage() {
                 }
                 return typeColor;
               })();
-              const color  = polyColor;
+              // User buildings: always red fill in type mode; other modes keep computed color
+              const fillColor = isMine && colorMode === "type" ? USER_RED : polyColor;
               const coords = b.osmGeom.map(n => [n.lat, n.lon]);
               return (
                 <Polygon
                   key={b.id}
                   positions={coords}
                   pathOptions={{
-                    color:       active ? "#ffffff" : isMine ? "#f4c842" : color,
-                    weight:      active ? 3 : isMine ? 2 : 1,
-                    fillColor:   color,
-                    fillOpacity: active ? 0.88 : 0.55,
-                    dashArray:   isMine && !active ? "5 3" : undefined,
+                    color:       active ? "#ffffff" : isMine ? USER_RED : polyColor,
+                    weight:      active ? 3 : isMine ? 2.5 : 1,
+                    fillColor:   fillColor,
+                    fillOpacity: active ? 0.9 : isMine ? 0.78 : 0.55,
+                    dashArray:   isMine && !active ? "6 3" : undefined,
                   }}
                   eventHandlers={{ click: () => setSelected(b) }}
                 >
@@ -1518,6 +1583,11 @@ export default function MapPage() {
                       return (
                         <div style={{ fontSize: 12, lineHeight: 1.55, minWidth: 140 }}>
                           <strong style={{ display: "block", marginBottom: 2 }}>{b.name}</strong>
+                          {isMine && (
+                            <span style={{ display: "block", color: USER_RED, fontSize: 10, fontWeight: 800, marginBottom: 2 }}>
+                              ★ {lang === "mn" ? "Таны барилга" : "User input"}
+                            </span>
+                          )}
                           <span style={{ color: TYPE_COLOR[b.type] || "#888" }}>
                             {b.type}{b.year ? ` · ${b.year}${!b.yearKnown && b.source === "osm" ? "~" : ""}` : ""}
                           </span>
@@ -1586,15 +1656,24 @@ export default function MapPage() {
 
           {/* Controls */}
           <div className="map-controls">
-            <div className="ctrl-pill">
-              <Filter size={12} style={{ color: "#8899aa" }} />
-              <select className="ctrl-sel" value={typeFilter}
-                onChange={e => { setTypeFilter(e.target.value); setSelected(null); }}>
-                <option value="all">{t.map.all_types}</option>
-                {Object.entries(typeLabels).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
+            <div className="ctrl-pill" style={{ display: "flex", flexWrap: "wrap", gap: "0.2rem", alignItems: "center" }}>
+              <Filter size={12} style={{ color: "#8899aa", flexShrink: 0 }} />
+              {[["all", t.map.all_types, null], ...Object.entries(typeLabels).map(([k, v]) => [k, v, TYPE_COLOR[k]])].map(([k, v, c]) => (
+                <button
+                  key={k}
+                  onClick={() => { setTypeFilter(k); setSelected(null); }}
+                  style={{
+                    padding: "0.15rem 0.45rem", borderRadius: 4, fontSize: "0.68rem", fontWeight: 700,
+                    cursor: "pointer", border: "1px solid",
+                    borderColor: typeFilter === k ? (c || "#3a8fd4") : "var(--border)",
+                    background:  typeFilter === k ? `${(c || "#3a8fd4")}25` : "transparent",
+                    color:       typeFilter === k ? (c || "#3a8fd4") : "var(--text3)",
+                    transition:  "0.15s",
+                  }}
+                >
+                  {typeof v === "string" ? v.slice(0, 7) : k}
+                </button>
+              ))}
             </div>
             {availableDistricts.length > 0 && (
               <div className="ctrl-pill">
@@ -1643,12 +1722,18 @@ export default function MapPage() {
           {/* Legend */}
           <div className="map-legend">
             {colorMode === "type"
-              ? Object.entries(TYPE_COLOR).map(([type, color]) => (
-                  <div key={type} className="lgd-row">
-                    <span className="lgd-dot" style={{ background: color }} />
-                    <span>{typeLabels[type] || type}</span>
-                  </div>
-                ))
+              ? [
+                  ...Object.entries(TYPE_COLOR).map(([type, color]) => (
+                    <div key={type} className="lgd-row">
+                      <span className="lgd-dot" style={{ background: color }} />
+                      <span>{typeLabels[type] || type}</span>
+                    </div>
+                  )),
+                  <div key="user" className="lgd-row">
+                    <span className="lgd-dot" style={{ background: "#e63946", border: "1px dashed #e63946" }} />
+                    <span style={{ color: "#e63946", fontWeight: 700 }}>{lang === "mn" ? "Таны барилга" : "User input"}</span>
+                  </div>,
+                ]
               : colorMode === "grade"
               ? (<>
                   {[

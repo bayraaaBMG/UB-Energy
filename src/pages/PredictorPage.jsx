@@ -224,8 +224,50 @@ export default function PredictorPage() {
         // Cap at 15 — training data has appliances in [2,15]; exceeding this causes out-of-distribution scaling that clamps OLS output to 0
         appliances: Math.min(15, Math.max(2, Math.round(form.area / 100 * (appPer100[form.building_type] || 6)))),
       };
-      const r   = predict(enriched);
-      const h   = predictHeating(enriched);
+      const modelR = predict(enriched);
+      const h      = predictHeating(enriched);
+
+      // If user entered a monthly electricity bill, blend with model (70% user / 30% model)
+      const userMonthly = parseFloat(elecBill);
+      let r = modelR;
+      if (userMonthly > 0) {
+        const ec         = convertElecMoneyToKwh(userMonthly);
+        const userAnnual = ec.kwh_annual;
+
+        // Clamp: model must not exceed user * 1.5 (prevents outlier inflation)
+        const safeModel = Math.min(modelR.annual, userAnnual * 1.5);
+
+        // Edge-case: if raw model > 2× user the data are too divergent — trust user fully
+        const extreme   = modelR.annual > userAnnual * 2;
+        const hybrid    = extreme
+          ? userAnnual
+          : Math.round(0.7 * userAnnual + 0.3 * safeModel);
+
+        const scale    = hybrid / Math.max(1, modelR.annual);
+        const newInt   = Math.round(hybrid / form.area);
+        const newGrade =
+          newInt < 50  ? "A" : newInt < 100 ? "B" :
+          newInt < 150 ? "C" : newInt < 200 ? "D" :
+          newInt < 250 ? "E" : newInt < 300 ? "F" : "G";
+        r = {
+          ...modelR,
+          annual:      hybrid,
+          monthly_avg: Math.round(hybrid / 12),
+          daily_avg:   +(hybrid / 365).toFixed(2),
+          chart_data:  modelR.chart_data.map(d => ({ ...d, usage: Math.round(d.usage * scale) })),
+          intensity:   newInt,
+          grade:       newGrade,
+          co2:         +((hybrid * 0.88) / 1000).toFixed(1),
+          pm25:        Math.round(hybrid * 0.88 * 1.35),
+          // expose for comparison + explanation
+          userAnnual,
+          modelAnnual:  modelR.annual,
+          safeModel,
+          isHybrid:     true,
+          isFallback:   extreme,   // model was clamped to user entirely
+        };
+      }
+
       const rec = generateRecommendations(enriched, r, lang);
       setResult(r);
       setHeating(h);
@@ -396,7 +438,7 @@ export default function PredictorPage() {
                         <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#1a6eb5" }}>{ec.kwh_monthly.toLocaleString()} кВт·цаг</div>
                         <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын цахилгааны хэрэглээ" : "Monthly electricity use"}</div>
                         <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: 4, padding: "0.2rem 0.5rem", background: "rgba(26,110,181,0.12)", borderRadius: 6, display: "inline-block" }}>
-                          {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг · шат ${ec.tier}` : `${ec.effective_rate}₮/kWh · tier ${ec.tier}`}
+                          {lang === "mn" ? `${ec.effective_rate}₮/кВт·цаг (дундаж тариф)` : `${ec.effective_rate}₮/kWh (avg rate)`}
                         </div>
                       </div>
                       <div style={{ background: "rgba(58,143,212,0.09)", border: "1px solid rgba(58,143,212,0.28)", borderRadius: 10, padding: "0.85rem" }}>
@@ -618,6 +660,44 @@ export default function PredictorPage() {
                   );
                 })()}
 
+                {/* User bill vs Model comparison (shown when elecBill was provided) */}
+                {result.isHybrid && (() => {
+                  const uKwh = result.userAnnual;
+                  const mKwh = result.modelAnnual;
+                  const hKwh = result.annual;
+                  const diffUvsM = uKwh - mKwh;
+                  return (
+                    <div style={{ margin: "0.75rem 0", padding: "0.9rem 1rem", background: "rgba(42,157,143,0.07)", border: "1px solid rgba(42,157,143,0.25)", borderRadius: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 700, fontSize: "0.82rem", color: "#2a9d8f", marginBottom: "0.65rem" }}>
+                        <Zap size={13} />
+                        {lang === "mn" ? "Нэхэмжлэл vs Загвар харьцуулалт" : "Bill vs Model comparison"}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", textAlign: "center" }}>
+                        <div style={{ background: "rgba(26,110,181,0.1)", borderRadius: 8, padding: "0.6rem 0.4rem" }}>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)", marginBottom: 3 }}>📄 {lang === "mn" ? "Нэхэмжлэл" : "Bill"}</div>
+                          <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#3a8fd4" }}>{uKwh.toLocaleString()}</div>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)" }}>kWh/жил</div>
+                        </div>
+                        <div style={{ background: "rgba(155,114,207,0.1)", borderRadius: 8, padding: "0.6rem 0.4rem" }}>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)", marginBottom: 3 }}>🤖 {lang === "mn" ? "Загвар" : "Model"}</div>
+                          <div style={{ fontWeight: 800, fontSize: "0.95rem", color: "#9b72cf" }}>{mKwh.toLocaleString()}</div>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)" }}>kWh/жил</div>
+                        </div>
+                        <div style={{ background: "rgba(42,157,143,0.12)", borderRadius: 8, padding: "0.6rem 0.4rem", border: "1px solid rgba(42,157,143,0.3)" }}>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)", marginBottom: 3 }}>⚡ {lang === "mn" ? "Эцсийн (70/30)" : "Final (70/30)"}</div>
+                          <div style={{ fontWeight: 900, fontSize: "0.95rem", color: "#2a9d8f" }}>{hKwh.toLocaleString()}</div>
+                          <div style={{ fontSize: "0.62rem", color: "var(--text3)" }}>kWh/жил</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: "0.5rem", textAlign: "center" }}>
+                        {lang === "mn"
+                          ? `Нэхэмжлэл ${diffUvsM > 0 ? "+" : ""}${diffUvsM.toLocaleString()} kWh загвараас ${diffUvsM > 0 ? "өндөр" : "доогуур"} · эцсийн: 70% нэхэмжлэл + 30% загвар`
+                          : `Bill is ${Math.abs(diffUvsM).toLocaleString()} kWh ${diffUvsM > 0 ? "above" : "below"} model · final = 70% bill + 30% model`}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Scenario comparison */}
                 {baseline && (() => {
                   const diff = result.annual - baseline.result.annual;
@@ -752,6 +832,23 @@ export default function PredictorPage() {
                           ? `Хамгийн их нөлөөлсөн хүчин зүйлүүд: ${parts.join(", ")}. Барилгын зэрэглэл ${result.grade} — ${gradeDesc[result.grade] || ""}. Эрчим хүчний эрчмийн утга ${result.intensity} кВт·цаг/м² байна.${improvable.length > 0 ? ` Сайжруулах боломжтой: ${FEAT_LABELS[improvable[0].key] || improvable[0].key}.` : ""}`
                           : `Top drivers: ${parts.join(", ")}. Grade ${result.grade} means ${gradeDesc[result.grade] || ""}. Energy intensity is ${result.intensity} kWh/m².${improvable.length > 0 ? ` Improvement opportunity: ${FEAT_LABELS[improvable[0].key] || improvable[0].key}.` : ""}`}
                       </p>
+                      {/* Hybrid derivation explanation */}
+                      {result.isHybrid && (
+                        <div style={{ marginTop: "0.65rem", paddingTop: "0.6rem", borderTop: "1px solid rgba(58,143,212,0.18)", fontSize: "0.77rem", color: "var(--text2)", lineHeight: 1.7 }}>
+                          <strong style={{ color: "#2a9d8f", display: "block", marginBottom: "0.3rem" }}>
+                            {lang === "mn" ? "Дүн яаж тооцоологдсон бэ?" : "How was this calculated?"}
+                          </strong>
+                          {result.isFallback ? (
+                            lang === "mn"
+                              ? `Загварын таамаглал (${result.modelAnnual.toLocaleString()} kWh) нэхэмжлэлийн утгаас 2 дахин их байсан тул загварыг бүрэн орхиж нэхэмжлэлийн утгыг ашигласан: ${result.userAnnual.toLocaleString()} kWh.`
+                              : `Model (${result.modelAnnual.toLocaleString()} kWh) was >2× bill data — fell back to bill only: ${result.userAnnual.toLocaleString()} kWh.`
+                          ) : (
+                            lang === "mn"
+                              ? `Нэхэмжлэл: ${result.userAnnual.toLocaleString()} kWh · Загвар (хязгаарласан): ${result.safeModel.toLocaleString()} kWh → Эцсийн = 0.7 × ${result.userAnnual.toLocaleString()} + 0.3 × ${result.safeModel.toLocaleString()} = ${result.annual.toLocaleString()} kWh`
+                              : `Bill: ${result.userAnnual.toLocaleString()} kWh · Model (clamped): ${result.safeModel.toLocaleString()} kWh → Final = 0.7 × ${result.userAnnual.toLocaleString()} + 0.3 × ${result.safeModel.toLocaleString()} = ${result.annual.toLocaleString()} kWh`
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
