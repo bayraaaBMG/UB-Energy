@@ -10,7 +10,7 @@ import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import { getAllBuildings } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import { GRADE_COLORS } from "../ml/model";
 import "./BuildingDetailPage.css";
 
@@ -108,7 +108,8 @@ export default function BuildingDetailPage() {
   const { lang } = useLang();
   usePageTitle(lang === "mn" ? "Барилгын дэлгэрэнгүй" : "Building Detail");
 
-  const building = useMemo(() => getAllBuildings().find(b => b.id === id), [id]);
+  const { buildings } = useData();
+  const building = useMemo(() => buildings.find(b => b.id === id), [buildings, id]);
   const chartData = useMemo(() =>
     building ? generateChartData(building, lang) : [], [building, lang]);
 

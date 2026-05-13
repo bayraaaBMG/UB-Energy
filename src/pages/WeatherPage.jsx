@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
+import { useData } from "../contexts/DataContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 import {
@@ -13,149 +14,18 @@ import {
   ComposedChart, AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Line, Legend, ReferenceLine,
 } from "recharts";
-import { storageGetJSON, storageSetJSON } from "../utils/storage";
-import { STORAGE_KEYS } from "../config/constants";
 import "./WeatherPage.css";
 
-// ─── Ulaanbaatar coordinates ──────────────────────────────────────────────────
-const LAT = 47.9184;
-const LON = 106.9177;
-
-const METEO_URL =
-  `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-  `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code` +
-  `,wind_speed_10m,wind_direction_10m,surface_pressure,visibility,precipitation_probability` +
-  `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability` +
-  `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max` +
-  `,wind_speed_10m_max,sunrise,sunset` +
-  `&past_days=7&forecast_days=8&timezone=Asia%2FUlaanbaatar`;
-
-const AQI_URL =
-  `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}` +
-  `&current=us_aqi,pm2_5&timezone=Asia%2FUlaanbaatar`;
-
-const CACHE_KEY = STORAGE_KEYS.weatherCache;
-const CACHE_TTL = 30 * 60 * 1000; // 30 min
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function wmoToCode(wmo) {
-  if (wmo === 0) return "sunny";
-  if (wmo <= 2) return "partly_cloudy";
-  if (wmo <= 48) return "cloudy";
-  if (wmo <= 67 || (wmo >= 80 && wmo <= 82)) return "rain";
-  if ((wmo >= 71 && wmo <= 77) || wmo === 85 || wmo === 86) return "snow";
-  return "thunderstorm";
-}
-
+// ─── Rendering helpers (kept local — only used in JSX) ────────────────────────
 const WIND_MN = ["Хойд", "ХЗ", "Зүүн", "ЗУ", "Урд", "УБ", "Баруун", "ХБ"];
 const WIND_EN = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const windDir = (deg, lang) => (lang === "mn" ? WIND_MN : WIND_EN)[Math.round((deg % 360) / 45) % 8];
 
-const WD_KEYS = ["weekday_sun", "weekday_mon", "weekday_tue", "weekday_wed", "weekday_thu", "weekday_fri", "weekday_sat"];
-const dayKey = (dateStr) => WD_KEYS[new Date(dateStr + "T00:00:00").getDay()];
-
-const hdd = (max, min) => Math.max(0, Math.round(18 - (max + min) / 2));
-const energyVal = (h) => Math.round(h * 143);
-const impactKey = (h) => h > 25 ? "impact_high" : h > 15 ? "impact_medium" : "impact_low";
-
-const HOURLY_SLOTS = ["00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00"];
+const SLOTS_NUM = [0, 3, 6, 9, 12, 15, 18, 21];
 const nearestSlot = () => {
   const h = new Date().getHours();
   return SLOTS_NUM.reduce((best, s) => Math.abs(h - s) < Math.abs(h - best) ? s : best, 0);
 };
-const SLOTS_NUM = [0, 3, 6, 9, 12, 15, 18, 21];
-
-function getCached() {
-  const c = storageGetJSON(CACHE_KEY, null);
-  if (c && Date.now() - c.ts < CACHE_TTL) return { data: c.data, ts: c.ts };
-  return null;
-}
-function setCached(data) {
-  storageSetJSON(CACHE_KEY, { ts: Date.now(), data });
-}
-
-function parseResponse(meteo, aq) {
-  const { current, daily, hourly } = meteo;
-  const todayIdx = 7; // past_days=7
-  const todayDate = daily.time[todayIdx];
-
-  function buildDay(i, useCurrent = false) {
-    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
-    return {
-      date: daily.time[i],
-      weekday_key: dayKey(daily.time[i]),
-      temp: useCurrent
-        ? Math.round(current.temperature_2m)
-        : Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2),
-      feels_like: useCurrent
-        ? Math.round(current.apparent_temperature)
-        : Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2 - 4),
-      temp_max: Math.round(daily.temperature_2m_max[i]),
-      temp_min: Math.round(daily.temperature_2m_min[i]),
-      code: useCurrent ? wmoToCode(current.weather_code) : wmoToCode(daily.weather_code[i]),
-      humidity: useCurrent ? Math.round(current.relative_humidity_2m) : 60,
-      wind: useCurrent
-        ? Math.round(current.wind_speed_10m)
-        : Math.round(daily.wind_speed_10m_max[i]),
-      wind_deg: useCurrent ? current.wind_direction_10m : 0,
-      visibility: useCurrent ? Math.round((current.visibility || 10000) / 1000) : 10,
-      pressure: useCurrent ? Math.round(current.surface_pressure) : 1015,
-      snow_chance: Math.round(daily.precipitation_probability_max[i] || 0),
-      sunrise: (daily.sunrise[i] || "").slice(11, 16) || "--:--",
-      sunset:  (daily.sunset[i]  || "").slice(11, 16) || "--:--",
-      aqi: Math.round(aq?.current?.us_aqi || 0),
-      hdd: h,
-      energy_val: energyVal(h),
-      impact_key: impactKey(h),
-    };
-  }
-
-  const todayData    = buildDay(todayIdx, true);
-  const tomorrowData = buildDay(todayIdx + 1, false);
-
-  const weekForecast = [];
-  for (let i = todayIdx + 2; i < todayIdx + 7; i++) {
-    if (!daily.time[i]) break;
-    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
-    weekForecast.push({
-      weekday_key: dayKey(daily.time[i]),
-      code: wmoToCode(daily.weather_code[i]),
-      temp_max: Math.round(daily.temperature_2m_max[i]),
-      temp_min: Math.round(daily.temperature_2m_min[i]),
-      hdd: h,
-    });
-  }
-
-  const hourlyToday = [];
-  hourly.time.forEach((ts, idx) => {
-    if (!ts.startsWith(todayDate)) return;
-    const slot = ts.slice(11, 16);
-    if (!HOURLY_SLOTS.includes(slot)) return;
-    hourlyToday.push({
-      hour: slot,
-      temp: Math.round(hourly.temperature_2m[idx]),
-      feels: Math.round(hourly.apparent_temperature[idx]),
-      code: wmoToCode(hourly.weather_code[idx]),
-      precip: Math.round(hourly.precipitation_probability[idx] || 0),
-    });
-  });
-
-  const historyChart = [];
-  for (let i = 0; i <= todayIdx + 1; i++) {
-    if (!daily.time[i]) break;
-    const h = hdd(daily.temperature_2m_max[i], daily.temperature_2m_min[i]);
-    const [, mm, dd] = daily.time[i].split("-");
-    historyChart.push({
-      date: `${mm}/${dd}`,
-      temp: Math.round((daily.temperature_2m_max[i] + daily.temperature_2m_min[i]) / 2),
-      hdd: h,
-      energy: energyVal(h),
-      forecast: i > todayIdx,
-    });
-  }
-
-  return { todayData, tomorrowData, weekForecast, hourlyToday, historyChart };
-}
 
 // ─── Weather icon ─────────────────────────────────────────────────────────────
 function WeatherIcon({ code, size = 40, animated = false }) {
@@ -301,13 +171,10 @@ function getInsightText(data, lang) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WeatherPage() {
   const { t, lang } = useLang();
+  const { weatherData, weatherLoading, weatherError, weatherTs, refreshWeather } = useData();
   usePageTitle(t.nav.weather);
 
-  const [weather, setWeather] = useState(null);
-  const [loading, setLoading]  = useState(true);
-  const [error, setError]      = useState(null);
-  const [fetchedAt, setFetchedAt] = useState(null);
-  const [activeDay, setActiveDay]  = useState("today");
+  const [activeDay, setActiveDay] = useState("today");
   const [now, setNow] = useState(new Date());
 
   // Real-time clock
@@ -316,38 +183,8 @@ export default function WeatherPage() {
     return () => clearInterval(id);
   }, []);
 
-  const fetchWeather = useCallback(async (force = false) => {
-    if (!force) {
-      const cached = getCached();
-      if (cached) { setWeather(cached.data); setLoading(false); setFetchedAt(new Date(cached.ts)); return; }
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [meteoRes, aqRes] = await Promise.all([
-        fetch(METEO_URL),
-        fetch(AQI_URL).catch(() => null),
-      ]);
-      if (!meteoRes.ok) throw new Error(`HTTP ${meteoRes.status}`);
-      const [meteoData, aqData] = await Promise.all([
-        meteoRes.json(),
-        aqRes ? aqRes.json().catch(() => null) : null,
-      ]);
-      const parsed = parseResponse(meteoData, aqData);
-      setWeather(parsed);
-      setCached(parsed);
-      setFetchedAt(new Date());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchWeather(); }, [fetchWeather]);
-
   // ── Render states ──
-  if (loading && !weather)
+  if (weatherLoading && !weatherData)
     return (
       <div className="weather-page">
         <div className="weather-loading" aria-live="polite" aria-busy="true">
@@ -358,21 +195,21 @@ export default function WeatherPage() {
       </div>
     );
 
-  if (error && !weather)
+  if (weatherError && !weatherData)
     return (
       <div className="weather-page">
         <div className="weather-loading" role="alert">
           <AlertTriangle size={40} style={{ color: "#e63946" }} />
           <p style={{ color: "#e63946" }}>{t.weather.load_failed}</p>
-          <p className="wl-sub">{error}</p>
-          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => fetchWeather(true)}>
+          <p className="wl-sub">{weatherError}</p>
+          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={refreshWeather}>
             <RefreshCw size={15} /> {t.weather.retry}
           </button>
         </div>
       </div>
     );
 
-  const data = activeDay === "today" ? weather.todayData : weather.tomorrowData;
+  const data = activeDay === "today" ? weatherData.todayData : weatherData.tomorrowData;
 
   const timeStr  = now.toLocaleTimeString(lang === "mn" ? "mn-MN" : "en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const dateLabel = lang === "mn"
@@ -407,11 +244,11 @@ export default function WeatherPage() {
             </div>
             <button
               className="weather-refresh-btn"
-              onClick={() => fetchWeather(true)}
+              onClick={refreshWeather}
               title={t.weather.refresh}
-              disabled={loading}
+              disabled={weatherLoading}
             >
-              <RefreshCw size={14} className={loading ? "spin" : ""} />
+              <RefreshCw size={14} className={weatherLoading ? "spin" : ""} />
             </button>
           </div>
 
@@ -602,11 +439,11 @@ export default function WeatherPage() {
         </div>
 
         {/* Hourly (today only) */}
-        {activeDay === "today" && weather.hourlyToday.length > 0 && (
+        {activeDay === "today" && weatherData.hourlyToday.length > 0 && (
           <div className="card mb-3">
             <h3 className="section-title">{t.weather.hourly_title}</h3>
             <div className="hourly-scroll">
-              {weather.hourlyToday.map(h => (
+              {weatherData.hourlyToday.map(h => (
                 <div key={h.hour} className={`hourly-item ${h.hour === nowSlot ? "now" : ""}`}>
                   <span className="h-time">{h.hour}</span>
                   <WeatherIcon code={h.code} size={32} />
@@ -626,9 +463,9 @@ export default function WeatherPage() {
         <div className="card mb-3">
           <h3 className="section-title">{t.weather.weekly_title}</h3>
           <div className="week-scroll">
-            <DayCard day={{ ...weather.todayData }}    active={activeDay === "today"}    onClick={() => setActiveDay("today")}    t={t} lang={lang} />
-            <DayCard day={{ ...weather.tomorrowData }} active={activeDay === "tomorrow"} onClick={() => setActiveDay("tomorrow")} t={t} lang={lang} />
-            {weather.weekForecast.map((d, i) => (
+            <DayCard day={{ ...weatherData.todayData }}    active={activeDay === "today"}    onClick={() => setActiveDay("today")}    t={t} lang={lang} />
+            <DayCard day={{ ...weatherData.tomorrowData }} active={activeDay === "tomorrow"} onClick={() => setActiveDay("tomorrow")} t={t} lang={lang} />
+            {weatherData.weekForecast.map((d, i) => (
               <DayCard key={i} day={d} active={false} onClick={() => {}} t={t} lang={lang} />
             ))}
           </div>
@@ -647,7 +484,7 @@ export default function WeatherPage() {
           </div>
 
           <ResponsiveContainer width="100%" height={190}>
-            <AreaChart data={weather.historyChart} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+            <AreaChart data={weatherData.historyChart} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
               <defs>
                 <linearGradient id="hddAreaGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3a8fd4" stopOpacity={0.55} />
@@ -662,7 +499,7 @@ export default function WeatherPage() {
                 formatter={(v) => [`${v} HDD`, lang === "mn" ? "Халаалтын зэрэглэлийн өдөр" : "Heating Degree Days"]}
               />
               <ReferenceLine
-                x={weather.historyChart[7]?.date}
+                x={weatherData.historyChart[7]?.date}
                 stroke="#e9c46a"
                 strokeDasharray="4 2"
                 strokeWidth={1.5}
@@ -682,7 +519,7 @@ export default function WeatherPage() {
 
           {/* HDD summary stats */}
           {(() => {
-            const hdds = weather.historyChart.map(d => d.hdd);
+            const hdds = weatherData.historyChart.map(d => d.hdd);
             const peak = Math.max(...hdds);
             const avg = Math.round(hdds.reduce((a, b) => a + b, 0) / hdds.length);
             const total = hdds.reduce((a, b) => a + b, 0);
@@ -731,7 +568,7 @@ export default function WeatherPage() {
           <h3 className="section-title">{t.weather.correlation_title}</h3>
           <div className="chart-note">{t.weather.chart_note_api}</div>
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={weather.historyChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <ComposedChart data={weatherData.historyChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="energyGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#1a6eb5" stopOpacity={0.9} />
@@ -811,9 +648,10 @@ export default function WeatherPage() {
             </div>
             <div className="ws-badges">
               <span className="ws-badge"><Clock size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{timeStr}</span>
-              <span className="ws-badge"><RefreshCw size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{fetchedAt ? (() => {
-                const hh = String(fetchedAt.getHours()).padStart(2,"0");
-                const mm = String(fetchedAt.getMinutes()).padStart(2,"0");
+              <span className="ws-badge"><RefreshCw size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{weatherTs ? (() => {
+                const d  = new Date(weatherTs);
+                const hh = String(d.getHours()).padStart(2,"0");
+                const mm = String(d.getMinutes()).padStart(2,"0");
                 return t.weather.updated_time.replace("{time}", `${hh}:${mm}`);
               })() : "—"}</span>
               <span className="ws-badge"><Thermometer size={12} style={{ verticalAlign: "middle", marginRight: 4 }} />{t.weather.city_name}</span>

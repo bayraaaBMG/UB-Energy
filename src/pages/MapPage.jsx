@@ -5,8 +5,7 @@ import {
 } from "recharts";
 import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
-import { storageGetJSON } from "../utils/storage";
-import { STORAGE_KEYS } from "../config/constants";
+import { useData } from "../contexts/DataContext";
 import {
   Building2, Zap, Wind, Ruler, Filter, TrendingUp,
   Database, Calculator, Leaf, BarChart2, Award, Lightbulb,
@@ -443,10 +442,12 @@ const MOCK_FALLBACK = buildingsData.map(b => ({
   source:   "mock",
 }));
 
-function loadUserMapBuildings(userId = null) {
+function loadUserMapBuildings(ctxBuildings, userId = null) {
   try {
-    const all = storageGetJSON(STORAGE_KEYS.buildings, []);
-    const stored = userId ? all.filter(b => !b.userId || b.userId === userId) : all;
+    const stored = ctxBuildings.filter(b =>
+      b.source !== "mock" && b.source !== "osm" &&
+      (!userId || !b.userId || b.userId === userId)
+    );
     return stored.map(b => ({
       id:       b.id,
       name:     b.name,
@@ -1395,12 +1396,13 @@ function WeatherWidget({ lang, pm25, showSmog, onToggleSmog }) {
 // ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MapPage() {
   const { t, lang, user } = useApp();
+  const { buildings: ctxBuildings } = useData();
   usePageTitle(t.nav.map);
 
   // Building cache: Map<id, building> — pre-seeded with mock + user buildings
   const buildingCache = useRef(new Map([
     ...MOCK_FALLBACK.map(b => [b.id, b]),
-    ...loadUserMapBuildings(user?.id).map(b => [b.id, b]),
+    ...loadUserMapBuildings(ctxBuildings, user?.id).map(b => [b.id, b]),
   ]));
   const [buildings,    setBuildings]   = useState([...buildingCache.current.values()]);
   const [loading,      setLoading]     = useState(true);
@@ -1413,6 +1415,19 @@ export default function MapPage() {
   const [showSmog,       setShowSmog]       = useState(true);
   const [mapZoom,        setMapZoom]        = useState(15);
   const DEMO_PM25 = 89;
+
+  // Sync user buildings from shared context into the map cache (handles add/delete)
+  useEffect(() => {
+    const userBuildings = loadUserMapBuildings(ctxBuildings, user?.id);
+    const userIds = new Set(userBuildings.map(b => b.id));
+    for (const [id, b] of buildingCache.current) {
+      if (b.source !== "mock" && b.source !== "osm" && !userIds.has(id)) {
+        buildingCache.current.delete(id);
+      }
+    }
+    userBuildings.forEach(b => buildingCache.current.set(b.id, b));
+    setBuildings([...buildingCache.current.values()]);
+  }, [ctxBuildings, user?.id]);
 
   // Called by BuildingFetcher with each batch of OSM buildings
   const addBuildings = useCallback((newBs) => {

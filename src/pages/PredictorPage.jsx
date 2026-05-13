@@ -19,8 +19,7 @@ import {
   predictHeating, generateRecommendations, CASE_STUDIES,
   TARIFF_TIERS,
 } from "../ml/model";
-import { getUserBuildings } from "../utils/buildingStorage";
-import { savePrediction, saveScenario } from "../utils/userDataStorage";
+import { useData } from "../contexts/DataContext";
 import "./PredictorPage.css";
 
 const BUILDING_COLORS = {
@@ -136,6 +135,7 @@ function GradeBar({ grade }) {
 
 export default function PredictorPage() {
   const { t, lang, user } = useApp();
+  const { buildings, addPrediction, addScenario, setLastPrediction } = useData();
   usePageTitle(t.nav.predictor);
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,7 +153,6 @@ export default function PredictorPage() {
     insulation_quality: "medium",
     window_type: "double",
   });
-  const [userBuildings, setUserBuildings] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [scenarioLoaded, setScenarioLoaded] = useState(false);
   const [demoScenario,   setDemoScenario]   = useState(null);
@@ -169,11 +168,8 @@ export default function PredictorPage() {
   const [showScenModal, setShowScenModal] = useState(false);
   const [scenSaved, setScenSaved] = useState(false);
 
-  // Load user's buildings from storage
-  useEffect(() => {
-    const b = getUserBuildings(user?.id).filter(b => b.source !== "mock");
-    setUserBuildings(b);
-  }, [user?.id]);
+  // User's own buildings (non-mock) from shared context
+  const userBuildings = buildings.filter(b => b.source !== "mock");
 
   // Load scenario from My Space
   useEffect(() => {
@@ -272,9 +268,9 @@ export default function PredictorPage() {
       setResult(r);
       setHeating(h);
       setRecs(rec);
+      setLastPrediction({ form: enriched, result: r, heating: h });
       setLoading(false);
-      // Auto-save to prediction history (guest saved under "guest" key)
-      savePrediction(user?.id, {
+      addPrediction({
         form: { ...enriched, name: form.building_name || `${form.area}м² ${form.building_type}`, grade: r.grade },
         result: r.annual,
         heating: h,
@@ -1169,7 +1165,7 @@ export default function PredictorPage() {
               autoFocus
               onKeyDown={e => {
                 if (e.key === "Enter" && scenLabel.trim()) {
-                  saveScenario(user?.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  addScenario({ label: scenLabel.trim(), form, id: Date.now() });
                   setShowScenModal(false);
                   setScenSaved(true);
                   setTimeout(() => setScenSaved(false), 2500);
@@ -1184,7 +1180,7 @@ export default function PredictorPage() {
                 className="btn btn-primary"
                 disabled={!scenLabel.trim()}
                 onClick={() => {
-                  saveScenario(user?.id, { label: scenLabel.trim(), form, id: Date.now() });
+                  addScenario({ label: scenLabel.trim(), form, id: Date.now() });
                   setShowScenModal(false);
                   setScenSaved(true);
                   setTimeout(() => setScenSaved(false), 2500);

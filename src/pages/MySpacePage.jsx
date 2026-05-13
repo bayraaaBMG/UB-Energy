@@ -14,14 +14,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine, Line, ComposedChart, Area,
 } from "recharts";
-import {
-  getPredictions, clearPredictions, deletePrediction,
-  getScenarios, deleteScenario,
-  getFavorites, removeFavorite,
-} from "../utils/userDataStorage";
-import {
-  getUserBuildings, deleteUserBuilding, updateUserBuilding,
-} from "../utils/buildingStorage";
+import { clearPredictions, deletePrediction, deleteScenario, removeFavorite } from "../utils/userDataStorage";
+import { deleteUserBuilding, updateUserBuilding } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import { predict } from "../ml/model";
 import "./MySpacePage.css";
 
@@ -1058,18 +1053,15 @@ export default function MySpacePage() {
   const navigate = useNavigate();
   usePageTitle(t.nav.mySpace);
 
-  const [activeTab, setActiveTab] = useState("summary");
-  const [tick, setTick] = useState(0);
-  const refresh = () => setTick(n => n + 1);
+  const {
+    buildings: allBuildings,
+    predictions, scenarios, favorites,
+    refreshUserData, refreshBuildings,
+  } = useData();
+  const buildings = allBuildings.filter(b => b.source !== "mock" && b.source !== "osm" && b.userId === user?.id);
+  const refresh = () => { refreshBuildings(); refreshUserData(); };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const buildings   = useMemo(() => user?.id ? getUserBuildings(user.id).filter(b => b.source !== "mock") : [], [tick, user?.id]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const predictions = useMemo(() => getPredictions(user?.id),  [tick, user?.id]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const scenarios   = useMemo(() => getScenarios(user?.id),    [tick, user?.id]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const favorites   = useMemo(() => getFavorites(user?.id),    [tick, user?.id]);
+  const [activeTab, setActiveTab] = useState("summary");
 
   const TAB_CONFIG = [
     { id: "summary",   icon: <BarChart2 size={15} />, label: t.myspace.tab_summary },

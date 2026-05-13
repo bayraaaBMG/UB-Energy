@@ -12,7 +12,8 @@ import {
 } from "recharts";
 import { monthlyEnergyData } from "../data/mockData";
 import { METRICS } from "../ml/model";
-import { getAllBuildings, computeStats } from "../utils/buildingStorage";
+import { computeStats } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import "./HomePage.css";
 
 const FEATURES = (t) => [
@@ -31,8 +32,8 @@ export default function HomePage() {
     month: lang === "mn" ? d.month : d.month_en,
   }));
 
-  const allBuildings = React.useMemo(() => getAllBuildings(), []);
-  const stats        = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
+  const { buildings: allBuildings } = useData();
+  const stats = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
 
   const DEMO_BADGE = { mn: "Синтетик өгөгдөл", en: "Synthetic data", icon: FlaskConical, color: "#f4a261" };
   const REAL_BADGE = { mn: "Бодит үзүүлэлт", en: "Real metric", icon: CheckCircle,  color: "#2a9d8f" };

@@ -19,7 +19,8 @@ import {
   ulaanbaatarDistricts,
 } from "../data/mockData";
 import { METRICS, ACTUAL_VS_PREDICTED, MODEL_COMPARISON, FEATURE_IMPORTANCE } from "../ml/model";
-import { getAllBuildings, computeStats } from "../utils/buildingStorage";
+import { computeStats } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import "./DashboardPage.css";
 
 function MetricCard({ icon: Icon, label, value, unit, trend, color = "#3a8fd4" }) {
@@ -87,6 +88,7 @@ function exportCSV(buildings, lang) {
 
 export default function DashboardPage() {
   const { t, lang, user } = useApp();
+  const { buildings: allBuildings } = useData();
   usePageTitle(t.nav.dashboard);
   const [period, setPeriod]         = useState("monthly");
   const [showAlert, setShowAlert]   = useState(true);
@@ -96,8 +98,6 @@ export default function DashboardPage() {
   const [typeFilter, setTypeFilter]         = useState("all");
 
   const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
-
-  const allBuildings = React.useMemo(() => getAllBuildings(user?.id), [user?.id]);
 
   const availableTypes = React.useMemo(() => {
     const types = [...new Set(allBuildings.map(b => b.type).filter(Boolean))];

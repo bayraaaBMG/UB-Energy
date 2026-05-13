@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
-import { saveUserBuilding } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import { convertElecMoneyToKwh, convertHeatBillToEstimates, TARIFF_TIERS, predict } from "../ml/model";
 
 const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
@@ -759,6 +759,7 @@ function BillResults({ elecBill, heatBill, lang }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function DataInputPage() {
   const { t, lang, user } = useApp();
+  const { addBuilding, batchAddBuildings } = useData();
   usePageTitle(t.nav.dataInput);
   const fileRef = useRef(null);
   const navigate = useNavigate();
@@ -1000,7 +1001,7 @@ export default function DataInputPage() {
         (schema?.fields || []).map(f => [f.key, form[f.key] ?? f.default])
       ),
     };
-    saveUserBuilding(record);
+    addBuilding(record);
     setSubmitted(true);
     setElecBill(""); setHeatBill("");
     setTimeout(() => setSubmitted(false), 5000);
@@ -1014,16 +1015,13 @@ export default function DataInputPage() {
 
   const handleFileSubmit = () => {
     if (files.length === 0 && links.length === 0) return;
-    // Import all valid parsed buildings
-    let count = 0;
+    const allValid = [];
     Object.values(parseResults).forEach(r => {
       if (!r || r.parsing || !r.valid) return;
-      r.valid.forEach(record => {
-        saveUserBuilding({ ...record, userId: user?.id || null });
-        count++;
-      });
+      r.valid.forEach(record => allValid.push({ ...record, userId: user?.id || null }));
     });
-    setSubmitCount(count);
+    batchAddBuildings(allValid);
+    setSubmitCount(allValid.length);
     setSubmitted(true);
     setTimeout(() => { setSubmitted(false); setFiles([]); setLinks([]); setParseResults({}); }, 5000);
   };
@@ -1825,7 +1823,7 @@ export default function DataInputPage() {
                       userId:       user?.id || null,
                       submittedAt:  new Date().toISOString(),
                     };
-                    saveUserBuilding(rec);
+                    addBuilding(rec);
                     setSubmitCount(1);
                     setSubmitted(true);
                     setCsvText(""); setTsResult(null);
@@ -1877,7 +1875,7 @@ export default function DataInputPage() {
                   onClick={() => {
                     const all = pasteResult.valid || [];
                     if (!all.length) return;
-                    all.forEach(r => saveUserBuilding({ ...r, userId: user?.id || null }));
+                    batchAddBuildings(all.map(r => ({ ...r, userId: user?.id || null })));
                     setSubmitCount(all.length);
                     setSubmitted(true);
                     setCsvText(""); setPasteResult(null);

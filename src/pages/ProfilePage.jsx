@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useAuth } from "../contexts/AuthContext";
-import { getUserBuildings, computeStats } from "../utils/buildingStorage";
+import { computeStats } from "../utils/buildingStorage";
+import { useData } from "../contexts/DataContext";
 import {
   User, Building2, Mail, Shield, Calendar, LogOut,
   Edit2, Lock, CheckCircle, AlertCircle, BarChart2, Camera,
@@ -55,6 +56,7 @@ export default function ProfilePage() {
   const { t, lang, toggleLang } = useLang();
   usePageTitle(t.nav.profile);
   const { user, logout, updateUser } = useAuth();
+  const { buildings: allBuildings } = useData();
   const navigate = useNavigate();
 
   // ── name edit ──
@@ -96,7 +98,7 @@ export default function ProfilePage() {
 
   if (!user) { navigate("/login"); return null; }
 
-  const buildings = getUserBuildings(user.id);
+  const buildings = allBuildings.filter(b => b.source !== "mock" && b.userId === user.id);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const stats = useMemo(() => computeStats(buildings), [buildings]);
 

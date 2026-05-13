@@ -15,8 +15,7 @@ import {
   CartesianGrid, ReferenceLine,
 } from "recharts";
 import { monthlyEnergyData, yearlyEnergyData } from "../data/mockData";
-import { getAllBuildings, deleteUserBuilding } from "../utils/buildingStorage";
-import { toggleFavorite, getFavorites } from "../utils/userDataStorage";
+import { useData } from "../contexts/DataContext";
 import "./DatabasePage.css";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -740,13 +739,12 @@ export default function DatabasePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [resultsBuilding, setResultsBuilding] = useState(null);
+  const { buildings: allBuildingsState, removeBuilding, favorites, toggleFav } = useData();
   const { confirmId, ask, confirm, cancel } = useConfirm();
   const isAdmin = user?.role === "admin";
   const [gradeFilter, setGradeFilter] = useState("all");
-  const [allBuildingsState, setAllBuildingsState] = useState(() => getAllBuildings(isAdmin ? null : user?.id));
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
-  const [favorites, setFavorites] = useState(() => user ? getFavorites(user.id) : []);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [showHistory, setShowHistory] = useState(false);
@@ -754,11 +752,7 @@ export default function DatabasePage() {
   const [activityLog, setActivityLog] = useState(() => readLog(user?.id));
   const favIds = new Set(favorites.map(f => f.id));
 
-  const handleToggleFav = (b) => {
-    if (!user) return;
-    toggleFavorite(user.id, b);
-    setFavorites(getFavorites(user.id));
-  };
+  const handleToggleFav = (b) => { toggleFav(b); };
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -818,13 +812,12 @@ export default function DatabasePage() {
 
   const handleDelete = (id) => {
     const b = allBuildingsState.find(x => x.id === id);
-    deleteUserBuilding(id);
+    removeBuilding(id);
     if (b) {
       const entry = { action: "delete", buildingName: b.name, buildingId: id, timestamp: new Date().toISOString() };
       appendLog(user?.id, entry);
       setActivityLog(readLog(user?.id));
     }
-    setAllBuildingsState(getAllBuildings(isAdmin ? null : user?.id));
     setCurrentPage(1);
   };
 

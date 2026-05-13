@@ -4,6 +4,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./contexts/AuthContext";
+import { DataProvider } from "./contexts/DataContext";
 import { useLang } from "./contexts/LanguageContext";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -71,6 +72,7 @@ export default function App() {
       <LanguageProvider>
         <ThemeProvider>
           <AuthProvider>
+            <DataProvider>
             <AppLayout>
               <Routes>
                 {/* ── Public routes ── */}
@@ -96,6 +98,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </AppLayout>
+            </DataProvider>
           </AuthProvider>
         </ThemeProvider>
       </LanguageProvider>
