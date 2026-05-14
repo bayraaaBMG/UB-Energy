@@ -678,62 +678,62 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
 
   return (
     <div className="bp">
-      {/* Header */}
-      <div className="bp-head">
-        <div className="bp-name">
-          <Building2 size={14} style={{ color: TYPE_COLOR[building.type], flexShrink: 0, marginTop: 2 }} />
-          <span>{building.name}</span>
-        </div>
-        <div className="bp-meta">
-          <span className="meta-type" style={{ background: `${TYPE_COLOR[building.type]}22`, color: TYPE_COLOR[building.type] }}>
+      {/* ── Top bar: name + close ── */}
+      <div className="bp-topbar">
+        <span className="bp-type-dot" style={{ background: TYPE_COLOR[building.type] || "#3a8fd4" }} />
+        <div className="bp-titleblock">
+          <span className="bp-title">{building.name}</span>
+          <span className="bp-subtitle">
             {typeLbl}
+            {building.district ? ` · ${building.district}` : ""}
+            {building.year ? ` · ${building.year}${!building.yearKnown && building.source === "osm" ? "~" : ""}` : ""}
           </span>
-          <span className="meta-grade" style={{ background: GRADE_COLORS[calc.grade] }}>
-            {calc.grade}
-          </span>
-          <span className="meta-yr" title={!building.yearKnown && building.source === "osm" ? (mn ? "OSM-д он байхгүй — таамаглал" : "Year not in OSM — estimated") : ""}>
-            {building.year}{!building.yearKnown && building.source === "osm" ? "~" : ""}
-          </span>
-          {onClose && (
-            <button className="bp-close-btn" onClick={onClose} title={mn ? "Хаах" : "Close"}>
-              ×
-            </button>
-          )}
         </div>
-        {/* OSM data completeness warning */}
-        {building.source === "osm" && (!building.yearKnown || !building.floorsKnown) && (
-          <div className="bp-data-warn">
-            <span className="bdw-icon">!</span>
-            <span>
-              {mn
-                ? `OSM-д ${!building.yearKnown ? "он" : ""}${!building.yearKnown && !building.floorsKnown ? ", " : ""}${!building.floorsKnown ? "давхрын тоо" : ""} байхгүй — тооцооллыг загвараар нөхсөн`
-                : `OSM missing ${[!building.yearKnown && "year", !building.floorsKnown && "floor count"].filter(Boolean).join(" & ")} — estimated by model`}
-            </span>
-          </div>
+        {onClose && (
+          <button className="bp-close-btn" onClick={onClose} aria-label={mn ? "Хаах" : "Close"}>×</button>
         )}
       </div>
 
-      {/* ── Auto-computed result summary ─────────────────────────────── */}
-      <div className="osm-result-summary">
-
-        {/* Pipeline steps */}
-        <div className="osm-pipeline">
-          {[
-            { lbl: "Overpass API", color: "#3a8fd4" },
-            { lbl: building.source === "osm" ? "Shoelace" : "Талбай", color: "#9b72cf" },
-            { lbl: "ML OLS", color: "#f4a261" },
-            { lbl: mn ? "Үр дүн" : "Result", color: "#2a9d8f", active: true },
-          ].map((s, i, arr) => (
-            <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.2rem" }}>
-              <span className={`pipe-node${s.active ? " pipe-active" : ""}`}
-                style={{ borderColor: s.color, color: s.color }}>
-                {s.lbl}
-              </span>
-              {i < arr.length - 1 && <span className="pipe-arr">→</span>}
-            </span>
-          ))}
+      {/* ── Prominent 3-metric summary ── */}
+      <div className="bp-kpi-bar">
+        <div className="bp-kpi">
+          <div className="bp-kpi-val" style={{ color: "#f4a261" }}>{calc.total.toLocaleString()}</div>
+          <div className="bp-kpi-unit">kWh/жил</div>
+          <div className="bp-kpi-lbl">{mn ? "Жилийн хэрэглээ" : "Annual usage"}</div>
         </div>
+        <div className="bp-kpi-divider" />
+        <div className="bp-kpi">
+          <div className="bp-kpi-val" style={{ color: GRADE_COLORS[calc.grade] }}>
+            <span className="bp-kpi-grade" style={{ background: GRADE_COLORS[calc.grade] }}>{calc.grade}</span>
+          </div>
+          <div className="bp-kpi-lbl" style={{ marginTop: "0.25rem" }}>{mn ? "Үр ашгийн анги" : "Eff. grade"}</div>
+        </div>
+        <div className="bp-kpi-divider" />
+        <div className="bp-kpi">
+          <div className="bp-kpi-val" style={{ color: calc.co2 > 50 ? "#e63946" : calc.co2 > 20 ? "#f4a261" : "#2a9d8f" }}>
+            {calc.co2}
+          </div>
+          <div className="bp-kpi-unit">t CO₂/жил</div>
+          <div className="bp-kpi-lbl">{mn ? "Нүүрстөрөгч" : "Carbon"}</div>
+        </div>
+      </div>
 
+      {/* ── Chips row: area / floors / source ── */}
+      <div className="bp-chips">
+        <span className="bp-chip"><Ruler size={10} />{building.area.toLocaleString()} m²</span>
+        <span className="bp-chip"><Layers size={10} />{building.floors} {mn ? "давхар" : "fl"}</span>
+        <span className="bp-chip" style={{ color: building.source === "user" ? "#e63946" : undefined }}>
+          {building.source === "user" ? (mn ? "★ Таны" : "★ Mine") : building.source === "osm" ? "OSM" : "Demo"}
+        </span>
+        {building.source === "osm" && (!building.yearKnown || !building.floorsKnown) && (
+          <span className="bp-chip bp-chip-warn">
+            {mn ? "Дутуу OSM өгөгдөл" : "Partial OSM data"}
+          </span>
+        )}
+      </div>
+
+      {/* ── osm-result-summary ── (secondary metrics, kept for tab detail) */}
+      <div className="osm-result-summary">
         {/* 6 key metrics */}
         <div className="osm-metrics-grid">
           {/* Annual usage — full width */}
@@ -1534,7 +1534,7 @@ export default function MapPage() {
   return (
     <div className="map-outer">
       {/* ── Full-screen map + panel row ── */}
-      <div className="map-page">
+      <div className={`map-page${selected ? " panel-open" : ""}`}>
         {/* Map canvas */}
         <div className="map-canvas">
           <MapContainer
@@ -1837,19 +1837,27 @@ export default function MapPage() {
             onToggleSmog={() => setShowSmog(s => !s)}
             weather={weatherData?.todayData}
           />
+        </div>
 
-          {/* Building info overlay panel (Google Maps style) */}
-          <div className={`map-panel${selected ? " open" : ""}`}>
-            {selected && (
-              <BuildingPanel
-                building={selected}
-                lang={lang}
-                t={t}
-                onClose={() => setSelected(null)}
-                hdd={currentHdd}
-              />
-            )}
-          </div>
+        {/* ── Result panel — sibling of map-canvas for split layout ── */}
+        <div className={`map-panel${selected ? " open" : ""}`} role="complementary" aria-label={lang === "mn" ? "Барилгын мэдээлэл" : "Building details"}>
+          {/* Mobile drag handle */}
+          <div className="panel-drag-handle" />
+          {selected ? (
+            <BuildingPanel
+              building={selected}
+              lang={lang}
+              t={t}
+              onClose={() => setSelected(null)}
+              hdd={currentHdd}
+            />
+          ) : (
+            <div className="panel-empty-state">
+              <div className="pes-icon"><Building2 size={28} style={{ color: "#3a8fd4", opacity: 0.6 }} /></div>
+              <p className="pes-hint">{lang === "mn" ? "Барилга сонгоно уу" : "Select a building"}</p>
+              <p className="pes-sub">{lang === "mn" ? "Газрын зурган дээр барилга дарахад дэлгэрэнгүй мэдээлэл харагдана" : "Tap any building on the map to see its energy details"}</p>
+            </div>
+          )}
         </div>
       </div>
 
