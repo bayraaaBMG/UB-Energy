@@ -1708,19 +1708,18 @@ export default function MapPage() {
 
           {/* Controls */}
           <div className="map-controls">
-            <div className="ctrl-pill" style={{ display: "flex", flexWrap: "wrap", gap: "0.2rem", alignItems: "center" }}>
-              <Filter size={12} style={{ color: "#8899aa", flexShrink: 0 }} />
+            {/* Type filter — horizontal scroll, single row */}
+            <div className="ctrl-pill ctrl-pill-scroll">
+              <Filter size={11} style={{ color: "#8899aa", flexShrink: 0 }} />
               {[["all", t.map.all_types, null], ...Object.entries(typeLabels).map(([k, v]) => [k, v, TYPE_COLOR[k]])].map(([k, v, c]) => (
                 <button
                   key={k}
+                  className="type-filter-btn"
                   onClick={() => { setTypeFilter(k); setSelected(null); }}
                   style={{
-                    padding: "0.15rem 0.45rem", borderRadius: 4, fontSize: "0.68rem", fontWeight: 700,
-                    cursor: "pointer", border: "1px solid",
-                    borderColor: typeFilter === k ? (c || "#3a8fd4") : "var(--border)",
-                    background:  typeFilter === k ? `${(c || "#3a8fd4")}25` : "transparent",
-                    color:       typeFilter === k ? (c || "#3a8fd4") : "var(--text3)",
-                    transition:  "0.15s",
+                    borderColor: typeFilter === k ? (c || "#3a8fd4") : "rgba(255,255,255,0.12)",
+                    background:  typeFilter === k ? `${(c || "#3a8fd4")}22` : "transparent",
+                    color:       typeFilter === k ? (c || "#3a8fd4") : "#8899aa",
                   }}
                 >
                   {typeof v === "string" ? v.slice(0, 7) : k}
@@ -1729,7 +1728,7 @@ export default function MapPage() {
             </div>
             {availableDistricts.length > 0 && (
               <div className="ctrl-pill">
-                <MapPin size={12} style={{ color: "#8899aa" }} />
+                <MapPin size={11} style={{ color: "#8899aa" }} />
                 <select className="ctrl-sel" value={districtFilter}
                   onChange={e => { setDistrictFilter(e.target.value); setSelected(null); }}>
                   <option value="all">{lang === "mn" ? "Бүх дүүрэг" : "All districts"}</option>
@@ -1737,31 +1736,22 @@ export default function MapPage() {
                 </select>
               </div>
             )}
-            {/* Primary layer toggle: Energy / Grade */}
+            {/* Color mode: Energy / Grade / Type / PM2.5 — merged into one row */}
             <div className="layer-group">
-              <button className={`layer-btn${colorMode === "energy" ? " active" : ""}`}
-                onClick={() => setColorMode("energy")}
-                title={lang === "mn" ? "kWh/m² эрчим хүч (ногоон→улаан)" : "Energy kWh/m² (green→red)"}>
-                {lang === "mn" ? "Энерги" : "Energy"}
-              </button>
-              <button className={`layer-btn${colorMode === "grade" ? " active" : ""}`}
-                onClick={() => setColorMode("grade")}
-                title={lang === "mn" ? "A–G зэрэглэлээр өнгө" : "Color by A–G grade"}>
-                {lang === "mn" ? "Зэрэглэл" : "Grade"}
-              </button>
+              {[
+                ["energy", lang === "mn" ? "Энерги" : "Energy"],
+                ["grade",  lang === "mn" ? "Зэрэглэл" : "Grade"],
+                ["type",   lang === "mn" ? "Төрөл" : "Type"],
+                ["pm25",   "PM2.5"],
+              ].map(([mode, label]) => (
+                <button key={mode} className={`layer-btn${colorMode === mode ? " active" : ""}`}
+                  onClick={() => setColorMode(mode)}>
+                  {label}
+                </button>
+              ))}
             </div>
-            {/* Secondary: Type / PM2.5 / base map */}
-            <div className="layer-group">
-              <button className={`layer-btn${colorMode === "type" ? " active" : ""}`}
-                onClick={() => setColorMode("type")} title={lang === "mn" ? "Төрлөөр өнгө" : "Color by type"}>
-                {lang === "mn" ? "Төрөл" : "Type"}
-              </button>
-              <button className={`layer-btn${colorMode === "pm25" ? " active" : ""}`}
-                onClick={() => setColorMode("pm25")} title={lang === "mn" ? "PM2.5 бохирдол" : "PM2.5 pollution"}>
-                PM2.5
-              </button>
-            </div>
-            <div className="layer-group">
+            {/* Basemap toggle */}
+            <div className="layer-group layer-group-basemap">
               {["dark", "satellite", "street"].map(l => (
                 <button key={l} className={`layer-btn${layer === l ? " active" : ""}`}
                   onClick={() => setLayer(l)}>

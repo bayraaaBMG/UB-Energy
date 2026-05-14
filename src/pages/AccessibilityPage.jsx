@@ -8,7 +8,7 @@ import {
 import "./AccessibilityPage.css";
 
 // ── Compliance item data ───────────────────────────────────────────────────────
-// status: "done" | "partial" | "planned"
+// status: "done-бүрэн хийж дууссан" | "partial-хэсэгчлэн хийгдсэн" | "planned-хийхээр төлөвлөсөн, хараахан хийгдээгүй"
 const COMPLIANCE = [
   { status: "done",    label: "Skip-to-content link",              desc: "Tab дарахад 'Skip to main content' линк харагдана" },
   { status: "done",    label: "Font size scaling",                  desc: "16 / 18 / 22px — бүх хуудсанд CSS rem ашиглана" },

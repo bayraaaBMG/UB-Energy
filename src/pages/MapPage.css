@@ -212,35 +212,59 @@
 /* ─── Controls overlay: top-left ─────────────────────────────────────────── */
 .map-controls {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   z-index: 500;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
+  max-width: calc(100vw - 20px);
 }
 
 .ctrl-pill {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
   background: rgba(8, 14, 24, 0.9);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 6px 11px;
+  border-radius: 7px;
+  padding: 5px 9px;
+}
+
+/* Scrollable type-filter row — never wraps */
+.ctrl-pill-scroll {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+.ctrl-pill-scroll::-webkit-scrollbar { display: none; }
+
+/* Type filter buttons */
+.type-filter-btn {
+  padding: 0.13rem 0.38rem;
+  border-radius: 4px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  transition: 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.4;
 }
 
 .ctrl-sel {
   background: transparent;
   border: none;
   color: #c8d8e8;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-family: inherit;
   cursor: pointer;
   outline: none;
   padding: 0;
-  max-width: 160px;
+  max-width: 140px;
 }
 .ctrl-sel option { background: #0e1825; color: #c8d8e8; }
 
@@ -249,14 +273,14 @@
   background: rgba(8, 14, 24, 0.9);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 7px;
   overflow: hidden;
 }
 
 .layer-btn {
   flex: 1;
-  padding: 5px 11px;
-  font-size: 0.73rem;
+  padding: 4px 9px;
+  font-size: 0.66rem;
   font-weight: 600;
   color: #8899aa;
   background: transparent;
@@ -1581,16 +1605,26 @@
   .weather-widget   { top: auto; bottom: 44px; right: 8px; }
 }
 
-/* ─── Mobile UI refinements (<500px) ─────────────────────────────────────── */
-@media (max-width: 500px) {
+/* ─── Tablet refinements (600–959px) ─────────────────────────────────────── */
+@media (min-width: 600px) and (max-width: 959px) {
+  .map-controls     { gap: 4px; top: 8px; left: 8px; }
+  .ctrl-pill        { padding: 4px 8px; gap: 3px; }
+  .layer-btn        { padding: 3px 7px; font-size: 0.62rem; }
+  .type-filter-btn  { padding: 0.1rem 0.3rem; font-size: 0.6rem; }
+  .ctrl-sel         { font-size: 0.7rem; max-width: 120px; }
+}
+
+/* ─── Mobile UI refinements (<600px) ─────────────────────────────────────── */
+@media (max-width: 599px) {
   .bp-tab           { font-size: 0.65rem; padding: 0.28rem 0.35rem; }
   .cr-formula       { display: none; }
   .how-step         { flex-direction: column; gap: 0.7rem; }
   .how-formula      { font-size: 0.65rem; }
   .weather-widget   { display: none; }
-  .map-controls     { gap: 5px; max-width: calc(100vw - 24px); }
-  .layer-btn        { padding: 4px 7px; font-size: 0.67rem; }
-  .ctrl-pill        { padding: 5px 8px; }
-  .ctrl-sel         { font-size: 0.75rem; max-width: 120px; }
-  .map-controls .layer-group:last-child { display: none; }
+  .map-controls     { gap: 3px; top: 7px; left: 7px; max-width: calc(100vw - 14px); }
+  .ctrl-pill        { padding: 3px 7px; gap: 3px; border-radius: 6px; }
+  .layer-btn        { padding: 2px 6px; font-size: 0.58rem; }
+  .type-filter-btn  { padding: 0.08rem 0.22rem; font-size: 0.55rem; }
+  .ctrl-sel         { font-size: 0.66rem; max-width: 100px; }
+  .layer-group-basemap { display: none; }
 }
