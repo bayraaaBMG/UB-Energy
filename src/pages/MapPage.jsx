@@ -570,6 +570,17 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
   return null;
 }
 
+// ─── MapResizer — forces Leaflet to remeasure after panel open/close transition ──
+function MapResizer({ panelOpen }) {
+  const map = useMap();
+  useEffect(() => {
+    // Wait for the 0.28s CSS transition to finish before invalidating
+    const id = setTimeout(() => map.invalidateSize({ animate: false }), 340);
+    return () => clearTimeout(id);
+  }, [panelOpen, map]);
+  return null;
+}
+
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 function SectionHeader({ icon: Icon, title, color }) {
   return (
@@ -1547,6 +1558,9 @@ export default function MapPage() {
 
             {/* Viewport-based building loader + zoom tracker */}
             <BuildingFetcher onNewBuildings={addBuildings} setLoading={setLoading} onFetched={setLastFetched} onZoom={setMapZoom} />
+
+            {/* Leaflet tile invalidation when panel opens/closes */}
+            <MapResizer panelOpen={!!selected} />
 
             {filtered.filter(b => b.osmGeom).map(b => {
               const active    = selected?.id === b.id;

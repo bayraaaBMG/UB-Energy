@@ -13,6 +13,7 @@
   flex-direction: row;
   height: calc(100vh - 60px);
   overflow: hidden;
+  position: relative;   /* anchors absolute-positioned overlay panel (tablet/mobile) */
 }
 
 /* ─── Map canvas ──────────────────────────────────────────────────────────── */
@@ -20,54 +21,46 @@
   flex: 1 1 100%;
   position: relative;
   min-width: 0;
-  transition: flex-basis 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Desktop split: map shrinks when panel opens ─────────────────────────── */
+/* ─── Desktop 60/40 split-screen workspace ────────────────────────────────── */
 @media (min-width: 960px) {
+  /* Canvas shrinks to 60% when panel opens */
   .map-page.panel-open .map-canvas {
-    flex: 1 1 55%;
+    flex-basis: 60%;
+    flex-shrink: 0;
+    flex-grow: 0;
   }
-  .map-page.panel-open .map-panel {
-    flex: 0 0 420px;
-    max-width: 420px;
-  }
-}
 
-/* ─── Result panel ────────────────────────────────────────────────────────── */
-.map-panel {
-  /* Desktop: flex column sibling */
-  flex: 0 0 0px;
-  max-width: 0;
-  overflow: hidden;
-  background: var(--bg);
-  border-left: none;
-  display: flex;
-  flex-direction: column;
-  transition:
-    flex-basis 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    max-width  0.28s cubic-bezier(0.4, 0, 0.2, 1),
-    border-left-width 0.28s;
-  pointer-events: none;
-}
-
-.map-panel.open {
-  pointer-events: auto;
-}
-
-/* Desktop open: shrinks map, panel slides in */
-@media (min-width: 960px) {
+  /* Panel: zero-width when closed, 40% when open — no fixed px, no max-width */
   .map-panel {
-    border-left: 0px solid var(--border);
-    overflow-y: auto;
+    position: relative;
+    flex: 0 0 0%;
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    min-width: 0;
+    max-width: none;
   }
+
   .map-panel.open {
+    flex-basis: 40%;
+    flex-shrink: 0;
+    flex-grow: 0;
+    min-width: 0;
+    max-width: none;
+    overflow-y: auto;
     border-left: 1px solid var(--border);
-    box-shadow: -3px 0 18px rgba(0, 0, 0, 0.3);
+    box-shadow: -2px 0 24px rgba(0, 0, 0, 0.22);
+    pointer-events: auto;
   }
 }
 
-/* Tablet (600–959px): overlay from right, doesn't shrink map */
+/* Tablet (600–959px): overlay from right, map stays full-width */
 @media (min-width: 600px) and (max-width: 959px) {
   .map-panel {
     position: absolute;
@@ -78,18 +71,21 @@
     max-width: min(88vw, 380px);
     flex: none;
     overflow-y: auto;
+    background: var(--bg);
     border-left: 1px solid var(--border);
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45);
-    transform: translateX(100%);
+    transform: translateX(110%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 800;
+    pointer-events: none;
   }
   .map-panel.open {
     transform: translateX(0);
+    pointer-events: auto;
   }
 }
 
-/* Mobile (<600px): bottom sheet */
+/* Mobile (<600px): bottom sheet — slides up from below */
 @media (max-width: 599px) {
   .map-page {
     flex-direction: column;
@@ -97,33 +93,37 @@
   }
   .map-canvas {
     flex: 1 1 auto;
-    min-height: 42vh;
+    min-height: 38vh;
     max-height: calc(100vh - 60px);
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
   }
   .map-page.panel-open .map-canvas {
-    max-height: 40vh;
+    max-height: 38vh;
   }
   .map-panel {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
     max-width: 100%;
-    height: 60vh;
+    height: 62vh;
     flex: none;
     overflow-y: auto;
+    background: var(--bg);
     border-radius: 16px 16px 0 0;
     border-top: 1px solid var(--border);
     border-left: none;
     box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5);
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 800;
+    z-index: 900;
+    pointer-events: none;
   }
   .map-panel.open {
     transform: translateY(0);
+    pointer-events: auto;
   }
 }
 
@@ -1574,29 +1574,23 @@
   font-family: monospace;
 }
 
+/* ─── Tablet / narrow responsive (non-panel) ─────────────────────────────── */
 @media (max-width: 960px) {
-  .map-page         { flex-direction: column; height: auto; }
-  .map-canvas       { flex: none; height: 55vh; min-height: 320px; width: 100%; }
-  .map-panel        { width: 100%; max-width: 100%; border-left: none; border-top: 1px solid var(--border); top: auto; bottom: 0; height: 55vh; max-height: 55vh; transform: translateY(100%); }
-  .map-panel.open   { transform: translateY(0); }
   .how-section      { padding: 2.5rem 1rem 3rem; }
   .how-title        { font-size: 1.3rem; }
   .weather-widget   { top: auto; bottom: 44px; right: 8px; }
 }
 
+/* ─── Mobile UI refinements (<500px) ─────────────────────────────────────── */
 @media (max-width: 500px) {
-  .map-canvas       { height: 48vh; }
-  .map-panel        { height: 60vh; max-height: 60vh; }
   .bp-tab           { font-size: 0.65rem; padding: 0.28rem 0.35rem; }
   .cr-formula       { display: none; }
   .how-step         { flex-direction: column; gap: 0.7rem; }
   .how-formula      { font-size: 0.65rem; }
   .weather-widget   { display: none; }
-  /* Compact controls on small screens */
   .map-controls     { gap: 5px; max-width: calc(100vw - 24px); }
   .layer-btn        { padding: 4px 7px; font-size: 0.67rem; }
   .ctrl-pill        { padding: 5px 8px; }
   .ctrl-sel         { font-size: 0.75rem; max-width: 120px; }
-  /* Hide map-style row — use default dark on mobile */
   .map-controls .layer-group:last-child { display: none; }
 }
