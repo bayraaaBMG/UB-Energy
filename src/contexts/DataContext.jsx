@@ -143,13 +143,23 @@ export function DataProvider({ children }) {
   const [weatherTs, setWeatherTs]           = useState(null);
 
   const fetchWeather = useCallback(async (force = false) => {
-    if (!force) {
-      const cached = storageGetJSON(STORAGE_KEYS.weatherCache, null);
-      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    // Always serve cache first so the UI isn't blank
+    const cached = storageGetJSON(STORAGE_KEYS.weatherCache, null);
+    if (!force && cached && Date.now() - cached.ts < CACHE_TTL) {
+      setWeatherData(cached.data);
+      setWeatherTs(cached.ts);
+      return;
+    }
+    // Fast-fail when offline — use stale cache if available
+    if (!navigator.onLine) {
+      if (cached) {
         setWeatherData(cached.data);
         setWeatherTs(cached.ts);
-        return;
+        setWeatherError("offline");
+      } else {
+        setWeatherError("offline");
       }
+      return;
     }
     setWeatherLoading(true);
     setWeatherError(null);
@@ -167,7 +177,13 @@ export function DataProvider({ children }) {
       storageSetJSON(STORAGE_KEYS.weatherCache, { ts: Date.now(), data: parsed });
       setWeatherData(parsed);
       setWeatherTs(Date.now());
+      setWeatherError(null);
     } catch (e) {
+      // Keep showing stale cached data if available
+      if (cached) {
+        setWeatherData(cached.data);
+        setWeatherTs(cached.ts);
+      }
       setWeatherError(e.message);
     } finally {
       setWeatherLoading(false);
@@ -262,6 +278,24 @@ export function DataProvider({ children }) {
   useEffect(() => { refreshBuildings(); }, [refreshBuildings]);
   useEffect(() => { refreshUserData(); }, [refreshUserData]);
 
+  // ── Auto-refresh weather every 30 min while app is open ──────────────────────
+  useEffect(() => {
+    const id = setInterval(() => fetchWeather(true), CACHE_TTL);
+    return () => clearInterval(id);
+  }, [fetchWeather]);
+
+  // ── Re-fetch when coming back online ─────────────────────────────────────────
+  useEffect(() => {
+    const handleOnline  = () => { setWeatherError(null); fetchWeather(true); };
+    const handleOffline = () => setWeatherError("offline");
+    window.addEventListener("online",  handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online",  handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [fetchWeather]);
+
   return (
     <DataContext.Provider value={{
       // Weather — full parsed data for WeatherPage, shortcuts for other pages
@@ -270,6 +304,8 @@ export function DataProvider({ children }) {
       weatherError,
       weatherTs,
       refreshWeather: () => fetchWeather(true),
+      isOffline:   weatherError === "offline",
+      isStale:     weatherTs != null && (Date.now() - weatherTs) > CACHE_TTL,
       currentHdd:  weatherData?.todayData?.hdd  ?? 4500,
       currentTemp: weatherData?.todayData?.temp  ?? null,
       currentAqi:  weatherData?.todayData?.aqi   ?? null,

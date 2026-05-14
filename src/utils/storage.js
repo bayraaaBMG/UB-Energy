@@ -8,7 +8,17 @@ export function storageGet(key) {
 }
 
 export function storageSet(key, value) {
-  try { localStorage.setItem(key, value); } catch { /* quota or private mode */ }
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "QuotaExceededError") {
+      // Evict oldest weather cache to free space, then retry once
+      try { localStorage.removeItem("ub_weather_cache"); } catch {}
+      try { localStorage.setItem(key, value); return true; } catch {}
+    }
+    return false;
+  }
 }
 
 export function storageRemove(key) {
@@ -20,5 +30,14 @@ export function storageGetJSON(key, fallback = null) {
 }
 
 export function storageSetJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota or private mode */ }
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "QuotaExceededError") {
+      try { localStorage.removeItem("ub_weather_cache"); } catch {}
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch {}
+    }
+    return false;
+  }
 }

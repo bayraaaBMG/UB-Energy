@@ -8,6 +8,7 @@ import {
   Building2, Database, ArrowRight,
   Download, FileText, Clock, SlidersHorizontal, Info,
   Gauge, ShieldCheck, Radio, Award, Brain, ChevronDown, ChevronUp,
+  Wind, Droplets, CloudSnow, WifiOff,
 } from "lucide-react";
 import {
   Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
@@ -88,7 +89,7 @@ function exportCSV(buildings, lang) {
 
 export default function DashboardPage() {
   const { t, lang, user } = useApp();
-  const { buildings: allBuildings } = useData();
+  const { buildings: allBuildings, weatherData, currentHdd, currentTemp, currentAqi, isOffline, isStale, weatherTs } = useData();
   usePageTitle(t.nav.dashboard);
   const [period, setPeriod]         = useState("monthly");
   const [showAlert, setShowAlert]   = useState(true);
@@ -278,6 +279,64 @@ export default function DashboardPage() {
             message={t.dashboard.alert_msg}
             onClose={() => setShowAlert(false)}
           />
+        )}
+
+        {/* ── Live weather card ── */}
+        {weatherData ? (
+          <div className="card mb-3" style={{ padding: "0.85rem 1.1rem", display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap", background: "linear-gradient(135deg, rgba(58,143,212,0.08) 0%, rgba(42,157,143,0.06) 100%)", border: "1px solid rgba(58,143,212,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 120 }}>
+              <Thermometer size={18} style={{ color: "#3a8fd4" }} />
+              <div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>
+                  {currentTemp != null ? `${currentTemp > 0 ? "+" : ""}${currentTemp}°C` : "—"}
+                </div>
+                <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>{lang === "mn" ? "Одоогийн температур" : "Current temp"}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 100 }}>
+              <Zap size={18} style={{ color: "#f4a261" }} />
+              <div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#f4a261", lineHeight: 1 }}>{currentHdd}</div>
+                <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>HDD {lang === "mn" ? "(Халааны өдөр)" : "(Heating days)"}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 100 }}>
+              <Wind size={18} style={{ color: "#8899aa" }} />
+              <div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{weatherData.todayData.wind} <span style={{ fontSize: "0.72rem" }}>km/h</span></div>
+                <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>{lang === "mn" ? "Салхи" : "Wind speed"}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 100 }}>
+              <CloudSnow size={18} style={{ color: currentAqi > 100 ? "#e63946" : currentAqi > 50 ? "#f4a261" : "#2a9d8f" }} />
+              <div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: currentAqi > 100 ? "#e63946" : currentAqi > 50 ? "#f4a261" : "#2a9d8f", lineHeight: 1 }}>
+                  {currentAqi ?? "—"}
+                </div>
+                <div style={{ fontSize: "0.68rem", color: "var(--text3)" }}>AQI</div>
+              </div>
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              {isOffline && (
+                <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#f4a261", background: "rgba(244,162,97,0.12)", borderRadius: 6, padding: "0.25rem 0.55rem", border: "1px solid rgba(244,162,97,0.3)" }}>
+                  <WifiOff size={11} /> {lang === "mn" ? "Офлайн · кэш" : "Offline · cached"}
+                </span>
+              )}
+              {isStale && !isOffline && (
+                <span style={{ fontSize: "0.68rem", color: "var(--text3)" }}>
+                  {lang === "mn" ? `${Math.round((Date.now() - weatherTs) / 60000)}мин өмнө` : `${Math.round((Date.now() - weatherTs) / 60000)}min ago`}
+                </span>
+              )}
+              <Link to="/weather" style={{ fontSize: "0.72rem", color: "#3a8fd4", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.2rem" }}>
+                {lang === "mn" ? "Цаг агаар" : "Weather"} <ArrowRight size={11} />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="card mb-3" style={{ padding: "0.75rem 1.1rem", display: "flex", alignItems: "center", gap: "0.6rem", opacity: 0.6, border: "1px solid var(--border)" }}>
+            <Thermometer size={16} style={{ color: "var(--text3)" }} />
+            <span style={{ fontSize: "0.8rem", color: "var(--text3)" }}>{lang === "mn" ? "Цаг агаарын мэдээ ачааллаж байна…" : "Loading weather data…"}</span>
+          </div>
         )}
 
         {/* ── User buildings summary ── */}

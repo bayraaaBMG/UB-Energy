@@ -171,7 +171,7 @@ function getInsightText(data, lang) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WeatherPage() {
   const { t, lang } = useLang();
-  const { weatherData, weatherLoading, weatherError, weatherTs, refreshWeather } = useData();
+  const { weatherData, weatherLoading, weatherError, weatherTs, refreshWeather, isOffline, isStale } = useData();
   usePageTitle(t.nav.weather);
 
   const [activeDay, setActiveDay] = useState("today");
@@ -199,9 +199,13 @@ export default function WeatherPage() {
     return (
       <div className="weather-page">
         <div className="weather-loading" role="alert">
-          <AlertTriangle size={40} style={{ color: "#e63946" }} />
-          <p style={{ color: "#e63946" }}>{t.weather.load_failed}</p>
-          <p className="wl-sub">{weatherError}</p>
+          <AlertTriangle size={40} style={{ color: weatherError === "offline" ? "#f4a261" : "#e63946" }} />
+          <p style={{ color: weatherError === "offline" ? "#f4a261" : "#e63946" }}>
+            {weatherError === "offline"
+              ? (lang === "mn" ? "Интернэт холболт алга" : "No internet connection")
+              : t.weather.load_failed}
+          </p>
+          {weatherError !== "offline" && <p className="wl-sub">{weatherError}</p>}
           <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={refreshWeather}>
             <RefreshCw size={15} /> {t.weather.retry}
           </button>
@@ -242,14 +246,26 @@ export default function WeatherPage() {
               <span className="clock-time">{timeStr}</span>
               <span className="clock-date">{dateLabel}</span>
             </div>
-            <button
-              className="weather-refresh-btn"
-              onClick={refreshWeather}
-              title={t.weather.refresh}
-              disabled={weatherLoading}
-            >
-              <RefreshCw size={14} className={weatherLoading ? "spin" : ""} />
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              {isOffline && (
+                <span style={{ fontSize: "0.68rem", color: "#f4a261", background: "rgba(244,162,97,0.15)", borderRadius: 6, padding: "0.15rem 0.45rem", border: "1px solid rgba(244,162,97,0.3)" }}>
+                  offline · cached
+                </span>
+              )}
+              {isStale && !isOffline && (
+                <span style={{ fontSize: "0.68rem", color: "var(--text3)" }}>
+                  stale {Math.round((Date.now() - weatherTs) / 60000)}m
+                </span>
+              )}
+              <button
+                className="weather-refresh-btn"
+                onClick={refreshWeather}
+                title={t.weather.refresh}
+                disabled={weatherLoading}
+              >
+                <RefreshCw size={14} className={weatherLoading ? "spin" : ""} />
+              </button>
+            </div>
           </div>
 
           <div className="day-selector">
