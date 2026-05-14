@@ -1436,7 +1436,13 @@ export default function MapPage() {
   const [colorMode,      setColorMode]      = useState("type");
   const [showSmog,       setShowSmog]       = useState(true);
   const [mapZoom,        setMapZoom]        = useState(15);
+  const [legendOpen,     setLegendOpen]     = useState(false);
+  const [sheetSnap,      setSheetSnap]      = useState("mid");
+  const dragStartY = useRef(null);
   const DEMO_PM25 = 89;
+
+  // Reset sheet snap when building panel closes
+  useEffect(() => { if (!selected) setSheetSnap("mid"); }, [selected]);
 
   // Merge function: mock + user (from context) + OSM (from cache) — user buildings always win
   const mergeBuildings = useCallback(() => {
@@ -1545,7 +1551,7 @@ export default function MapPage() {
   return (
     <div className="map-outer">
       {/* ── Full-screen map + panel row ── */}
-      <div className={`map-page${selected ? " panel-open" : ""}`}>
+      <div className={`map-page${selected ? " panel-open" : ""}${selected && sheetSnap === "full" ? " sheet-full" : ""}`}>
         {/* Map canvas */}
         <div className="map-canvas">
           <MapContainer
@@ -1761,8 +1767,17 @@ export default function MapPage() {
             </div>
           </div>
 
+          {/* Legend toggle button — mobile only */}
+          <button
+            className="legend-toggle-btn"
+            onClick={() => setLegendOpen(o => !o)}
+            aria-label={lang === "mn" ? "Тайлбар" : "Legend"}
+          >
+            <Layers size={13} />
+          </button>
+
           {/* Legend */}
-          <div className="map-legend">
+          <div className={`map-legend${legendOpen ? " legend-open" : ""}`}>
             {colorMode === "type"
               ? [
                   ...Object.entries(TYPE_COLOR).map(([type, color]) => (
@@ -1845,8 +1860,18 @@ export default function MapPage() {
 
         {/* ── Result panel — sibling of map-canvas for split layout ── */}
         <div className={`map-panel${selected ? " open" : ""}`} role="complementary" aria-label={lang === "mn" ? "Барилгын мэдээлэл" : "Building details"}>
-          {/* Mobile drag handle */}
-          <div className="panel-drag-handle" />
+          {/* Mobile drag handle — tap to snap, drag up/down to expand/collapse */}
+          <div
+            className="panel-drag-handle"
+            onClick={() => setSheetSnap(s => s === "mid" ? "full" : "mid")}
+            onTouchStart={e => { dragStartY.current = e.touches[0].clientY; }}
+            onTouchEnd={e => {
+              const diff = (dragStartY.current || 0) - e.changedTouches[0].clientY;
+              if (diff > 40) setSheetSnap("full");
+              else if (diff < -40) sheetSnap === "full" ? setSheetSnap("mid") : setSelected(null);
+              dragStartY.current = null;
+            }}
+          />
           {selected ? (
             <BuildingPanel
               building={selected}

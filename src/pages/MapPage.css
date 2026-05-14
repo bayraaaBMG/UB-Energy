@@ -129,13 +129,26 @@
 
 /* ─── Drag handle (mobile) ────────────────────────────────────────────────── */
 .panel-drag-handle {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+  flex-shrink: 0;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.panel-drag-handle::after {
+  content: "";
+  display: block;
   width: 40px;
   height: 4px;
   border-radius: 2px;
-  background: var(--border);
-  margin: 10px auto 0;
-  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background 0.15s;
 }
+.panel-drag-handle:hover::after,
+.panel-drag-handle:active::after { background: rgba(255, 255, 255, 0.45); }
+
 @media (min-width: 600px) {
   .panel-drag-handle { display: none; }
 }
@@ -292,6 +305,27 @@
 }
 .layer-btn:last-child { border-right: none; }
 .layer-btn.active { background: rgba(58,143,212,0.22); color: #5baee8; }
+
+/* ─── Legend toggle button — mobile only ─────────────────────────────────── */
+.legend-toggle-btn {
+  display: none;
+  position: absolute;
+  bottom: 44px;
+  left: 10px;
+  z-index: 501;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(8, 14, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #8899aa;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: color 0.15s, border-color 0.15s;
+}
+.legend-toggle-btn:hover { color: #c8d8e8; border-color: rgba(255,255,255,0.35); }
 
 /* ─── Legend overlay: bottom-left ─────────────────────────────────────────── */
 .map-legend {
@@ -1627,4 +1661,45 @@
   .type-filter-btn  { padding: 0.08rem 0.22rem; font-size: 0.55rem; }
   .ctrl-sel         { font-size: 0.66rem; max-width: 100px; }
   .layer-group-basemap { display: none; }
+
+  /* ── Legend: hidden by default, shown via toggle button ── */
+  .map-legend       { display: none; bottom: 80px; }
+  .map-legend.legend-open { display: flex; }
+  .legend-toggle-btn { display: flex; }
+
+  /* ── Sheet snap-to-top: map nearly hidden, panel fills screen ── */
+  .map-page.sheet-full .map-canvas {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .map-page.sheet-full .map-panel.open {
+    height: calc(100vh - 60px) !important;
+    border-radius: 0;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Stats cards: horizontal scroll carousel ── */
+  .osm-metrics-grid {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    gap: 0.35rem;
+    padding: 0 0.75rem 0.55rem;
+  }
+  .osm-metrics-grid::-webkit-scrollbar { display: none; }
+  .osm-metrics-grid .osm-m-big {
+    min-width: 130px;
+    flex-shrink: 0;
+    /* override grid-column span */
+    grid-column: unset;
+  }
+  .osm-metrics-grid .osm-m-card {
+    min-width: 78px;
+    flex-shrink: 0;
+  }
 }
