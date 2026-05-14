@@ -1414,47 +1414,55 @@ export default function MapPage() {
   const { buildings: ctxBuildings, currentHdd, weatherData } = useData();
   usePageTitle(t.nav.map);
 
-  // Building cache: Map<id, building> — pre-seeded with mock + user buildings
-  const buildingCache = useRef(new Map([
-    ...MOCK_FALLBACK.map(b => [b.id, b]),
-    ...loadUserMapBuildings(ctxBuildings, user?.id).map(b => [b.id, b]),
-  ]));
-  const [buildings,    setBuildings]   = useState([...buildingCache.current.values()]);
+  // OSM-only cache — keeps only Overpass-fetched buildings, never mixed with user data
+  const osmCache = useRef(new Map());
   const [loading,      setLoading]     = useState(true);
   const [lastFetched,  setLastFetched] = useState(null);
   const [selected,     setSelected]   = useState(null);
   const [typeFilter,     setTypeFilter]     = useState("all");
   const [districtFilter, setDistrictFilter] = useState("all");
   const [layer,          setLayer]          = useState("dark");
-  const [colorMode,      setColorMode]      = useState("type"); // "type" | "energy" | "grade" | "pm25"
+  const [colorMode,      setColorMode]      = useState("type");
   const [showSmog,       setShowSmog]       = useState(true);
   const [mapZoom,        setMapZoom]        = useState(15);
   const DEMO_PM25 = 89;
 
-  // Sync user buildings from shared context into the map cache (handles add/delete)
-  useEffect(() => {
+  // Merge function: mock + user (from context) + OSM (from cache) — user buildings always win
+  const mergeBuildings = useCallback(() => {
     const userBuildings = loadUserMapBuildings(ctxBuildings, user?.id);
     const userIds = new Set(userBuildings.map(b => b.id));
-    for (const [id, b] of buildingCache.current) {
-      if (b.source !== "mock" && b.source !== "osm" && !userIds.has(id)) {
-        buildingCache.current.delete(id);
-      }
-    }
-    userBuildings.forEach(b => buildingCache.current.set(b.id, b));
-    setBuildings([...buildingCache.current.values()]);
+    // Mock fallback — exclude any that are shadowed by a user building with same id
+    const mocks = MOCK_FALLBACK.filter(b => !userIds.has(b.id));
+    // OSM — exclude any whose id collides with a user building
+    const osm   = [...osmCache.current.values()].filter(b => !userIds.has(b.id));
+    return [...mocks, ...userBuildings, ...osm];
   }, [ctxBuildings, user?.id]);
 
-  // Called by BuildingFetcher with each batch of OSM buildings
+  const [buildings, setBuildings] = useState(() => mergeBuildings());
+
+  // Re-merge whenever user buildings change (context update)
+  useEffect(() => {
+    setBuildings(mergeBuildings());
+  }, [mergeBuildings]);
+
+  // Called by BuildingFetcher with each batch of OSM buildings — additive, never replaces user data
   const addBuildings = useCallback((newBs) => {
     let added = 0;
     newBs.forEach(b => {
-      if (!buildingCache.current.has(b.id)) {
-        buildingCache.current.set(b.id, b);
+      if (!osmCache.current.has(b.id)) {
+        osmCache.current.set(b.id, b);
         added++;
       }
     });
     if (added > 0) {
-      setBuildings([...buildingCache.current.values()]);
+      setBuildings(prev => {
+        // Keep all non-osm buildings (mock + user) and append new osm entries
+        const nonOsm = prev.filter(b => b.source !== "osm");
+        const osm    = [...osmCache.current.values()];
+        // Remove osm entries whose id collides with a user building id
+        const userIds = new Set(nonOsm.filter(b => b.source !== "mock").map(b => b.id));
+        return [...nonOsm, ...osm.filter(b => !userIds.has(b.id))];
+      });
     }
   }, []);
 
