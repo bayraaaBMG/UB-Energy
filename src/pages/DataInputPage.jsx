@@ -1075,6 +1075,26 @@ export default function DataInputPage() {
           </div>
         </div>
 
+        {/* ⚠ Benchmark method warning */}
+        <div style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start", background: "rgba(233,196,106,0.07)", border: "1px solid rgba(233,196,106,0.35)", borderLeft: "4px solid #e9c46a", borderRadius: 10, padding: "1rem 1.2rem", marginBottom: "1.25rem" }}>
+          <AlertTriangle size={18} style={{ color: "#e9c46a", flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong style={{ display: "block", color: "var(--text)", marginBottom: "0.45rem", fontSize: "0.9rem" }}>
+              ⚠️ {lang === "mn" ? "Анхааруулга" : "Notice"}
+            </strong>
+            <p style={{ margin: "0 0 0.4rem", color: "var(--text2)", fontSize: "0.85rem", lineHeight: 1.65 }}>
+              {lang === "mn"
+                ? "Энэхүү өгөгдлийн багц нь зөвхөн барилгын ерөнхий үзүүлэлтэд зориулагдсан."
+                : "This dataset is intended for building-level general indicators only."}
+            </p>
+            <p style={{ margin: 0, color: "var(--text2)", fontSize: "0.85rem", lineHeight: 1.65 }}>
+              {lang === "mn"
+                ? "Айл бүрийн эрчим хүчний тооцооллыг тусгай жишиг (Benchmark) загвар ашиглан гаргаж байгааг анхаарна уу."
+                : "Note: per-apartment energy estimates are derived using an international Benchmark model, not direct building-total division."}
+            </p>
+          </div>
+        </div>
+
         {submitted && (
           <div className="success-banner animate-fade" role="status" aria-live="polite">
             <CheckCircle size={20} />

@@ -4,7 +4,7 @@ import { useLang } from "../contexts/LanguageContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 import {
   ChevronLeft, Zap, Home, Layers, AlertTriangle, MapPin,
-  Building2, TrendingUp, Calendar,
+  Building2, TrendingUp, Calendar, Info,
 } from "lucide-react";
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
@@ -84,6 +84,16 @@ function gradeFromIntensity(i) {
          i < 200 ? "D" : i < 250 ? "E" : i < 300 ? "F" : "G";
 }
 
+// Benchmark EUI (kWh/m²/year) by building age — ISO 9836 / ASHRAE 90.1 reference values
+// adapted for UB continental climate (HDD ≈ 4200)
+function benchmarkEUI(year) {
+  if (year >= 2015) return 100;
+  if (year >= 2005) return 140;
+  if (year >= 1995) return 175;
+  if (year >= 1980) return 210;
+  return 240;
+}
+
 const TYPE_LABELS = {
   apartment: "Орон сууц", office: "Оффис", school: "Сургууль",
   hospital: "Эмнэлэг", commercial: "Худалдааны", warehouse: "Агуулах",
@@ -121,14 +131,36 @@ export default function BuildingDetailPage() {
     if (!building || !unitArea) return null;
     const oF = ORIENTATION_F[orientation] || 1;
     const fF = floorFactor(unitFloor, building.floors);
-    const ratio = unitArea / building.area;
-    const annual = Math.round(building.predicted_kwh * ratio * oF * fF);
-    const monthly = Math.round(annual / 12);
+
+    // ── Benchmark-based formula: E_total = (A × E_base) + (E_common / n) ──
+    const baseEUI = benchmarkEUI(building.year);
+
+    // Adjust benchmark for insulation & wall material
+    const insFactor  = { good: 0.85, medium: 1.0, poor: 1.18 }[building.insulation_quality] ?? 1.0;
+    const wallFactor = { concrete: 0.92, brick: 0.98, panel: 1.05, wood: 1.20 }[building.wall_material] ?? 1.0;
+    const adjEUI = baseEUI * insFactor * wallFactor;
+
+    // Private load component (A × E_base)
+    const privateLoad = unitArea * adjEUI;
+
+    // Common area energy (lifts, pumps, corridor lighting) as share of building total
+    const unitsPerFloor = 4;
+    const totalUnits    = Math.max(1, building.floors * unitsPerFloor);
+    const commonFactor  = building.floors >= 5 ? 0.18 : 0.08;
+    const eCommon       = building.predicted_kwh * commonFactor;
+    const commonShare   = eCommon / totalUnits;
+
+    const annual    = Math.round((privateLoad + commonShare) * oF * fF);
+    const monthly   = Math.round(annual / 12);
     const intensity = unitArea > 0 ? Math.round(annual / unitArea) : 0;
     return {
       annual, monthly, intensity,
       grade: gradeFromIntensity(intensity),
       monthly12: monthlyFromAnnual(annual),
+      privateLoad:  Math.round(privateLoad),
+      commonShare:  Math.round(commonShare),
+      adjEUI:       Math.round(adjEUI),
+      totalUnits,
     };
   }, [building, unitFloor, unitArea, orientation]);
 
@@ -257,7 +289,7 @@ export default function BuildingDetailPage() {
           </div>
         </div>
 
-        {/* ── Unit / Apartment Predictor ── */}
+        {/* ── Unit / Apartment Predictor — Estimation Mode ── */}
         <div className="card bdet-unit-card">
           <div className="bdet-unit-header">
             <Home size={18} style={{ color: "var(--primary-light)" }} />
@@ -266,12 +298,34 @@ export default function BuildingDetailPage() {
                 ? (building.type === "apartment" ? "Тоот (айл) таамаглагч" : "Хэсэг / Давхар таамаглагч")
                 : (building.type === "apartment" ? "Apartment Unit Predictor" : "Section / Floor Predictor")}
             </h3>
+            <span style={{
+              marginLeft: "auto", fontSize: "0.72rem", fontWeight: 700,
+              padding: "0.18rem 0.65rem", borderRadius: 20,
+              background: "rgba(233,196,106,0.15)", color: "#e9c46a",
+              border: "1px solid rgba(233,196,106,0.4)",
+            }}>
+              {lang === "mn" ? "Тооцооллын горим" : "Estimation Mode"}
+            </span>
           </div>
           <p className="bdet-unit-desc">
             {lang === "mn"
               ? `Энэ барилгын ${building.type === "apartment" ? "тодорхой тоотод" : "тодорхой хэсэгт"} ногдох эрчим хүчний хэрэглээг тооцоол.`
               : `Estimate energy use for a specific ${building.type === "apartment" ? "unit" : "section"} within this building.`}
           </p>
+          {/* Estimation method disclaimer */}
+          <div style={{
+            display: "flex", gap: "0.5rem", alignItems: "flex-start",
+            padding: "0.7rem 0.9rem", marginBottom: "0.75rem",
+            background: "rgba(233,196,106,0.07)", border: "1px solid rgba(233,196,106,0.3)",
+            borderRadius: 8, fontSize: "0.78rem", color: "var(--text2)", lineHeight: 1.6,
+          }}>
+            <Info size={13} style={{ color: "#e9c46a", flexShrink: 0, marginTop: 2 }} />
+            <span>
+              {lang === "mn"
+                ? "Айл өрхийн хэрэглээг тухайн барилгын дундын ашиглалтын зардал болон олон улсын жишиг (Benchmark) хэрэглээнд үндэслэн тооцов."
+                : "Apartment energy is estimated using the building's common-area load share plus an international Benchmark EUI, not by directly dividing the building's total."}
+            </span>
+          </div>
 
           <div className="bdet-unit-inputs">
             <div className="form-group">
@@ -340,6 +394,39 @@ export default function BuildingDetailPage() {
                 {lang === "mn"
                   ? `${unitFloor}-р давхар · ${ORIENTATION_LABELS_MN[orientation]?.split("(")[0].trim()} · ${unitArea} м²`
                   : `Floor ${unitFloor} · ${orientation} · ${unitArea} m²`}
+              </div>
+
+              {/* Formula breakdown */}
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem",
+                marginTop: "0.75rem", padding: "0.7rem 0.85rem",
+                background: "rgba(26,110,181,0.07)", border: "1px solid rgba(58,143,212,0.2)",
+                borderRadius: 8, fontSize: "0.72rem",
+              }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 800, color: "#3a8fd4", fontSize: "0.95rem" }}>
+                    {unitResult.privateLoad.toLocaleString()} кВт·цаг
+                  </div>
+                  <div style={{ color: "var(--text3)", marginTop: 2 }}>
+                    {lang === "mn" ? `A×E_base (${unitResult.adjEUI} кВт·цаг/м²)` : `A×E_base (${unitResult.adjEUI} kWh/m²)`}
+                  </div>
+                </div>
+                <div style={{ textAlign: "center", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)" }}>
+                  <div style={{ fontWeight: 800, color: "#f4a261", fontSize: "0.95rem" }}>
+                    +{unitResult.commonShare.toLocaleString()} кВт·цаг
+                  </div>
+                  <div style={{ color: "var(--text3)", marginTop: 2 }}>
+                    {lang === "mn" ? `Дундын хувь (${unitResult.totalUnits} айл)` : `Common share (${unitResult.totalUnits} units)`}
+                  </div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 800, color: "#2a9d8f", fontSize: "0.95rem" }}>
+                    {unitResult.annual.toLocaleString()} кВт·цаг
+                  </div>
+                  <div style={{ color: "var(--text3)", marginTop: 2 }}>
+                    {lang === "mn" ? "Нийт (жил)" : "Total (annual)"}
+                  </div>
+                </div>
               </div>
 
               {/* Mini monthly breakdown */}

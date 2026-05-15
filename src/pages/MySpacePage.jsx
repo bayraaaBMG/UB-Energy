@@ -266,6 +266,33 @@ function GradePill({ grade }) {
   );
 }
 
+const SOURCE_META = {
+  real:      { color: "#2a9d8f", bg: "rgba(42,157,143,0.12)", border: "rgba(42,157,143,0.35)" },
+  estimated: { color: "#3a8fd4", bg: "rgba(58,143,212,0.12)", border: "rgba(58,143,212,0.35)" },
+  synthetic: { color: "#9b72cf", bg: "rgba(155,114,207,0.12)", border: "rgba(155,114,207,0.35)" },
+};
+
+function SourceLabel({ source, lang }) {
+  let key, labelMn, labelEn;
+  if (source === "mock") {
+    key = "synthetic"; labelMn = "Синтетик"; labelEn = "Synthetic";
+  } else if (source === "osm") {
+    key = "estimated"; labelMn = "Тооцоолсон"; labelEn = "Estimated";
+  } else {
+    key = "real"; labelMn = "Бодит"; labelEn = "Real";
+  }
+  const m = SOURCE_META[key];
+  return (
+    <span style={{
+      fontSize: "0.68rem", fontWeight: 700, padding: "0.12rem 0.5rem",
+      borderRadius: 20, background: m.bg, color: m.color,
+      border: `1px solid ${m.border}`, whiteSpace: "nowrap",
+    }}>
+      {lang === "mn" ? labelMn : labelEn}
+    </span>
+  );
+}
+
 function EmptyState({ icon: Icon, text, action }) {
   return (
     <div className="ms-empty">
@@ -593,6 +620,7 @@ function BuildingsTab({ t, user, buildings, onRefresh }) {
                       <Building2 size={16} />
                       <strong>{b.name}</strong>
                       <GradePill grade={b.grade} />
+                      <SourceLabel source={b.source} lang={lang} />
                     </div>
                     <div className="ms-building-meta">
                       <span>{TYPE_LABELS[b.type] || b.type}</span>
@@ -666,6 +694,7 @@ function BuildingsTab({ t, user, buildings, onRefresh }) {
 
 // ── Dataset Tab ───────────────────────────────────────────────────────────────
 function DatasetTab({ t, buildings }) {
+  const { lang } = useLang();
   const qualityScore = useMemo(() => {
     if (!buildings.length) return 0;
     const scored = buildings.map(b => {
@@ -724,7 +753,7 @@ function DatasetTab({ t, buildings }) {
             <tr>
               <th>{t.myspace.history_building}</th>
               <th>Төрөл</th><th>Талбай</th><th>Он</th>
-              <th>Дүүрэг</th><th>Зэрэглэл</th><th>кВт·цаг/жил</th><th>кВт·цаг/м²</th>
+              <th>Дүүрэг</th><th>Зэрэглэл</th><th>Эх сурвалж</th><th>кВт·цаг/жил</th><th>кВт·цаг/м²</th>
             </tr>
           </thead>
           <tbody>
@@ -736,6 +765,7 @@ function DatasetTab({ t, buildings }) {
                 <td>{b.year}</td>
                 <td>{b.district}</td>
                 <td><GradePill grade={b.grade} /></td>
+                <td><SourceLabel source={b.source} lang={lang} /></td>
                 <td>{(b.predicted_kwh || 0).toLocaleString()}</td>
                 <td>{b.intensity || 0}</td>
               </tr>
