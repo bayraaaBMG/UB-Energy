@@ -5,7 +5,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
   Building2, Zap, Database, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
-  ShieldAlert, Clock,
+  ShieldAlert, Clock, Thermometer, Snowflake, Leaf,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -85,7 +85,39 @@ export default function HomePage() {
           )}
           <h1 className="hero-title">{t.home.hero_title}</h1>
           <p className="hero-sentence">{t.home.hero_sentence}</p>
+
+          {/* Mongolia context micro-strip */}
+          <div className="hero-context">
+            {[
+              { icon: Thermometer, val: "–30°C",   label: mn ? "УБ-ын өвлийн доод хэм" : "UB winter low" },
+              { icon: Snowflake,   val: "~4,500",   label: mn ? "HDD / жил" : "HDD / year" },
+              { icon: Building2,   val: "40–60%",   label: mn ? "Панель барилгын дулааны алдагдал" : "Panel bldg heat loss" },
+              { icon: Leaf,        val: "0.73 kg",  label: mn ? "CO₂ / kWh (нүүрс)" : "CO₂ / kWh (coal)" },
+            ].map(({ icon: Icon, val, label }) => (
+              <div className="hc-item" key={val}>
+                <Icon size={15} className="hc-icon" />
+                <span className="hc-val">{val}</span>
+                <span className="hc-lbl">{label}</span>
+              </div>
+            ))}
+          </div>
+
           <p className="hero-subtitle">{t.home.hero_subtitle}</p>
+
+          {/* 3-step process */}
+          <div className="hero-steps">
+            {[
+              { icon: Building2, text: mn ? "Барилгын мэдээлэл оруул" : "Enter building info" },
+              { icon: Brain,     text: mn ? "AI 30+ хувьсагчид тооцооллно" : "AI runs 30+ features" },
+              { icon: Lightbulb, text: mn ? "Зэрэглэл + CO₂ + зөвлөмж авна" : "Get grade + CO₂ + tips" },
+            ].map(({ icon: Icon, text }, i, arr) => (
+              <React.Fragment key={text}>
+                <div className="hs-step"><Icon size={14} /><span>{text}</span></div>
+                {i < arr.length - 1 && <ArrowRight size={12} className="hs-sep" />}
+              </React.Fragment>
+            ))}
+          </div>
+
           <div className="hero-actions">
             <Link to="/predictor" className="btn btn-accent">
               <Brain size={18} />

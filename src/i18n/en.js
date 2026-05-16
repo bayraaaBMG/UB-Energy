@@ -46,7 +46,7 @@ const en = {
   home: {
     hero_title: "Predict building energy consumption using AI.",
     hero_subtitle: "Calculate and forecast energy use based on building structure, insulation, and climate data using OLS regression and physics-based EUI models",
-    hero_sentence: "A research platform for building energy prediction, analysis, and recommendations — tailored for Mongolian conditions.",
+    hero_sentence: "40–60% of energy costs in UB's aging buildings stem from heat loss. Calculate your building's consumption and identify your savings potential.",
     hero_btn: "Start Prediction",
     hero_btn2: "View Map",
     hero_btn3: "Dashboard",
@@ -327,7 +327,7 @@ const en = {
     elec_hint: "Take this from your electricity bill or supplier data.",
     tariff_note_title: "Unit Conversion Guide: Monetary Amounts to Energy Units",
     tariff_note_p1: "Most households are familiar with their energy costs in monetary terms and may not know their consumption in technical units such as kWh or Gcal (Energy Regulatory Commission). In Mongolia, residential electricity uses a tiered tariff: 0–150 kWh → 175₮, 150–300 kWh → 256₮, 300+ kWh → 285₮ per kWh (УБЦТС ТӨХК). To estimate electricity consumption from a monetary amount, use the following formula: Electricity (kWh) ≈ Amount paid ÷ Tariff (УБЦТС ТӨХК).",
-    tariff_note_p2: "District heating charges for residential apartments are calculated per unit floor area, at approximately 3,000–6,000 MNT per m² per month (Ulaanbaatar Heating Network ТӨХК). Water consumption is measured in cubic metres, with hot water priced at approximately 1,500–3,000 MNT/m³ (УСУГ). Where consumption figures in physical units are unavailable, tariff-based conversion from monetary amounts should be applied; actual meter readings are preferred for greater accuracy (Energy Regulatory Commission).",
+    tariff_note_p2: "Residential heating tariff: 506₮/m² or 3,421₮/GJ; hot water per person: 1,870₮/person during heating season, 2,806₮/person off-season; by consumption: 1,632₮/m³ (Energy Regulatory Commission, dulaan.mn). Where available, actual meter readings are preferred for greater accuracy.",
   },
   database: {
     title: "Database",

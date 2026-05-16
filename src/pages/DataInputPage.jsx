@@ -1407,26 +1407,106 @@ export default function DataInputPage() {
                     </div>
                   </div>
 
-                  {/* Heating & water */}
-                  <div style={{ marginTop:"0.6rem", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.5rem" }}>
-                    <div style={{ background:"var(--bg2)", borderRadius:8, padding:"0.4rem 0.6rem", border:"1px solid var(--border)" }}>
-                      <span style={{ color:"#f4a261", fontWeight:700, fontSize:"0.7rem" }}>{lang==="mn" ? "🔥 Дулаан (УБ ДС ТӨХК):" : "🔥 Heating:"}</span>
-                      <div style={{ fontFamily:"monospace", fontSize:"0.68rem", color:"var(--text3)", marginTop:2 }}>
-                        {lang==="mn" ? "72% × нийлбэр ÷ 160,000₮/Гкал" : "72% × bill ÷ 160,000₮/Gcal"}
+                  {/* Heating tariff — dulaan.mn/page/tariff */}
+                  <div style={{ marginTop:"0.7rem" }}>
+                    <span style={{ color:"#f4a261", fontWeight:700, fontSize:"0.75rem", display:"block", marginBottom:"0.4rem" }}>
+                      {lang==="mn" ? "🔥 Дулааны тариф (НӨАТ-гүй) — Эрчим хүчний зохицуулах хороо" : "🔥 Heating Tariff (excl. VAT) — Energy Regulatory Commission"}
+                    </span>
+
+                    {/* Ахуйн хэрэглэгч */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)", marginBottom:"0.4rem" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.25rem 0.6rem", fontSize:"0.67rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "Ахуйн хэрэглэгч" : "Residential consumers"}
                       </div>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.67rem" }}>
+                        <tbody>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Орон сууцны халаалт" : "Apartment heating"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/м²</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>506</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Орон сууцны халаалт" : "Apartment heating"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/ГДж</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>3,421</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — халаалтын улиралд" : "Hot water — heating season"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/хүн</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>1,870</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — халаалтын бус улиралд" : "Hot water — off-season"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/хүн</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>2,806</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — усны зарцуулалтаар" : "Hot water — by consumption"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/м³</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>1,632</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — хэмжүүрээр" : "Hot water — by meter"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/ГДж</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>3,421</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                    <div style={{ background:"var(--bg2)", borderRadius:8, padding:"0.4rem 0.6rem", border:"1px solid var(--border)" }}>
-                      <span style={{ color:"#2a9d8f", fontWeight:700, fontSize:"0.7rem" }}>{lang==="mn" ? "💧 Ус (УСУГ):" : "💧 Water:"}</span>
-                      <div style={{ fontFamily:"monospace", fontSize:"0.68rem", color:"var(--text3)", marginTop:2 }}>
-                        {lang==="mn" ? "28% × нийлбэр ÷ 2,100₮/м³" : "28% × bill ÷ 2,100₮/m³"}
+
+                    {/* Үйлчилгээний тариф (талбайгаар) */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)", marginBottom:"0.4rem" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.25rem 0.6rem", fontSize:"0.67rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "Эрчим хүчний үйлчилгээний тариф (талбайгаар)" : "Energy service tariff (by floor area)"}
                       </div>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.67rem" }}>
+                        <tbody>
+                          {[
+                            [lang==="mn" ? "40м² хүртэл" : "≤40 m²", "3,300"],
+                            [lang==="mn" ? "41–80м²" : "41–80 m²", "5,500"],
+                            [lang==="mn" ? "81м²-аас дээш" : ">80 m²", "11,000"],
+                          ].map(([label, price]) => (
+                            <tr key={label} style={{ borderTop:"1px solid var(--border)" }}>
+                              <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{label}</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/сар</td>
+                              <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>{price}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Байгууллага */}
+                    <div style={{ background:"var(--bg2)", borderRadius:8, overflow:"hidden", border:"1px solid var(--border)" }}>
+                      <div style={{ background:"#1a3a5c", padding:"0.25rem 0.6rem", fontSize:"0.67rem", fontWeight:700, color:"#7ec8ff" }}>
+                        {lang==="mn" ? "Аж ахуйн нэгж, байгууллага" : "Commercial / institutional"}
+                      </div>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.67rem" }}>
+                        <tbody>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халаалт" : "Heating"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/м³</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>604</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халаалт + халуун ус" : "Heating + hot water"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/ГДж</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>9,314</td>
+                          </tr>
+                          <tr style={{ borderTop:"1px solid var(--border)" }}>
+                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Байгууллагын халуун ус" : "Commercial hot water"}</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/м³</td>
+                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>2,637</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
                   <div style={{ marginTop:"0.6rem", fontSize:"0.67rem", color:"var(--text3)", borderTop:"1px solid var(--border)", paddingTop:"0.5rem" }}>
                     {lang === "mn"
-                      ? <>Эх сурвалж: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Айл өрхийн цахилгааны хэрэглээний бүтэц</a> · Улаанбаатар Дулааны Сүлжээ ТӨХК 2024 · УСУГ норматив 2024</>
-                      : <>Source: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Household Electricity Consumption Structure</a> · UB Heating Network ТӨХК 2024 · УСУГ norm 2024</>}
+                      ? <>Эх сурвалж: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Айл өрхийн цахилгааны хэрэглээний бүтэц</a> · <a href="https://www.dulaan.mn/page/tariff" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>Эрчим хүчний зохицуулах хороо — Үнэ тарифын газар (11-319357)</a></>
+                      : <>Source: <a href="https://www.facebook.com/share/p/1ZAbUwfoq1/" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>УБЦТС ТӨХК — Household Electricity Consumption Structure</a> · <a href="https://www.dulaan.mn/page/tariff" target="_blank" rel="noopener noreferrer" style={{ color:"#3a8fd4" }}>Energy Regulatory Commission — Tariff Office (11-319357)</a></>}
                   </div>
                 </div>
               </div>
