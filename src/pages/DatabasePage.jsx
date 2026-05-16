@@ -489,10 +489,13 @@ function ResultsModal({ building, lang, t, onClose }) {
 
           {/* ── Зардал хэмнэх зөвлөгөө ── */}
           {(() => {
-            const elecPrice = building.type === "apartment" ? 82.6
-              : building.type === "office" || building.type === "commercial" ? 145
-              : building.type === "school" || building.type === "hospital" ? 95
-              : 120;
+            // Current УБЦТС 2024 tariffs
+            const elecPrice = building.type === "apartment" ? 220        // blended residential (175/256/285₮ tiered)
+              : building.type === "office" || building.type === "commercial" ? 285  // commercial tier 3
+              : building.type === "school" || building.type === "hospital" ? 175    // institutional tier 1
+              : 256;
+            // Official dulaan.mn heating tariff: 506₮/m²/month × 9 months
+            const heatAnnualCost = Math.round((building.area || 0) * 506 * 9);
 
             const rlist = [];
 
@@ -642,14 +645,15 @@ function ResultsModal({ building, lang, t, onClose }) {
                 </div>
 
                 {/* Summary banner */}
-                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.85rem", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "0.6rem", marginBottom: "0.85rem", flexWrap: "wrap" }}>
                   {[
                     { label: mn ? "Нийт боломжит хэмнэлт" : "Total potential savings", val: `${totalSaveKwh.toLocaleString()} kWh/жил`, color: "#3a8fd4" },
                     { label: mn ? "Мөнгөн хэмнэлт" : "Money savings", val: `≈ ${(totalSaveMnt / 1_000_000).toFixed(1)} сая ₮/жил`, color: "#2a9d8f" },
-                    { label: mn ? "Цахилгааны тариф" : "Elec. tariff used", val: `${elecPrice} ₮/kWh`, color: "#e9c46a" },
+                    { label: mn ? "⚡ Цахилгааны тариф" : "⚡ Elec. tariff", val: `${elecPrice} ₮/kWh`, color: "#e9c46a" },
+                    { label: mn ? "🔥 Дулааны зардал/жил" : "🔥 Heating cost/yr", val: `≈ ${(heatAnnualCost / 1_000_000).toFixed(2)} сая ₮`, color: "#f4a261" },
                   ].map(({ label, val, color }) => (
-                    <div key={label} style={{ background: `${color}12`, border: `1px solid ${color}30`, borderRadius: 8, padding: "0.4rem 0.75rem", flex: 1, minWidth: 140 }}>
-                      <div style={{ fontSize: "0.67rem", color: "var(--text3)", marginBottom: 2 }}>{label}</div>
+                    <div key={label} style={{ background: `${color}12`, border: `1px solid ${color}30`, borderRadius: 8, padding: "0.4rem 0.75rem", flex: 1, minWidth: 130 }}>
+                      <div style={{ fontSize: "0.65rem", color: "var(--text3)", marginBottom: 2 }}>{label}</div>
                       <div style={{ fontSize: "0.82rem", fontWeight: 700, color }}>{val}</div>
                     </div>
                   ))}
@@ -703,8 +707,8 @@ function ResultsModal({ building, lang, t, onClose }) {
 
                 <div style={{ marginTop: "0.65rem", fontSize: "0.67rem", color: "var(--text3)", lineHeight: 1.5 }}>
                   {mn
-                    ? `* Тооцоолол нь УБЦТС 2024 оны тариф (${elecPrice} ₮/kWh), ML загварын таамаглал болон БНТУ норматив дээр суурилсан. Бодит хэмнэлт байшингийн нөхцөл, хэрэглэгчийн зан үйл, цаг уурын нөхцөлөөс хамаарч өөрчлөгдөнө.`
-                    : `* Calculations based on UBCTS 2024 tariff (${elecPrice} MNT/kWh), ML model prediction, and БНТУ standards. Actual savings depend on building condition, occupant behaviour, and weather.`}
+                    ? `* Цахилгааны тариф: УБЦТС 2024 — ахуйн шаталсан (175/256/285₮/кВт·цаг), дундаж ${elecPrice}₮/кВт·цаг. Дулааны тариф: 506₮/м²/сар × 9 сар (Эрчим хүчний зохицуулах хороо — dulaan.mn). Бодит хэмнэлт байшингийн нөхцөл, хэрэглэгчийн зан үйл, цаг уурын нөхцөлөөс хамаарч өөрчлөгдөнө.`
+                    : `* Electricity: УБЦТС 2024 tiered tariff (175/256/285₮/kWh), blended ${elecPrice}₮/kWh. Heating: 506₮/m²/month × 9 months (Energy Regulatory Commission — dulaan.mn). Actual savings depend on building condition, occupant behaviour, and weather.`}
                 </div>
               </div>
             );
