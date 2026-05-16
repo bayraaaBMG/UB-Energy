@@ -42,6 +42,22 @@ const MONTH_FRACS = monthlyEnergyData.map(m => m.usage / CITY_ANNUAL);
 const MONTHS_MN = ["1","2","3","4","5","6","7","8","9","10","11","12"];
 const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+// ─── Tariff helpers (current official rates) ─────────────────────────────────
+// Electricity: УБЦТС 2024 blended residential (175/256/285₮ tiered)
+function getElecPrice(type) {
+  if (type === "apartment") return 220;
+  if (type === "office" || type === "commercial") return 285;
+  if (type === "school" || type === "hospital") return 175;
+  return 256;
+}
+// Annual cost = electricity (28% of kWh × ₮/kWh) + heating (dulaan.mn 506₮/m²/month × 9 months)
+function calcAnnualCost(building) {
+  const ep = getElecPrice(building.type);
+  const kwh = building.predicted_kwh || 0;
+  const area = building.area || 0;
+  return Math.round(kwh * 0.28 * ep) + Math.round(area * 506 * 9);
+}
+
 // ─── Download helpers ─────────────────────────────────────────────────────────
 function downloadCSV(data, typeLabels, headers) {
   const rows = data.map(d => [
@@ -781,6 +797,7 @@ export default function DatabasePage() {
     type:          (a, b) => a.type.localeCompare(b.type),
     area:          (a, b) => (a.area || 0) - (b.area || 0),
     predicted_kwh: (a, b) => (a.predicted_kwh || 0) - (b.predicted_kwh || 0),
+    annual_cost:   (a, b) => calcAnnualCost(a) - calcAnnualCost(b),
     intensity:     (a, b) => (a.intensity || 0) - (b.intensity || 0),
     year:          (a, b) => (a.year || 0) - (b.year || 0),
     district:      (a, b) => (a.district || "").localeCompare(b.district || ""),
@@ -1022,6 +1039,7 @@ export default function DatabasePage() {
                   { key: "type",          label: t.database.type },
                   { key: "area",          label: t.database.area },
                   { key: "predicted_kwh", label: lang === "mn" ? "Жилийн kWh" : "Annual kWh" },
+                  { key: "annual_cost",   label: lang === "mn" ? "Зардал (₮/жил)" : "Cost (₮/yr)" },
                   { key: "intensity",     label: "kWh/m²" },
                   { key: "year",          label: t.database.year },
                   { key: "district",      label: t.database.district },
@@ -1079,6 +1097,20 @@ export default function DatabasePage() {
                     <span className={`usage-val ${(b.predicted_kwh||0) > 80000 ? "high" : (b.predicted_kwh||0) > 40000 ? "mid" : "low"}`}>
                       {(b.predicted_kwh || 0).toLocaleString()}
                     </span>
+                  </td>
+                  <td>
+                    {(() => {
+                      const cost = calcAnnualCost(b);
+                      const inM = cost >= 1_000_000;
+                      return (
+                        <span style={{ fontWeight: 700, color: "#2a9d8f", whiteSpace: "nowrap" }}>
+                          {inM
+                            ? `${(cost / 1_000_000).toFixed(1)}M`
+                            : `${Math.round(cost / 1000)}к`}
+                          <span style={{ fontWeight: 400, fontSize: "0.7rem", color: "var(--text3)", marginLeft: 2 }}>₮</span>
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td>
                     <span style={{ color: GRADE_COLORS[b.grade] || "#888", fontWeight: 600 }}>
