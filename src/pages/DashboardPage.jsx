@@ -24,9 +24,9 @@ import { computeStats } from "../utils/buildingStorage";
 import { useData } from "../contexts/DataContext";
 import "./DashboardPage.css";
 
-function MetricCard({ icon: Icon, label, value, unit, trend, color = "#3a8fd4" }) {
+function MetricCard({ icon: Icon, label, value, unit, trend, color = "#3a8fd4", title }) {
   return (
-    <div className="metric-card card">
+    <div className="metric-card card" title={title}>
       <div className="mc-icon" style={{ background: `${color}22`, color }}>
         <Icon size={20} />
       </div>
@@ -66,6 +66,139 @@ const BUILDING_TYPE_LABELS = {
   hotel:      { mn: "Зочид буудал", en: "Hotel" },
   commercial: { mn: "Худалдаа",     en: "Commercial" },
 };
+
+function exportPDFReport(buildings, userStats, lang) {
+  const mn   = lang === "mn";
+  const date = new Date().toLocaleDateString(mn ? "mn-MN" : "en-US", { dateStyle: "long" });
+  const gradeColors = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
+  const retrofits = [
+    { name: mn ? "Дулаалга сайжруулалт"    : "Insulation upgrade",         pct: 22, payback: 3.5 },
+    { name: mn ? "3-давхар шилтэй цонх"    : "Triple-pane windows",         pct: 15, payback: 5.2 },
+    { name: mn ? "Халаалтын систем"         : "Heating system retrofit",     pct: 12, payback: 4.8 },
+    { name: mn ? "Хослол (дулаалга + цонх)" : "Combined (insul. + windows)", pct: 35, payback: 4.1 },
+  ];
+  const gradeOf = i => i < 50 ? "A" : i < 100 ? "B" : i < 150 ? "C" : i < 200 ? "D" : i < 250 ? "E" : i < 300 ? "F" : "G";
+
+  const bldgRows = buildings.slice(0, 10).map(b => `
+    <tr>
+      <td>${b.name || "—"}</td>
+      <td>${b.district || "—"}</td>
+      <td>${b.area?.toLocaleString() || "—"} m²</td>
+      <td>${b.year || "—"}</td>
+      <td style="color:${gradeColors[b.grade] || '#888'};font-weight:700">${b.grade || "—"}</td>
+      <td>${b.intensity || "—"} kWh/m²</td>
+      <td>${Math.round(b.predicted_kwh || 0).toLocaleString()} kWh</td>
+      <td>${b.co2 || "—"} t</td>
+    </tr>`).join("");
+
+  const retRows = userStats ? retrofits.map(r => {
+    const newInt = Math.round(userStats.avgIntensity * (1 - r.pct / 100));
+    const delta  = userStats.avgIntensity - newInt;
+    const saved  = Math.round(userStats.totalAnnual * r.pct / 100);
+    const co2    = Math.round(saved * 0.73 / 100) / 10;
+    const ng     = gradeOf(newInt);
+    return `<tr>
+      <td>${r.name}</td>
+      <td>−${r.pct}%</td>
+      <td>${newInt} kWh/m² <span style="color:${gradeColors[ng]}">${ng}</span></td>
+      <td style="color:#2a9d8f">−${delta} kWh/m²</td>
+      <td style="color:#57cc99">−${co2} tCO₂</td>
+      <td style="color:#3a8fd4">${r.payback} ${mn ? "жил (simple)" : "yr (simple)"}</td>
+    </tr>`;
+  }).join("") : "";
+
+  const html = `<!DOCTYPE html><html lang="${mn ? "mn" : "en"}">
+<head><meta charset="UTF-8"><title>UB Energy Report · ${date}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a2a3a; padding: 24px; }
+  h1 { font-size: 16px; color: #1a4a7a; margin-bottom: 4px; }
+  h2 { font-size: 12px; color: #1a4a7a; margin: 18px 0 6px; border-bottom: 1px solid #c0d8f0; padding-bottom: 3px; }
+  .meta { font-size: 10px; color: #666; margin-bottom: 18px; }
+  .disclaimer { font-size: 9px; color: #888; border: 1px solid #ddd; padding: 6px 9px; border-radius: 4px; margin-bottom: 14px; background: #fafafa; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  th { background: #e8f0f8; text-align: left; padding: 4px 6px; font-size: 9.5px; border: 1px solid #c0d0e0; }
+  td { padding: 3px 6px; border: 1px solid #dde; font-size: 10px; }
+  tr:nth-child(even) td { background: #f5f8fc; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .sum-box { border: 1px solid #c0d8f0; border-radius: 4px; padding: 8px; text-align: center; }
+  .sum-val { font-size: 16px; font-weight: 800; color: #1a4a7a; }
+  .sum-lbl { font-size: 9px; color: #666; margin-top: 2px; }
+  .rec-list li { padding: 2px 0; font-size: 10px; }
+  @media print { body { padding: 12px; } }
+</style></head>
+<body>
+<h1>UB Energy — ${mn ? "Эрчим хүчний урьдчилсан үнэлгээний тайлан" : "Preliminary Energy Assessment Report"}</h1>
+<div class="meta">${mn ? "Огноо" : "Date"}: ${date} &nbsp;·&nbsp; ${mn ? "Загвар" : "Model"}: OLS Regression (R²=0.923) &nbsp;·&nbsp; ${mn ? "Датасет" : "Dataset"}: 600 ${mn ? "синтетик барилга" : "synthetic buildings"}</div>
+<div class="disclaimer">⚠ ${mn
+  ? "Энэхүү тайлан нь урьдчилсан эрчим хүчний үнэлгээнд зориулагдсан бөгөөд дэлгэрэнгүй инженерийн аудитыг орлохгүй. Тооцоолол синтетик пилот датасет дээр суурилна (estimated)."
+  : "This report is for preliminary energy assessment only and is not a substitute for a detailed engineering audit. Calculations are based on a synthetic pilot dataset (estimated)."}
+</div>
+
+${userStats ? `
+<h2>${mn ? "Хэрэглэгчийн барилгуудын хураангуй" : "My Buildings — Summary"}</h2>
+<div class="summary-grid">
+  <div class="sum-box"><div class="sum-val">${buildings.length}</div><div class="sum-lbl">${mn ? "Барилгын тоо" : "Buildings"}</div></div>
+  <div class="sum-box"><div class="sum-val" style="color:${gradeColors[userStats.grade]}">${userStats.grade}</div><div class="sum-lbl">${mn ? "Дундаж зэрэглэл" : "Avg grade"}</div></div>
+  <div class="sum-box"><div class="sum-val">${userStats.avgIntensity}</div><div class="sum-lbl">kWh/m²/yr</div></div>
+  <div class="sum-box"><div class="sum-val">${(userStats.totalAnnual / 1000).toFixed(1)} MWh</div><div class="sum-lbl">${mn ? "Жилийн нийт" : "Annual total"}</div></div>
+</div>` : ""}
+
+<h2>${mn ? "Барилгуудын жагсаалт" : "Building List"}</h2>
+<table>
+  <thead><tr>
+    <th>${mn ? "Нэр" : "Name"}</th><th>${mn ? "Дүүрэг" : "District"}</th>
+    <th>${mn ? "Талбай" : "Area"}</th><th>${mn ? "Он" : "Year"}</th>
+    <th>${mn ? "Зэрэглэл" : "Grade"}</th><th>kWh/m²</th>
+    <th>${mn ? "Жилийн kWh" : "Annual kWh"}</th><th>CO₂ (t)</th>
+  </tr></thead>
+  <tbody>${bldgRows || `<tr><td colspan="8" style="text-align:center;color:#888">${mn ? "Барилга байхгүй" : "No buildings"}</td></tr>`}</tbody>
+</table>
+
+${userStats ? `
+<h2>${mn ? "Baseline vs Retrofit харьцуулалт" : "Baseline vs Retrofit Comparison"}</h2>
+<table>
+  <thead><tr>
+    <th>${mn ? "Retrofit хувилбар" : "Retrofit scenario"}</th>
+    <th>${mn ? "Хэмнэлт %" : "Savings %"}</th>
+    <th>${mn ? "Шинэ эрч" : "New EUI"}</th>
+    <th>Δ kWh/m²</th>
+    <th>CO₂ ${mn ? "бууралт" : "reduction"}</th>
+    <th>${mn ? "Нөхөх хугацаа" : "Payback"}</th>
+  </tr></thead>
+  <tbody>${retRows}</tbody>
+</table>
+<p style="font-size:9px;color:#888;margin-top:4px">${mn
+  ? "* Simple payback (хөнгөлөлтгүй) · УБЦТС тариф ~256₮/kWh · CO₂: нүүрс 0.73 kg/kWh"
+  : "* Simple payback (no discounting) · UBEG tariff ~256₮/kWh · CO₂: coal factor 0.73 kg/kWh"}</p>
+` : ""}
+
+<h2>${mn ? "Зөвлөмж" : "Recommendations"}</h2>
+<ul class="rec-list">
+  ${mn ? `
+  <li>• Дулаалга сайжруулалт — панель барилгын хамгийн өндөр өгөөжтэй арга (−22%, 3.5 жил)</li>
+  <li>• 3-давхар шилтэй цонх — дулааны алдагдлыг 15% бууруулна</li>
+  <li>• Хослол retrofit — хамгийн их хэмнэлт (−35%) боловч хөрөнгө оруулалт илүү</li>
+  <li>• Дэлгэрэнгүй инженерийн аудит хийлгэхийг зөвлөнө (энэ тайлан урьдчилсан үнэлгээ)</li>
+  ` : `
+  <li>• Insulation upgrade — highest ROI for panel buildings (−22%, 3.5 yr payback)</li>
+  <li>• Triple-pane windows — reduces heat loss by 15%</li>
+  <li>• Combined retrofit — highest savings (−35%) but larger upfront cost</li>
+  <li>• A detailed engineering audit is recommended (this report is a preliminary screening)</li>
+  `}
+</ul>
+
+<div style="margin-top:20px;font-size:9px;color:#aaa;border-top:1px solid #ddd;padding-top:8px">
+  UB Energy Research Platform · OLS Regression · ${mn ? "Монголын нөхцөлд" : "Mongolia-adapted"} · ${date}
+</div>
+</body></html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
 
 function exportCSV(buildings, lang) {
   const headers = lang === "mn"
@@ -256,7 +389,7 @@ export default function DashboardPage() {
             <button className="dash-export-btn" onClick={() => exportCSV(filteredBuildings, lang)}>
               <Download size={14} /> {t.dashboard.export_csv}
             </button>
-            <button className="dash-export-btn" onClick={() => window.print()}>
+            <button className="dash-export-btn" onClick={() => exportPDFReport(filteredBuildings, userStats, lang)}>
               <FileText size={14} /> {t.dashboard.export_pdf}
             </button>
           </div>
@@ -525,28 +658,38 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Зэрэглэлийн тайлбар */}
-                <div className="usbe-grade-note" style={{ borderLeftColor: GRADE_COLORS[userStats.grade] }}>
-                  <strong style={{ color: GRADE_COLORS[userStats.grade] }}>{userStats.grade} {lang === "mn" ? "зэрэглэл" : "grade"}</strong>
-                  {" — "}
-                  {lang === "mn"
-                    ? `эрчим хүчний эрч ${userStats.avgIntensity} kWh/m²/жил. ${
-                        { A:"50-аас бага — дэлхийн стандартад нийцэж байна.",
-                          B:"50–100 — үр ашигтай Монголын барилга.",
-                          C:"100–150 — дунд зэрэг, сайжруулах боломжтой.",
-                          D:"150–200 — хэвийн, дулаалга болон цонхыг сайжруулах зөвлөмжтэй.",
-                          E:"200–250 — их хэрэглээтэй. Дулаалга, цонх, халаалтын системийг шинэчлэх хэрэгтэй.",
-                          F:"250–300 — маш их хэрэглээтэй. Яаралтай шинэчлэл шаардлагатай.",
-                          G:"300-аас их — хэт их хэрэглээ. Цогц шинэчлэл зайлшгүй." }[userStats.grade] || ""}`
-                    : `intensity ${userStats.avgIntensity} kWh/m²/yr. ${
-                        { A:"Below 50 — meets world-class efficiency standards.",
-                          B:"50–100 — efficient by Mongolian standards.",
-                          C:"100–150 — average, improvement possible.",
-                          D:"150–200 — normal, insulation & window upgrade recommended.",
-                          E:"200–250 — high usage. Insulation, windows, heating system need updating.",
-                          F:"250–300 — very high. Urgent retrofit required.",
-                          G:"Above 300 — extremely high. Full retrofit essential." }[userStats.grade] || ""}`}
-                </div>
+                {/* Зэрэглэлийн тайлбар — bullet format */}
+                {(() => {
+                  const g = userStats.grade;
+                  const gc = GRADE_COLORS[g];
+                  const bullets = lang === "mn" ? {
+                    A: ["Зэрэглэл: A · эрч < 50 kWh/m²/жил", "Үнэлгээ: Дэлхийн стандартад нийцнэ", "Зөвлөмж: Тогтмол хяналт хангалттай", "Итгэлцэл: Өндөр"],
+                    B: ["Зэрэглэл: B · эрч 50–100 kWh/m²/жил", "Үнэлгээ: Монголын нөхцөлд үр ашигтай", "Зөвлөмж: Цонхны шил сайжруулаарай", "Итгэлцэл: Өндөр"],
+                    C: ["Зэрэглэл: C · эрч 100–150 kWh/m²/жил", "Үнэлгээ: Дунд зэрэг — сайжруулах боломжтой", "Зөвлөмж: Дулаалга → −15–20% хэмнэлт", "Итгэлцэл: Дунд"],
+                    D: ["Зэрэглэл: D · эрч 150–200 kWh/m²/жил", "Үнэлгээ: Хэвийн, шинэчлэл зөвлөгдөж байна", "Зөвлөмж: Дулаалга + цонх → −22–35% хэмнэлт", "Payback: 3–5 жил (simple)"],
+                    E: ["Зэрэглэл: E · эрч 200–250 kWh/m²/жил", "Үнэлгээ: Их хэрэглээ — яаралтай анхаарна уу", "Зөвлөмж: Дулаалга + цонх + халаалт → −30–40%", "Payback: 4–6 жил (simple)"],
+                    F: ["Зэрэглэл: F · эрч 250–300 kWh/m²/жил", "Үнэлгээ: Маш их хэрэглээ — яаралтай шинэчлэл", "Зөвлөмж: Цогц retrofit → CO₂ −35%+ бууруулна", "Payback: 4–7 жил (simple)"],
+                    G: ["Зэрэглэл: G · эрч > 300 kWh/m²/жил", "Үнэлгээ: Хэт их — цогц шинэчлэл зайлшгүй", "Зөвлөмж: Бүрэн тусгаарлалт + халаалтын систем", "Payback: 5–8 жил (simple)"],
+                  }[g] : {
+                    A: ["Grade A · EUI < 50 kWh/m²/yr", "Assessment: World-class efficiency", "Recommendation: Monitor only", "Confidence: High"],
+                    B: ["Grade B · EUI 50–100 kWh/m²/yr", "Assessment: Efficient by Mongolian standards", "Recommendation: Consider window glazing upgrade", "Confidence: High"],
+                    C: ["Grade C · EUI 100–150 kWh/m²/yr", "Assessment: Average — improvement feasible", "Recommendation: Insulation → −15–20% savings", "Confidence: Medium"],
+                    D: ["Grade D · EUI 150–200 kWh/m²/yr", "Assessment: Normal — retrofit recommended", "Recommendation: Insulation + windows → −22–35%", "Payback: 3–5 yr (simple)"],
+                    E: ["Grade E · EUI 200–250 kWh/m²/yr", "Assessment: High usage — urgent attention needed", "Recommendation: Insulation + windows + heating → −30–40%", "Payback: 4–6 yr (simple)"],
+                    F: ["Grade F · EUI 250–300 kWh/m²/yr", "Assessment: Very high — immediate retrofit needed", "Recommendation: Full envelope retrofit → CO₂ −35%+", "Payback: 4–7 yr (simple)"],
+                    G: ["Grade G · EUI > 300 kWh/m²/yr", "Assessment: Extremely high — full retrofit essential", "Recommendation: Complete insulation + heating system", "Payback: 5–8 yr (simple)"],
+                  }[g] || ["—","—","—","—"];
+                  return (
+                    <div className="usbe-grade-note usbe-grade-bullets" style={{ borderLeftColor: gc }}>
+                      {bullets.map((line, i) => (
+                        <div key={i} className={`ugb-line ${i === 0 ? "ugb-line-title" : ""}`} style={i === 0 ? { color: gc } : {}}>
+                          {i > 0 && <span className="ugb-dot" style={{ background: gc }} />}
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
               </div>
             )}
@@ -562,6 +705,79 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* ── Baseline vs Retrofit + ROI ── */}
+        {userStats && (
+          <div className="card mb-3 bvr-card">
+            <div className="bvr-header">
+              <div>
+                <h3 className="section-title" style={{ marginBottom: 2, fontSize: "1rem" }}>
+                  {lang === "mn" ? "Baseline vs Retrofit харьцуулалт" : "Baseline vs Retrofit Comparison"}
+                </h3>
+                <p style={{ fontSize: "0.75rem", color: "var(--text3)", margin: 0 }}>
+                  {lang === "mn"
+                    ? "Одоогийн зэрэглэл + retrofit хувилбар бүрийн таамаглал"
+                    : "Current grade vs estimated outcome per retrofit scenario"}
+                </p>
+              </div>
+            </div>
+
+            <div className="bvr-baseline-row">
+              <span className="bvr-lbl">{lang === "mn" ? "Одоогийн (Baseline)" : "Current (Baseline)"}</span>
+              <span className="bvr-int">{userStats.avgIntensity} kWh/m²/жил</span>
+              <span className="bvr-grade" style={{ background: { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" }[userStats.grade] || "#888" }}>
+                {userStats.grade}
+              </span>
+            </div>
+
+            {/* BvR column headers */}
+            <div className="bvr-col-headers">
+              <span>{lang === "mn" ? "Retrofit хувилбар" : "Retrofit scenario"}</span>
+              <span>{lang === "mn" ? "Шинэ эрч" : "New EUI"}</span>
+              <span>Δ kWh/m²</span>
+              <span>CO₂ {lang === "mn" ? "бууралт" : "reduction"}</span>
+              <span>{lang === "mn" ? "Нөхөх хугацаа" : "Payback"}</span>
+            </div>
+
+            <div className="bvr-scenarios">
+              {[
+                { name: lang === "mn" ? "Дулаалга сайжруулалт"        : "Insulation upgrade",
+                  pct: 22, cost: lang === "mn" ? "~₮2,500/м²"          : "~₮2,500/m²", payback: 3.5 },
+                { name: lang === "mn" ? "3-давхар шилтэй цонх"         : "Triple-pane windows",
+                  pct: 15, cost: lang === "mn" ? "~₮180,000/цонх"       : "~₮180k/window", payback: 5.2 },
+                { name: lang === "mn" ? "Халаалтын системийг шинэчлэх" : "Heating system retrofit",
+                  pct: 12, cost: lang === "mn" ? "~₮3,200,000/нэгж"     : "~₮3.2M/unit", payback: 4.8 },
+                { name: lang === "mn" ? "Хослол (дулаалга + цонх)"     : "Combined (insul. + windows)",
+                  pct: 35, cost: lang === "mn" ? "~₮3,000/м² нийт"      : "~₮3,000/m²", payback: 4.1 },
+              ].map(({ name, pct, cost, payback }) => {
+                const newInt       = Math.round(userStats.avgIntensity * (1 - pct / 100));
+                const deltaInt     = userStats.avgIntensity - newInt;
+                const gradeOf      = i => i < 50 ? "A" : i < 100 ? "B" : i < 150 ? "C" : i < 200 ? "D" : i < 250 ? "E" : i < 300 ? "F" : "G";
+                const gradeColors  = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
+                const newGrade     = gradeOf(newInt);
+                const annualSaving = Math.round(userStats.totalAnnual * pct / 100);
+                const co2saved     = Math.round(annualSaving * 0.73 / 100) / 10;
+                return (
+                  <div key={name} className="bvr-row bvr-row-grid">
+                    <span className="bvr-row-name">{name}</span>
+                    <span className="bvr-eui-cell">
+                      <span className="bvr-new-grade" style={{ background: gradeColors[newGrade] }}>{newGrade}</span>
+                      <span className="bvr-saving">{newInt}</span>
+                    </span>
+                    <span className="bvr-delta">−{deltaInt} kWh/m²</span>
+                    <span className="bvr-co2">−{co2saved} tCO₂/yr</span>
+                    <span className="bvr-payback">{payback} {lang === "mn" ? "жил" : "yr"}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: "0.75rem", fontStyle: "italic", borderTop: "1px solid var(--border)", paddingTop: "0.6rem" }}>
+              {lang === "mn"
+                ? "* Simple payback (хөнгөлөлтгүй) · EUI загвар + УБЦТС тариф (~256₮/kWh) · CO₂: нүүрсний сүлжээний коэффициент 0.73 kg/kWh ашигласан · Бодит нөхцөл өөр байж болно."
+                : "* Simple payback (no discounting, i=8% not applied) · EUI model + UBEG tariff (~256₮/kWh) · CO₂: coal grid factor 0.73 kg/kWh · Actual results may vary."}
+            </p>
+          </div>
+        )}
+
         {/* No-results notice */}
         {filteredBuildings.length === 0 && (districtFilter !== "all" || typeFilter !== "all") && (
           <div className="dash-no-results card mb-3">
@@ -574,7 +790,7 @@ export default function DashboardPage() {
         <div className="grid grid-4 mb-3">
           <MetricCard icon={Building2}  label={lang === "mn" ? "Нийт барилга"       : "Total Buildings"}   value={stats?.count        ?? "—"} unit=""                       color="#3a8fd4" />
           <MetricCard icon={Zap}        label={lang === "mn" ? "Нийт жилийн хэрэглээ" : "Total Annual Usage"} value={stats ? (stats.totalMwh >= 1000 ? `${(stats.totalMwh/1000).toFixed(1)}` : stats.totalMwh) : "—"} unit={stats && stats.totalMwh >= 1000 ? "GWh" : "MWh"} color="#e9c46a" />
-          <MetricCard icon={Activity}   label={lang === "mn" ? "Дундаж эрчим хүчний эрчим" : "Avg. Energy Intensity"} value={stats?.avgIntensity ?? "—"} unit="kWh/m²"              color="#57cc99" />
+          <MetricCard icon={Activity}   label={lang === "mn" ? "Дундаж эрчим хүчний эрчим" : "Avg. Energy Intensity"} value={stats?.avgIntensity ?? "—"} unit="kWh/m²" color="#57cc99" title={lang === "mn" ? "Жилийн халааны эрчим хүчний эрчимжилт — нийт хэрэглээ ÷ нийт талбай" : "Annual heating energy intensity — total consumption ÷ total area"} />
           <MetricCard icon={TrendingUp} label={lang === "mn" ? "Нийт CO₂ ялгаруулалт" : "Total CO₂ Emissions"} value={stats ? stats.totalCo2.toLocaleString() : "—"} unit="t CO₂"          color="#e76f51" />
         </div>
 
@@ -600,6 +816,24 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
+              {/* UB benchmark reference */}
+              <div className="gdb-benchmark">
+                <div className="gdb-bm-dot" />
+                <span className="gdb-bm-text">
+                  {lang === "mn"
+                    ? "УБ дундаж: ~180 kWh/m²/жил (D зэрэглэл) · синтетик пилот"
+                    : "UB avg: ~180 kWh/m²/yr (grade D) · synthetic pilot estimate"}
+                </span>
+              </div>
+              {stats.avgIntensity > 0 && (
+                <div className="gdb-your-val" title={lang === "mn" ? "Жилийн халааны эрчим хүчний эрчимжилт" : "Annual heating energy intensity"}>
+                  {lang === "mn" ? "Таны датасетийн дундаж" : "Your dataset avg"}:{" "}
+                  <strong style={{ color: GRADE_COLORS[
+                    stats.avgIntensity < 50 ? "A" : stats.avgIntensity < 100 ? "B" : stats.avgIntensity < 150 ? "C"
+                    : stats.avgIntensity < 200 ? "D" : stats.avgIntensity < 250 ? "E" : stats.avgIntensity < 300 ? "F" : "G"
+                  ] }}>{stats.avgIntensity} kWh/m²</strong>
+                </div>
+              )}
             </div>
             <div className="card">
               <h3 className="section-title" style={{ fontSize: "1rem" }}>

@@ -91,7 +91,7 @@
 .usbe-sum-eq    { flex: 1; font-family: monospace; font-size: 0.7rem; color: var(--text3); background: rgba(255,255,255,0.04); border-radius: 4px; padding: 1px 6px; }
 .usbe-sum-val   { font-weight: 700; font-size: 0.82rem; white-space: nowrap; }
 
-/* Grade note */
+/* Grade note — bullet format */
 .usbe-grade-note {
   font-size: 0.75rem;
   color: var(--text2);
@@ -106,6 +106,12 @@
   .usbe-sum-lbl { min-width: 80px; }
   .usbe-sum-eq  { display: none; }
 }
+
+/* Grade bullets */
+.usbe-grade-bullets { display: flex; flex-direction: column; gap: 0.25rem; }
+.ugb-line { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2); line-height: 1.4; }
+.ugb-line-title { font-weight: 800; font-size: 0.8rem; }
+.ugb-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
 /* Last updated */
 .dash-last-updated {
@@ -627,6 +633,134 @@
   font-weight: 700;
   font-family: monospace;
   letter-spacing: 0.02em;
+}
+
+/* ── Baseline vs Retrofit card ── */
+.bvr-card { padding: 1rem 1.1rem; }
+
+.bvr-header {
+  margin-bottom: 0.85rem;
+}
+
+.bvr-baseline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(230,57,70,0.06);
+  border: 1px solid rgba(230,57,70,0.2);
+  border-radius: 8px;
+  margin-bottom: 0.85rem;
+}
+.bvr-lbl {
+  font-size: 0.75rem;
+  color: var(--text3);
+  flex: 1;
+}
+.bvr-int {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text);
+}
+.bvr-grade {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.bvr-col-headers {
+  display: grid;
+  grid-template-columns: 1fr 80px 90px 110px 90px;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 0.25rem;
+}
+
+.bvr-scenarios { display: flex; flex-direction: column; gap: 0; }
+
+.bvr-row {
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.bvr-row:last-child { border-bottom: none; }
+
+.bvr-row-grid {
+  display: grid;
+  grid-template-columns: 1fr 80px 90px 110px 90px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bvr-row-name {
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.bvr-eui-cell { display: flex; align-items: center; gap: 0.35rem; }
+.bvr-saving { font-size: 0.8rem; font-weight: 700; font-family: monospace; color: var(--text); }
+.bvr-new-grade {
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 0.72rem;
+  flex-shrink: 0;
+}
+.bvr-delta { font-size: 0.78rem; color: #2a9d8f; font-weight: 700; font-family: monospace; }
+.bvr-co2   { font-size: 0.77rem; color: #57cc99; font-weight: 600; }
+.bvr-payback {
+  font-size: 0.78rem;
+  color: #3a8fd4;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .bvr-col-headers { display: none; }
+  .bvr-row-grid {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .bvr-eui-cell, .bvr-delta, .bvr-co2, .bvr-payback { font-size: 0.74rem; }
+}
+
+/* Grade distribution benchmark */
+.gdb-benchmark {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(255,255,255,0.1);
+}
+.gdb-bm-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #f4a261;
+  flex-shrink: 0;
+}
+.gdb-bm-text {
+  font-size: 0.68rem;
+  color: var(--text3);
+  line-height: 1.35;
+}
+.gdb-your-val {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 0.3rem;
 }
 
 /* Top high-intensity buildings */

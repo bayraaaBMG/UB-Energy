@@ -1632,11 +1632,23 @@ export default function DataInputPage() {
                     </div>
                     <div>
                       <div style={{ fontSize: "1.25rem", fontWeight: 800, color: GRADE_COLORS[livePreview.grade] }}>{livePreview.intensity}</div>
-                      <div style={{ fontSize: "0.7rem", color: "var(--text3)" }}>kWh/m²</div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text3)", cursor: "help" }}
+                        title={lang === "mn" ? "Жилийн халааны эрчим хүчний эрчимжилт: нийт хэрэглээг барилгын талбайд хувааж тооцно" : "Annual heating energy intensity: total consumption divided by floor area"}>
+                        kWh/m² <span style={{ opacity: 0.5 }}>ⓘ</span>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: "0.4rem" }}>
-                    CO₂: {livePreview.co2} t · PM2.5: {livePreview.pm25.toLocaleString()} μg
+                  <div style={{ fontSize: "0.7rem", color: "var(--text3)", marginTop: "0.4rem", cursor: "help" }}
+                    title={lang === "mn" ? "CO₂: дүүргийн халаалтын ялгарлын коэффициент 0.73 kg/kWh (нүүрс) ашиглан тооцсон" : "CO₂: calculated using district heating emission factor 0.73 kg/kWh (coal-based grid)"}>
+                    CO₂: {livePreview.co2} t <span style={{ opacity: 0.5 }}>ⓘ</span> · PM2.5: {livePreview.pm25.toLocaleString()} μg
+                  </div>
+                  <div style={{ marginTop: "0.45rem", fontSize: "0.68rem", color: "#f4a261", display: "flex", alignItems: "flex-start", gap: "0.35rem", lineHeight: 1.45, padding: "0.35rem 0.6rem", background: "rgba(244,162,97,0.07)", border: "1px solid rgba(244,162,97,0.2)", borderRadius: 6 }}>
+                    <AlertTriangle size={11} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      {lang === "mn"
+                        ? "±10% тодорхойгүй байдал: оролтын параметрийн нарийвчлалаас хамааран тооцоолол ±10% хэлбэлзэж болно. Input sensitivity — инженерийн баталгаажуулалт шаардана."
+                        : "±10% uncertainty: prediction may vary ±10% depending on input accuracy. Input sensitivity — engineering verification recommended."}
+                    </span>
                   </div>
                 </div>
               ) : (

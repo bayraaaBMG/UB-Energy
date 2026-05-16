@@ -4,8 +4,8 @@ import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Brain, BarChart2, CloudRain, Lightbulb, ArrowRight,
-  Building2, Zap, Database, Target, Info, LogIn, FlaskConical, CheckCircle, Map,
-  ShieldAlert, Clock, Thermometer, Snowflake, Leaf,
+  Building2, Zap, Database, Target, Info, LogIn, FlaskConical, CheckCircle,
+  ShieldAlert, Clock, Thermometer, Snowflake, Leaf, TrendingDown, Calculator,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -108,7 +108,7 @@ export default function HomePage() {
           <div className="hero-steps">
             {[
               { icon: Building2, text: mn ? "Барилгын мэдээлэл оруул" : "Enter building info" },
-              { icon: Brain,     text: mn ? "AI 30+ хувьсагчид тооцооллно" : "AI runs 30+ features" },
+              { icon: Brain,     text: mn ? "OLS загвар 30+ хувьсагчид тооцооллно" : "OLS model processes 30+ features" },
               { icon: Lightbulb, text: mn ? "Зэрэглэл + CO₂ + зөвлөмж авна" : "Get grade + CO₂ + tips" },
             ].map(({ icon: Icon, text }, i, arr) => (
               <React.Fragment key={text}>
@@ -118,14 +118,26 @@ export default function HomePage() {
             ))}
           </div>
 
+          <div className="hero-scope-note">
+            <span className="hsn-item">
+              <Target size={12} />
+              {mn ? "Урьдчилсан эрчим хүчний үнэлгээнд зориулсан" : "For preliminary energy assessment"}
+            </span>
+            <span className="hsn-sep">·</span>
+            <span className="hsn-item hsn-warn">
+              {mn ? "Дэлгэрэнгүй инженерийн аудитыг орлохгүй" : "Not a substitute for detailed engineering audit"}
+            </span>
+          </div>
+          <p className="hero-screening-note">
+            {mn
+              ? "Эрт шатны дэлгэц шүүлтэд зориулсан — нарийвчилсан дизайн тооцоонд тохиромжгүй"
+              : "Designed for early-stage screening, not detailed design calculations"}
+          </p>
+
           <div className="hero-actions">
             <Link to="/predictor" className="btn btn-accent">
               <Brain size={18} />
               {t.home.hero_btn}
-            </Link>
-            <Link to="/map" className="btn btn-secondary">
-              <Map size={18} />
-              {t.home.hero_btn2}
             </Link>
             <Link to="/dashboard" className="btn btn-secondary">
               <BarChart2 size={18} />
@@ -201,6 +213,252 @@ export default function HomePage() {
               <Clock size={11} aria-hidden="true" />
               {t.home.last_updated}: <time dateTime="2026-04-18">2026-04-18</time>
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Methodology ── */}
+      <section className="methodology-section">
+        <div className="container">
+          <h2 className="section-title">{mn ? "Тооцооллын аргачлал" : "Calculation Methodology"}</h2>
+          <p className="meth-sub">
+            {mn
+              ? "Систем юун дээр суурилж тооцооллыг хийдэг вэ?"
+              : "What is the calculation based on?"}
+          </p>
+          <div className="meth-grid">
+            <div className="meth-card card">
+              <div className="meth-num">①</div>
+              <div className="meth-content">
+                <div className="meth-title">Heating Degree Days (HDD)</div>
+                <div className="meth-body">
+                  <div className="meth-formula">HDD = Σ max(T<sub>base</sub> − T<sub>daily</sub>, 0)</div>
+                  <div className="meth-detail">
+                    {mn
+                      ? "Базисын температур: 18°C · УБ дундаж: ~4,500 HDD/жил · Улирлын хэрэглээний жин"
+                      : "Base: 18°C · UB average: ~4,500 HDD/year · Seasonal weighting factor"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="meth-card card">
+              <div className="meth-num">②</div>
+              <div className="meth-content">
+                <div className="meth-title">
+                  {mn
+                    ? "Калибрлагдсан регрессийн загвар"
+                    : "Calibrated Regression Model"}
+                </div>
+                <div className="meth-body">
+                  <div className="meth-formula">ŷ = β₀ + β₁·area + β₂·age + β₃·HDD + … + β₃₀·x₃₀</div>
+                  <div className="meth-detail">
+                    {mn
+                      ? "Хэрэглээний түүхэн өгөгдөлд суурилсан OLS + Ridge (λ=0.01) · EUI физик томьёогоор баталгаажуулсан"
+                      : "Historical consumption–calibrated OLS + Ridge (λ=0.01) · validated against physics EUI formula"}
+                  </div>
+                  <div className="meth-dataset-row">
+                    <span className="meth-ds-chip">N = {METRICS.n_total}</span>
+                    <span className="meth-ds-chip">80/20 train/test split</span>
+                    <span className="meth-ds-chip">{mn ? "Hold-out validation" : "Hold-out validation"}</span>
+                    <span className="meth-ds-chip meth-ds-pilot">{mn ? "Синтетик пилот датасет" : "Synthetic pilot dataset"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="meth-card card">
+              <div className="meth-num">③</div>
+              <div className="meth-content">
+                <div className="meth-title">{mn ? "Барилгын параметрүүд (30+)" : "Building Parameters (30+)"}</div>
+                <div className="meth-body">
+                  <div className="meth-params">
+                    {(mn
+                      ? ["Талбай (м²)", "Барилгасан он", "Давхрын тоо", "Дулаалга", "Цонхны төрөл", "Халаалт", "Ханын материал", "HDD"]
+                      : ["Area (m²)", "Year built", "Floors", "Insulation", "Window type", "Heating", "Wall material", "HDD"]
+                    ).map(p => (
+                      <span key={p} className="meth-param-tag">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="meth-accuracy-row">
+            {[
+              { label: "R²",   value: `${(METRICS.r2 * 100).toFixed(1)}%`,
+                desc: mn ? "Тайлбарлах чадвар" : "Explained variance", color: "#2a9d8f" },
+              { label: "MAPE", value: `±${METRICS.mape}%`,
+                desc: mn ? "УБ цаг уурын нөхцөлд · синтетик пилот" : "UB climate · synthetic pilot", color: "#3a8fd4" },
+              { label: "MAE",  value: `${METRICS.mae.toLocaleString()} kWh`,
+                desc: mn ? "Дундаж абсолют алдаа" : "Mean absolute error", color: "#9b72cf" },
+              { label: "RMSE", value: `${METRICS.rmse.toLocaleString()} kWh`,
+                desc: mn ? "Үндэс квадрат алдаа · estimated" : "Root mean sq. error · estimated", color: "#e9c46a" },
+            ].map(({ label, value, desc, color }) => (
+              <div key={label} className="meth-acc-item">
+                <div className="meth-acc-label">{label}</div>
+                <div className="meth-acc-value" style={{ color }}>{value}</div>
+                <div className="meth-acc-desc">{desc}</div>
+              </div>
+            ))}
+          </div>
+          <div className="meth-pilot-note">
+            <Info size={12} />
+            <span>
+              {mn
+                ? "Дээрх метрикүүд 600 синтетик барилгын hold-out test set дээр тооцсон — бодит барилгын мэдээллийн дутагдлаас шалтгаалан (estimated / pilot-based). Бодит НЭТЭГ өгөгдөл ирэхэд шинэчлэгдэнэ."
+                : "Metrics are estimated on a 600-sample synthetic hold-out test set (pilot-based) due to the absence of publicly available Mongolian building energy records. Will be updated when real district heating data becomes available."}
+              {" "}
+              <strong style={{ color: "#2a9d8f" }}>
+                {mn
+                  ? "→ Бодит датасет нэгтгэлт төлөвлөгдөж байна: 2026 III улирал (50+ барилга, пилот)"
+                  : "→ Real dataset integration planned: Q3 2026 (50+ buildings, pilot phase)"}
+              </strong>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Limitations ── */}
+      <section className="limitations-section">
+        <div className="container">
+          <div className="lim-card card">
+            <div className="lim-header">
+              <ShieldAlert size={15} className="lim-icon" />
+              <span className="lim-title">{mn ? "Загварын хязгаарлалтууд" : "Model Limitations"}</span>
+              <span className="lim-sub">{mn ? "— инженерүүдэд мэдэгдэх зүйл" : "— known constraints for engineers"}</span>
+            </div>
+            <div className="lim-grid">
+              {[
+                {
+                  icon: "👤",
+                  mn: "Оршин суугчдын зан үйлийг загварчлахгүй",
+                  en: "Does not model occupant behaviour",
+                  detail_mn: "Гэрт байх цаг, агааржуулалтын дадал, цаг алдаатай эсвэл хэт их халаах зэрэг хүний хүчин зүйлийг тооцохгүй.",
+                  detail_en: "Occupancy schedules, ventilation habits, and over- or under-heating patterns are not captured.",
+                },
+                {
+                  icon: "🔥",
+                  mn: "Тогтмол дулаан хангамж гэж үздэг",
+                  en: "Assumes steady district heating supply",
+                  detail_mn: "Дулааны станцийн ачааллын хэлбэлзэл, хоолойн алдагдал, даралтын уналтыг тооцохгүй.",
+                  detail_en: "Does not account for heat plant load fluctuation, pipe losses, or pressure drops.",
+                },
+                {
+                  icon: "🏗",
+                  mn: "Барилгын бүрхүүлийн хялбаршуулсан загвар",
+                  en: "Simplified building envelope model",
+                  detail_mn: "Дулааны гүүр, хаалганы хаалт, суурийн дулааны алдагдлыг нарийн тооцохгүй — EUI коэффициентэд дундажлагдсан.",
+                  detail_en: "Thermal bridging, door seals, and slab heat loss are averaged into EUI coefficients, not modelled precisely.",
+                },
+                {
+                  icon: "📊",
+                  mn: "Синтетик пилот датасет",
+                  en: "Synthetic pilot dataset",
+                  detail_mn: "600 барилга физик томьёогоор үүсгэгдсэн — бодит НЭТЭГ / дулааны тоолуурын датаар солигдох боломжтой.",
+                  detail_en: "600 buildings generated via physics formula — pending real district heating meter data for production use.",
+                },
+              ].map(({ icon, mn: t_mn, en: t_en, detail_mn, detail_en }) => (
+                <div key={t_en} className="lim-item">
+                  <div className="lim-item-header">
+                    <span className="lim-emoji">{icon}</span>
+                    <span className="lim-item-title">{mn ? t_mn : t_en}</span>
+                  </div>
+                  <div className="lim-item-detail">{mn ? detail_mn : detail_en}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Case Study ── */}
+      <section className="casestudy-section">
+        <div className="container">
+          <div className="cs-section-header">
+            <h2 className="section-title">{mn ? "Жишээ барилга — Case Study" : "Case Study — Sample Building"}</h2>
+            <span className="cs-sim-badge">
+              <FlaskConical size={11} />
+              {mn ? "Sample simulation · estimated" : "Sample simulation · estimated"}
+            </span>
+          </div>
+          <div className="cs-grid">
+            <div className="card cs-info">
+              <div className="cs-tag">{mn ? "Суурь үзүүлэлт" : "Baseline"}</div>
+              <div className="cs-building-title">
+                <Building2 size={16} />
+                {mn ? "Баянмонгол-1 орон сууц" : "Bayanmongol-1 Apartment"}
+              </div>
+              <div className="cs-specs">
+                {[
+                  { k: mn ? "Байршил"    : "Location",  v: mn ? "Баянзүрх дүүрэг, УБ" : "Bayanzurkh, UB" },
+                  { k: mn ? "Талбай"     : "Area",      v: "1,200 м²" },
+                  { k: mn ? "Баригдсан"  : "Built",     v: "1995 он" },
+                  { k: mn ? "Давхар"     : "Floors",    v: "9 давхар" },
+                  { k: mn ? "Ханы мат."  : "Wall",      v: mn ? "Панель бетон" : "Panel concrete" },
+                  { k: mn ? "Дулаалга"   : "Insulation",v: mn ? "Муу (хуучин)" : "Poor (aged)" },
+                ].map(({ k, v }) => (
+                  <div key={k} className="cs-spec-row">
+                    <span className="cs-spec-k">{k}</span>
+                    <span className="cs-spec-v">{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="cs-baseline-metrics">
+                <div className="cs-bm-item cs-bm-bad">
+                  <div className="cs-bm-val">245 kWh/м²</div>
+                  <div className="cs-bm-lbl">kWh/м²/жил</div>
+                </div>
+                <div className="cs-bm-item">
+                  <div className="cs-bm-val">294,000 kWh</div>
+                  <div className="cs-bm-lbl">{mn ? "Жилийн нийт" : "Annual total"}</div>
+                </div>
+                <div className="cs-bm-item">
+                  <div className="cs-bm-val" style={{ color: "#e63946" }}>F</div>
+                  <div className="cs-bm-lbl">{mn ? "Зэрэглэл" : "Grade"}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card cs-retrofits">
+              <div className="cs-tag cs-tag-green">{mn ? "Retrofit хувилбарууд" : "Retrofit Options"}</div>
+              {[
+                { name: mn ? "① Дулаалга нэмэх"           : "① Insulation upgrade",
+                  saving: 22, payback: 3.5, newInt: 191, newGrade: "D", cost: "₮12.5M" },
+                { name: mn ? "② 3-давхар шилтэй цонх"     : "② Triple-pane windows",
+                  saving: 15, payback: 5.2, newInt: 208, newGrade: "E", cost: "₮9.8M" },
+                { name: mn ? "③ Хослол (дулаалга + цонх)" : "③ Combined (insul. + windows)",
+                  saving: 35, payback: 4.1, newInt: 159, newGrade: "D", cost: "₮21.8M" },
+              ].map(({ name, saving, payback, newInt, newGrade, cost }) => {
+                const gradeColor = { D:"#f4a261", E:"#e76f51", C:"#a8c686" };
+                const co2saved = Math.round((245 - newInt) * 1200 * 0.73 / 1000 * 10) / 10;
+                return (
+                  <div key={name} className="cs-retrofit-row">
+                    <div className="cs-ret-name">{name}</div>
+                    <div className="cs-ret-kwhrow">
+                      <span className="cs-ret-before">245</span>
+                      <span className="cs-ret-arrow">→</span>
+                      <span className="cs-ret-after">{newInt} kWh/м²</span>
+                      <span className="cs-ret-grade-badge" style={{ background: gradeColor[newGrade] || "#888" }}>{newGrade}</span>
+                    </div>
+                    <div className="cs-ret-metrics">
+                      <span className="cs-ret-saving"><TrendingDown size={12} />−{saving}%</span>
+                      <span className="cs-ret-co2">−{co2saved} tCO₂/жил</span>
+                      <span className="cs-ret-roi">
+                        <Calculator size={12} />
+                        {cost} · {payback} {mn ? "жил · энгийн нөхөлт" : "yr · simple payback"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="cs-note">
+                {mn
+                  ? "* Тооцоолол нь УБЦТС тарифт (~256₮/kWh), EUI загварт болон IEA 2022 ашиглалтын коэффициентэд тулгуурлана."
+                  : "* Estimates based on UBEG tariff (~256₮/kWh), EUI model, and IEA 2022 retrofit coefficients."}
+              </div>
+            </div>
           </div>
         </div>
       </section>

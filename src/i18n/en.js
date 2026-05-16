@@ -44,7 +44,7 @@ const en = {
     refresh: "Refresh page",
   },
   home: {
-    hero_title: "Predict building energy consumption using AI.",
+    hero_title: "ML-Based Building Energy Prediction for Mongolian Conditions",
     hero_subtitle: "Calculate and forecast energy use based on building structure, insulation, and climate data using OLS regression and physics-based EUI models",
     hero_sentence: "40–60% of energy costs in UB's aging buildings stem from heat loss. Calculate your building's consumption and identify your savings potential.",
     hero_btn: "Start Prediction",
