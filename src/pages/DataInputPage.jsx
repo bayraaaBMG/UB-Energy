@@ -1059,23 +1059,7 @@ export default function DataInputPage() {
           </button>
         </div>
 
-        {/* Тарифын тайлбар */}
-        <div className="card tariff-note mb-3" style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start", background: "var(--card)", border: "1px solid var(--border)", borderLeft: "4px solid #3a8fd4", borderRadius: 10, padding: "1rem 1.2rem" }}>
-          <Info size={18} style={{ color: "#3a8fd4", flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <strong style={{ display: "block", color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.95rem" }}>
-              {t.dataInput.tariff_note_title}
-            </strong>
-            <p style={{ margin: "0 0 0.55rem", color: "var(--text2)", fontSize: "0.875rem", lineHeight: 1.65 }}>
-              {t.dataInput.tariff_note_p1}
-            </p>
-            <p style={{ margin: 0, color: "var(--text2)", fontSize: "0.875rem", lineHeight: 1.65 }}>
-              {t.dataInput.tariff_note_p2}
-            </p>
-          </div>
-        </div>
-
-        {/* ⚠ Benchmark method warning */}
+{/* ⚠ Benchmark method warning */}
         <div style={{ display: "flex", gap: "0.85rem", alignItems: "flex-start", background: "rgba(233,196,106,0.07)", border: "1px solid rgba(233,196,106,0.35)", borderLeft: "4px solid #e9c46a", borderRadius: 10, padding: "1rem 1.2rem", marginBottom: "1.25rem" }}>
           <AlertTriangle size={18} style={{ color: "#e9c46a", flexShrink: 0, marginTop: 2 }} />
           <div>
