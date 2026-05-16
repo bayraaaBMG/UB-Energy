@@ -877,7 +877,46 @@ export default function PredictorPage() {
                         {heating.annual_heat_cost.toLocaleString()} ₮
                       </div>
                       <div style={{ fontSize: "0.75rem", color: "var(--text3)", marginTop: 4 }}>
-                        {lang === "mn" ? `≈ 4,500₮/м²/сар × 9 сар (УБ ДС ТӨХК дундаж тариф)` : `≈ 4,500₮/m²/month × 9 months (UB DHN avg tariff)`}
+                        {lang === "mn" ? `506₮/м² × 9 сар (Эрчим хүчний зохицуулах хороо — dulaan.mn)` : `506₮/m² × 9 months (Energy Regulatory Commission — dulaan.mn)`}
+                      </div>
+                    </div>
+
+                    {/* Official dulaan.mn tariff reference */}
+                    <div style={{ background: "var(--bg3)", borderRadius: 10, overflow: "hidden", border: "1px solid var(--border)", marginBottom: "0.75rem" }}>
+                      <div style={{ background: "#1a3a5c", padding: "0.3rem 0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#7ec8ff" }}>
+                        🔥 {lang === "mn" ? "Дулааны тариф (НӨАТ-гүй) — Эрчим хүчний зохицуулах хороо" : "Heating Tariff (excl. VAT) — Energy Regulatory Commission"}
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(255,255,255,0.04)" }}>
+                            <th style={{ padding: "0.2rem 0.6rem", textAlign: "left", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Ангилал" : "Category"}</th>
+                            <th style={{ padding: "0.2rem 0.5rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Нэгж" : "Unit"}</th>
+                            <th style={{ padding: "0.2rem 0.6rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Тариф" : "Tariff"}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            [lang === "mn" ? "Орон сууцны халаалт" : "Apartment heating", "Төг/м²/сар", "506"],
+                            [lang === "mn" ? "Орон сууцны халаалт" : "Apartment heating", "Төг/ГДж", "3,421"],
+                            [lang === "mn" ? "Халуун ус — халаалтын улиралд" : "Hot water — heating season", "Төг/хүн", "1,870"],
+                            [lang === "mn" ? "Халуун ус — халаалтын бус улиралд" : "Hot water — off-season", "Төг/хүн", "2,806"],
+                            [lang === "mn" ? "Халуун ус — усны зарцуулалтаар" : "Hot water — by volume", "Төг/м³", "1,632"],
+                          ].map(([label, unit, price]) => (
+                            <tr key={label + unit} style={{ borderTop: "1px solid var(--border)" }}>
+                              <td style={{ padding: "0.2rem 0.6rem", color: "var(--text2)" }}>{label}</td>
+                              <td style={{ padding: "0.2rem 0.5rem", textAlign: "right", color: "var(--text3)", fontSize: "0.65rem" }}>{unit}</td>
+                              <td style={{ padding: "0.2rem 0.6rem", textAlign: "right", fontWeight: 700, color: "#f4a261" }}>{price}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div style={{ padding: "0.25rem 0.6rem 0.3rem", borderTop: "1px solid var(--border)", background: "rgba(58,143,212,0.04)" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.68rem" }}>
+                          <tbody>
+                            <tr><td style={{ color: "var(--text3)", padding: "0.1rem 0" }}>{lang === "mn" ? "Аж ахуйн нэгж — халаалт" : "Commercial — heating"}</td><td style={{ textAlign: "right", color: "var(--text3)", fontSize: "0.63rem" }}>Төг/м³</td><td style={{ textAlign: "right", fontWeight: 700, color: "#f4a261", paddingLeft: "0.5rem" }}>604</td></tr>
+                            <tr><td style={{ color: "var(--text3)", padding: "0.1rem 0" }}>{lang === "mn" ? "Аж ахуйн нэгж — халаалт+халуун ус" : "Commercial — heat+hot water"}</td><td style={{ textAlign: "right", color: "var(--text3)", fontSize: "0.63rem" }}>Төг/ГДж</td><td style={{ textAlign: "right", fontWeight: 700, color: "#f4a261", paddingLeft: "0.5rem" }}>9,314</td></tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
 
@@ -888,7 +927,9 @@ export default function PredictorPage() {
                         : `Based on БНТУ 23-02-09 thermal load formula. Base ${heating.gcal_per_m2} Gcal/m²/year × ${form.area} m² = ${heating.annual_gcal} Gcal. Heat loss factors: wall ${form.wall_material}, insulation ${form.insulation_quality}, HDD ${form.hdd}.`}
                     </div>
                     <div style={{ fontSize: "0.72rem", color: "var(--text3)", marginTop: "0.5rem" }}>
-                      {lang === "mn" ? "Эх сурвалж: БНТУ 23-02-09; Улаанбаатар Дулааны Сүлжээ ТӨХК" : "Source: БНТУ 23-02-09; Ulaanbaatar Heating Network ТӨХК"}
+                      {lang === "mn"
+                        ? <>Эх сурвалж: БНТУ 23-02-09 · <a href="https://www.dulaan.mn/page/tariff" target="_blank" rel="noopener noreferrer" style={{ color: "#3a8fd4" }}>Эрчим хүчний зохицуулах хороо — dulaan.mn</a></>
+                        : <>Source: БНТУ 23-02-09 · <a href="https://www.dulaan.mn/page/tariff" target="_blank" rel="noopener noreferrer" style={{ color: "#3a8fd4" }}>Energy Regulatory Commission — dulaan.mn</a></>}
                     </div>
                   </div>
                 )}

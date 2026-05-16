@@ -573,8 +573,9 @@ export function convertHeatBillToEstimates(tugrug_monthly) {
 }
 
 // ─── 14. Heating model (Gcal/year) ───────────────────────────────────────────
-// Based on: БНТУ 23-02-09, Улаанбаатар Дулааны Сүлжээ ТӨХК тариф
-// District heating in UB billed per m² per month (~4,500₮/m²/month avg 9 months)
+// Based on: БНТУ 23-02-09 thermal load formula
+// Cost: official dulaan.mn tariff — 506₮/м² floor area / month (9-month heating season)
+// Source: Эрчим хүчний зохицуулах хороо — dulaan.mn/page/tariff
 export function predictHeating(form) {
   const area   = Math.max(10, Number(form.area) || 100);
   const hdd    = Math.max(3000, Number(form.hdd) || 4500);
@@ -591,7 +592,8 @@ export function predictHeating(form) {
   const monthly_peak = +(annual_gcal * 1.85 / 9).toFixed(2);
   const monthly_avg  = +(annual_gcal / 9).toFixed(2);
 
-  const annual_heat_cost = Math.round(area * 4500 * 9);
+  // Official residential rate: 506₮/м² floor area/month × 9 heating months (dulaan.mn)
+  const annual_heat_cost = Math.round(area * 506 * 9);
 
   // Equivalent kWh (1 Gcal = 1,163 kWh)
   const annual_kwh_equiv = Math.round(annual_gcal * 1163);
