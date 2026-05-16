@@ -13,7 +13,6 @@ import "./Navbar.css";
 const navItems = (t, user) => [
   // ── Public ──
   { path: "/", label: t.nav.home, icon: Home },
-  { path: "/about", label: t.nav.about, icon: Info },
   { path: "/predictor", label: t.nav.predictor, icon: Brain },
   { path: "/map", label: t.nav.map, icon: Map },
   { path: "/weather", label: t.nav.weather, icon: CloudSun },
