@@ -1,4 +1,10 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import {
+  onAuthStateChanged,
+  signInWithPopup, GoogleAuthProvider,
+  signOut as fbSignOut,
+} from "firebase/auth";
+import { auth, FIREBASE_CONFIGURED } from "../lib/firebase";
 import { storageGetJSON, storageSetJSON, storageRemove } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
 
@@ -9,7 +15,6 @@ const USERS_KEY   = STORAGE_KEYS.users;
 const SESSION_KEY = STORAGE_KEYS.session;
 
 // ─── PBKDF2 password hashing (Web Crypto API) ─────────────────────────────────
-// Passwords for localStorage users are hashed; admin is in-memory demo only.
 const PBKDF2_ITER = 150_000;
 
 function genSalt() {
@@ -34,12 +39,12 @@ async function verifyPw(plain, storedHash, salt) {
   return (await hashPw(plain, salt)) === storedHash;
 }
 
-// ─── Pre-seeded demo admin (in-memory only, plaintext — intentional demo) ────
+// ─── Pre-seeded demo admin (in-memory only) ───────────────────────────────────
 const ADMIN = {
   id: "admin_1",
   name: "Админ",
   email: "admin@ubenergy.mn",
-  password: "demo_admin_only",  // plaintext, in-memory, demo-only
+  password: "demo_admin_only",
   type: "official",
   org: "UBenergy",
   role: "admin",
@@ -47,115 +52,131 @@ const ADMIN = {
   createdAt: new Date("2024-01-01").toISOString(),
 };
 
+// Emails that get admin role when logging in via Google
+const GOOGLE_ADMIN_EMAILS = ["admin@ubenergy.mn"];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
-function loadUsers() {
-  return storageGetJSON(USERS_KEY, []);
-}
-
-function saveUsers(users) {
-  storageSetJSON(USERS_KEY, users);
-}
-
-// Merge admin into stored users (always first, always present)
+function loadUsers() { return storageGetJSON(USERS_KEY, []); }
+function saveUsers(users) { storageSetJSON(USERS_KEY, users); }
 function getAllUsers() {
-  const stored = loadUsers().filter(u => u.email !== ADMIN.email);
-  return [ADMIN, ...stored];
+  return [ADMIN, ...loadUsers().filter(u => u.email !== ADMIN.email)];
 }
-
 function loadSession() {
   try {
     const raw = storageGetJSON(SESSION_KEY, null);
     if (!raw) return null;
-    // Expired?
-    if (raw.expiresAt && raw.expiresAt < Date.now()) {
-      storageRemove(SESSION_KEY);
-      return null;
-    }
-    // User still exists?
-    const exists = getAllUsers().find(u => u.id === raw.id);
-    if (!exists) {
-      storageRemove(SESSION_KEY);
-      return null;
-    }
+    if (raw.expiresAt && raw.expiresAt < Date.now()) { storageRemove(SESSION_KEY); return null; }
+    if (!getAllUsers().find(u => u.id === raw.id)) { storageRemove(SESSION_KEY); return null; }
     return raw;
-  }
-  catch { return null; }
+  } catch { return null; }
+}
+
+function buildGoogleUser(fbUser) {
+  return {
+    id:        fbUser.uid,
+    email:     fbUser.email,
+    name:      fbUser.displayName || fbUser.email.split("@")[0],
+    avatar:    fbUser.photoURL || null,
+    role:      GOOGLE_ADMIN_EMAILS.includes(fbUser.email) ? "admin" : "user",
+    type:      "personal",
+    org:       "",
+    createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
+    isGoogle:  true,
+  };
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => loadSession());
+  // localUser: email+password localStorage session
+  const [localUser, setLocalUser] = useState(() => loadSession());
+  // googleUser: Firebase Google OAuth session
+  const [googleUser, setGoogleUser] = useState(null);
 
-  // Persist session changes (with expiry stamp)
+  // Persist local session changes
   useEffect(() => {
-    if (user) storageSetJSON(SESSION_KEY, { ...user, expiresAt: Date.now() + SESSION_TTL });
+    if (localUser) storageSetJSON(SESSION_KEY, { ...localUser, expiresAt: Date.now() + SESSION_TTL });
     else storageRemove(SESSION_KEY);
-  }, [user]);
+  }, [localUser]);
 
-  // ── login ──
+  // Listen for Firebase Google auth state
+  useEffect(() => {
+    if (!FIREBASE_CONFIGURED || !auth) return;
+    return onAuthStateChanged(auth, (fbUser) => {
+      setGoogleUser(fbUser ? buildGoogleUser(fbUser) : null);
+    });
+  }, []);
+
+  // Exposed user: Google takes precedence over local
+  const user = googleUser || localUser;
+
+  // ── Email/password login (localStorage) ──
   const login = async (email, password) => {
     const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
     if (!found) return false;
 
     let ok = false;
     if (found.isDemo) {
-      // Demo admin: plaintext comparison (in-memory only, never stored)
       ok = found.password === password;
     } else if (found.pwHash && found.pwSalt) {
-      // Hashed password (new users)
       ok = await verifyPw(password, found.pwHash, found.pwSalt);
     } else if (found.password) {
-      // Legacy plaintext — verify then migrate to hashed
       ok = found.password === password;
       if (ok) {
         const pwSalt = genSalt();
         const pwHash = await hashPw(password, pwSalt);
-        const stored = loadUsers();
-        saveUsers(stored.map(u =>
-          u.id === found.id ? { ...u, pwHash, pwSalt, password: undefined } : u
-        ));
+        saveUsers(loadUsers().map(u => u.id === found.id ? { ...u, pwHash, pwSalt, password: undefined } : u));
       }
     }
-
     if (!ok) return false;
     const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = found;
-    setUser(session);
+    setLocalUser(session);
     return true;
   };
 
-  // ── register ──
+  // ── Google OAuth login ──
+  const loginWithGoogle = async () => {
+    if (!FIREBASE_CONFIGURED || !auth) return false;
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      return true;
+    } catch { return false; }
+  };
+
+  // ── Register (localStorage) ──
   const register = async ({ name, email, password, type, org }) => {
     if (getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
       return { ok: false, error: "email_taken" };
     }
     if (password.length < 8) return { ok: false, error: "too_short" };
-
     const pwSalt = genSalt();
     const pwHash = await hashPw(password, pwSalt);
-
     const newUser = {
       id: `user_${Date.now()}`,
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      pwHash,
-      pwSalt,
-      type,
-      org: org || "",
+      pwHash, pwSalt,
+      type, org: org || "",
       role: "user",
       createdAt: new Date().toISOString(),
     };
     saveUsers([...loadUsers(), newUser]);
     const { pwHash: _h, pwSalt: _s, ...session } = newUser;
-    setUser(session);
+    setLocalUser(session);
     return { ok: true };
   };
 
-  // ── logout ──
-  const logout = () => setUser(null);
+  // ── Logout ──
+  const logout = async () => {
+    if (googleUser && auth) {
+      await fbSignOut(auth);
+    }
+    setLocalUser(null);
+    setGoogleUser(null);
+  };
 
-  // ── checkEmailForReset — step 1: verify email exists ──
+  // ── checkEmailForReset ──
   const checkEmailForReset = (email) => {
     const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
     if (!found) return { ok: false, error: "email_not_found" };
@@ -163,7 +184,7 @@ export function AuthProvider({ children }) {
     return { ok: true };
   };
 
-  // ── resetPassword — step 2: set new password for verified email ──
+  // ── resetPassword ──
   const resetPassword = async (email, newPassword) => {
     if (newPassword.length < 8) return { ok: false, error: "too_short" };
     const stored = loadUsers();
@@ -173,19 +194,28 @@ export function AuthProvider({ children }) {
     const pwHash = await hashPw(newPassword, pwSalt);
     saveUsers(stored.map(u =>
       u.email.toLowerCase() === email.trim().toLowerCase()
-        ? { ...u, pwHash, pwSalt, password: undefined }
-        : u
+        ? { ...u, pwHash, pwSalt, password: undefined } : u
     ));
     return { ok: true };
   };
 
   // ── updateUser ──
   const updateUser = async ({ name, currentPassword, newPassword, avatar }) => {
+    if (googleUser) {
+      // Google users: only update name/avatar locally
+      setGoogleUser(prev => ({
+        ...prev,
+        ...(name !== undefined ? { name } : {}),
+        ...(avatar !== undefined ? { avatar } : {}),
+      }));
+      return { ok: true };
+    }
+
+    // localStorage user
     const allUsers = getAllUsers();
-    const full = allUsers.find(u => u.id === user.id);
+    const full = allUsers.find(u => u.id === localUser?.id);
     if (!full) return { ok: false, error: "not_found" };
 
-    // Password change requested
     if (newPassword !== undefined) {
       let currentOk = false;
       if (full.isDemo) {
@@ -214,17 +244,19 @@ export function AuthProvider({ children }) {
     };
 
     if (!full.isDemo) {
-      const stored = loadUsers();
-      saveUsers(stored.map(u => u.id === user.id ? updated : u));
+      saveUsers(loadUsers().map(u => u.id === localUser.id ? updated : u));
     }
-
     const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = updated;
-    setUser(session);
+    setLocalUser(session);
     return { ok: true };
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, updateUser, checkEmailForReset, resetPassword }}>
+    <AuthContext.Provider value={{
+      user, authLoading: false,
+      login, loginWithGoogle, logout, register,
+      updateUser, checkEmailForReset, resetPassword,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,6 +13,7 @@ export default defineConfig({
             if (/\/(leaflet|react-leaflet)\//.test(id))  return 'vendor-leaflet';
             if (/\/recharts\//.test(id))                 return 'vendor-recharts';
             if (/\/(react|react-dom|react-router-dom)\//.test(id)) return 'vendor-react';
+            if (/\/(@firebase|firebase)\//.test(id))               return 'vendor-firebase';
           }
         },
       },
