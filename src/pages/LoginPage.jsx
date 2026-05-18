@@ -9,6 +9,7 @@ import {
   Lock, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { APP_NAME } from "../config/constants";
+import { FIREBASE_CONFIGURED } from "../lib/firebase";
 import "./LoginPage.css";
 
 // ─── Password strength ────────────────────────────────────────────────────────
@@ -305,8 +306,8 @@ export default function LoginPage() {
               {mode === "login" ? t.login.title : t.login.register_title}
             </h1>
 
-            {/* Google sign-in — shown only when Firebase is configured */}
-            {loginWithGoogle && (
+            {/* Google sign-in — shown only when Firebase env vars are set */}
+            {FIREBASE_CONFIGURED && (
               <>
                 <button
                   type="button"
