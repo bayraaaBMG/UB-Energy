@@ -577,12 +577,15 @@ export function convertHeatBillToEstimates(tugrug_monthly) {
 // Cost: official dulaan.mn tariff — 506₮/м² floor area / month (9-month heating season)
 // Source: Эрчим хүчний зохицуулах хороо — dulaan.mn/page/tariff
 export function predictHeating(form) {
-  const area   = Math.max(10, Number(form.area) || 100);
-  const hdd    = Math.max(3000, Number(form.hdd) || 4500);
-  const floors = Math.max(1, Number(form.floors) || 3);
+  const area      = Math.max(10, Number(form.area) || 100);
+  const hddRaw    = Number(form.hdd);
+  const hdd       = hddRaw > 0 ? Math.max(3000, hddRaw) : 4500;
+  const hddIsDefault = !(hddRaw > 0);
+  const floors    = Math.max(1, Number(form.floors) || 3);
+  const residents = Math.max(1, Number(form.residents) || Math.max(1, Math.round(area / 20)));
 
   // Specific heat load (Gcal/m²/year) by insulation quality
-  const base = { good: 0.043, medium: 0.062, poor: 0.090 }[form.insulation_quality] || 0.062;
+  const base     = { good: 0.043, medium: 0.062, poor: 0.090 }[form.insulation_quality] || 0.062;
   const matMod   = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[form.wall_material] || 1.0;
   const hddRatio = hdd / 4500;
   const floorMod = floors >= 5 ? 0.94 : 1.0;
@@ -595,16 +598,34 @@ export function predictHeating(form) {
   // Official residential rate: 506₮/м² floor area/month × 9 heating months (dulaan.mn)
   const annual_heat_cost = Math.round(area * 506 * 9);
 
-  // Equivalent kWh (1 Gcal = 1,163 kWh)
+  // Equivalent kWh (1 Gcal = 1,163 kWh thermal)
   const annual_kwh_equiv = Math.round(annual_gcal * 1163);
+
+  // Hot water cost: heating season 1,870₮/person/month × 9 months + off-season 2,806₮/person/month × 3 months
+  const hot_water_annual = Math.round(residents * (1870 * 9 + 2806 * 3));
+
+  // Service fee by floor area (monthly × 12)
+  const service_monthly = area <= 40 ? 3300 : area <= 80 ? 5500 : 11000;
+  const service_annual  = service_monthly * 12;
+
+  // Monthly heating kWh profile — winter-heavy, zero in summer (Jun–Aug)
+  const HEAT_WEIGHTS = [2.00, 1.85, 1.45, 0.55, 0.10, 0, 0, 0, 0.10, 0.80, 1.50, 1.85];
+  const heatWSum = HEAT_WEIGHTS.reduce((a, b) => a + b, 0);
+  const monthly_heat_kwh = HEAT_WEIGHTS.map(w => Math.round(annual_kwh_equiv * w / heatWSum));
 
   return {
     annual_gcal,
     monthly_avg,
     monthly_peak,
-    gcal_per_m2: +gcal_per_m2.toFixed(3),
+    gcal_per_m2:    +gcal_per_m2.toFixed(3),
     annual_heat_cost,
     annual_kwh_equiv,
+    hot_water_annual,
+    service_annual,
+    service_monthly,
+    hdd_used:       hdd,
+    hdd_is_default: hddIsDefault,
+    monthly_heat_kwh,
   };
 }
 
