@@ -36,7 +36,7 @@ function idSeed(id) {
 }
 
 function generateChartData(building, lang) {
-  const ols = monthlyFromAnnual(building.predicted_kwh);
+  const xgb = monthlyFromAnnual(building.predicted_kwh);
 
   // Ridge: regularization smooths extreme months slightly toward mean
   const ridgeAnnual = Math.round(building.predicted_kwh * 0.963);
@@ -54,9 +54,9 @@ function generateChartData(building, lang) {
     return Math.round(v * stepBias);
   });
 
-  // "Actual": OLS ± seeded 10% noise
+  // "Actual": XGBoost prediction ± seeded 10% noise
   const seed = idSeed(building.id);
-  const actual = ols.map((v, i) =>
+  const actual = xgb.map((v, i) =>
     Math.max(0, Math.round(v * (1 + seededNoise(seed, i) * 0.10)))
   );
 
@@ -64,7 +64,7 @@ function generateChartData(building, lang) {
   return labels.map((month, i) => ({
     month,
     actual: actual[i],
-    ols: ols[i],
+    xgb: xgb[i],
     ridge: ridge[i],
     dt: dt[i],
   }));
@@ -266,10 +266,10 @@ export default function BuildingDetailPage() {
                 dot={{ fill: "#1a4a9f", r: 4 }} activeDot={{ r: 6 }}
                 name={lang === "mn" ? "Бодит хэрэглээ" : "Actual"} />
 
-              {/* OLS / LR */}
-              <Line type="monotone" dataKey="ols" stroke="#e9a43a" strokeWidth={2}
+              {/* XGBoost */}
+              <Line type="monotone" dataKey="xgb" stroke="#e9a43a" strokeWidth={2}
                 dot={{ fill: "#e9a43a", r: 4, strokeWidth: 0 }} strokeDasharray="6 3"
-                name={lang === "mn" ? "OLS таамаглал" : "OLS prediction"} />
+                name={lang === "mn" ? "XGBoost таамаглал" : "XGBoost prediction"} />
 
               {/* Ridge */}
               <Line type="monotone" dataKey="ridge" stroke="#2a9d8f" strokeWidth={2}
@@ -284,8 +284,8 @@ export default function BuildingDetailPage() {
           </ResponsiveContainer>
           <div className="bdet-chart-note">
             {lang === "mn"
-              ? "Бодит хэрэглээ нь ойролцоо таамаглал дээр ±10% хэлбэлзэлтэй. OLS=Шугаман, Ridge=Тогтмолжуулсан, DT=Шийдвэрийн мод."
-              : "Actual values simulate ±10% variance around predictions. OLS=Linear, Ridge=Regularized, DT=Decision Tree."}
+              ? "Бодит хэрэглээ нь ойролцоо таамаглал дээр ±10% хэлбэлзэлтэй. XGBoost=Үндсэн загвар, Ridge=Тогтмолжуулсан, DT=Шийдвэрийн мод."
+              : "Actual values simulate ±10% variance around predictions. XGBoost=Main model, Ridge=Regularized, DT=Decision Tree."}
           </div>
         </div>
 

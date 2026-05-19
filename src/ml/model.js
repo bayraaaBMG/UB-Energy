@@ -1,7 +1,7 @@
 /**
  * UB Energy — Building Energy Prediction Model
  *
- * Architecture : Physics-informed synthetic dataset  →  OLS Linear Regression
+ * Architecture : Physics-informed synthetic dataset  →  XGBoost Gradient Boosting
  * Dataset      : 600 synthetic Mongolian buildings (UB climate, seeds = 42)
  * Split        : 80 % train / 20 % test (seed = 99)
  * Targets      : annual_kwh  (continuous)
@@ -14,7 +14,9 @@
  *   (IEA 2022, БНТУ норматив) plus ±12 % Gaussian measurement noise,
  *   which represents realistic meter-reading variance in UB apartment blocks.
  *
- * Training runs at module-load time (~5 ms in V8).
+ * Main model : XGBoost (n_estimators=60, max_depth=4, eta=0.15, subsample=0.8)
+ * Baseline   : OLS Linear Regression (kept for thesis/research comparison)
+ * Training runs at module-load time (~30 ms in V8).
  */
 
 // ─── 1. Seeded PRNG (Mulberry32 — reproducible across platforms) ─────────────
@@ -319,24 +321,30 @@ const TEST_F1      = f1MacroScore(y_test, y_pred_test, test_areas);
 // Coverage: % of test records where prediction is within ±20% (data coverage metric)
 const within20 = y_test.filter((y, i) => Math.abs(y - y_pred_test[i]) / (Math.abs(y) || 1) <= 0.20).length;
 
+const XGB_MODEL   = trainXGBoost(X_train, y_train);
+const y_pred_xgb  = xgbPredict(XGB_MODEL, X_test);
+const XGB_METRICS = evalMetrics(y_test, y_pred_xgb);
+const XGB_F1      = f1MacroScore(y_test, y_pred_xgb, test_areas);
+const xgb_w20     = y_test.filter((y, i) => Math.abs(y - y_pred_xgb[i]) / (Math.abs(y) || 1) <= 0.20).length;
+
 export const METRICS = {
-  r2:         TEST_METRICS.r2,
-  mae:        TEST_METRICS.mae,
-  rmse:       TEST_METRICS.rmse,
-  mape:       TEST_METRICS.mape,
-  confidence: TEST_METRICS.confidence,
-  coverage:   +(within20 / y_test.length * 100).toFixed(1),
-  f1:         TEST_F1,
+  r2:         XGB_METRICS.r2,
+  mae:        XGB_METRICS.mae,
+  rmse:       XGB_METRICS.rmse,
+  mape:       XGB_METRICS.mape,
+  confidence: XGB_METRICS.confidence,
+  coverage:   +(xgb_w20 / y_test.length * 100).toFixed(1),
+  f1:         XGB_F1,
   n_train:    train.length,
   n_test:     test.length,
   n_total:    DATASET.length,
 };
 
-// Actual vs Predicted scatter data (sample of test set, max 80 points)
+// Actual vs Predicted scatter data (sample of test set, max 80 points) — XGBoost predictions
 const _step = Math.max(1, Math.floor(y_test.length / 80));
 export const ACTUAL_VS_PREDICTED = y_test
   .filter((_, i) => i % _step === 0)
-  .map((actual, i) => ({ actual: Math.round(actual), predicted: Math.round(y_pred_test[i * _step]) }));
+  .map((actual, i) => ({ actual: Math.round(actual), predicted: Math.round(y_pred_xgb[i * _step]) }));
 
 // ─── 10b. Ridge Regression (λ = 200) ─────────────────────────────────────────
 const XtX_ridge = matMul(Xt, X_train);
@@ -401,13 +409,111 @@ const DT_M  = evalMetrics(y_test, y_pred_dt);
 const DT_F1 = f1MacroScore(y_test, y_pred_dt, test_areas);
 const dt_w20 = y_test.filter((y, i) => Math.abs(y - y_pred_dt[i]) / (Math.abs(y) || 1) <= 0.20).length;
 
+// ─── 10d. XGBoost Gradient Boosting (main prediction model) ──────────────────
+// n_estimators=60, max_depth=4, eta=0.15, subsample=0.8, min_child_weight=5
+function _buildXGBTree(X, res, indices, depth, minCW) {
+  const n = indices.length;
+  if (depth >= 4 || n < minCW) {
+    let sum = 0;
+    for (const i of indices) sum += res[i];
+    return { leaf: true, val: n > 0 ? sum / n : 0 };
+  }
+  const nF = X[0].length;
+  let bestGain = 0, bestFi = -1, bestThr = 0;
+  let bestL = null, bestR = null;
+  let totalSum = 0;
+  for (const i of indices) totalSum += res[i];
+  const parentOBJ = (totalSum * totalSum) / n;
+
+  for (let fi = 1; fi < nF; fi++) {
+    const sorted = [...indices].sort((a, b) => X[a][fi] - X[b][fi]);
+    let sumL = 0, nl = 0;
+    for (let k = 0; k < n - 1; k++) {
+      const v = res[sorted[k]];
+      sumL += v; nl++;
+      const nr = n - nl, sumR = totalSum - sumL;
+      if (X[sorted[k]][fi] === X[sorted[k + 1]][fi]) continue;
+      if (nl < minCW || nr < minCW) continue;
+      const gain = sumL * sumL / nl + sumR * sumR / nr - parentOBJ;
+      if (gain > bestGain) {
+        bestGain = gain; bestFi = fi;
+        bestThr = (X[sorted[k]][fi] + X[sorted[k + 1]][fi]) / 2;
+        bestL = sorted.slice(0, k + 1);
+        bestR = sorted.slice(k + 1);
+      }
+    }
+  }
+  if (bestFi === -1) {
+    let sum = 0;
+    for (const i of indices) sum += res[i];
+    return { leaf: true, val: sum / n };
+  }
+  return {
+    leaf: false, fi: bestFi, threshold: bestThr, gain: bestGain,
+    left:  _buildXGBTree(X, res, bestL, depth + 1, minCW),
+    right: _buildXGBTree(X, res, bestR, depth + 1, minCW),
+  };
+}
+
+function trainXGBoost(X, y, { n_estimators = 60, eta = 0.15, subsample = 0.8, min_child_weight = 5, seed = 7 } = {}) {
+  const n = X.length;
+  const rng = mulberry32(seed);
+  const meanY = y.reduce((a, b) => a + b, 0) / n;
+  const F = new Array(n).fill(meanY);
+  const trees = [];
+
+  for (let t = 0; t < n_estimators; t++) {
+    const res = F.map((f, i) => y[i] - f);
+    // Fisher-Yates subsample
+    const idx = Array.from({ length: n }, (_, i) => i);
+    for (let k = n - 1; k > 0; k--) {
+      const j = Math.floor(rng() * (k + 1));
+      [idx[k], idx[j]] = [idx[j], idx[k]];
+    }
+    const sampleIdx = idx.slice(0, Math.round(n * subsample));
+    const tree = _buildXGBTree(X, res, sampleIdx, 0, min_child_weight);
+    trees.push(tree);
+    for (let i = 0; i < n; i++) F[i] += eta * _treePredict(tree, X[i]);
+  }
+  return { trees, base: meanY, eta };
+}
+
+function xgbPredictOne(model, row) {
+  let p = model.base;
+  for (const tree of model.trees) p += model.eta * _treePredict(tree, row);
+  return p;
+}
+
+function xgbPredict(model, X) {
+  return X.map(row => Math.max(0, xgbPredictOne(model, row)));
+}
+
+function xgbFeatureGain(model, nF) {
+  const gain = new Array(nF).fill(0);
+  function walk(node) {
+    if (node.leaf) return;
+    gain[node.fi] = (gain[node.fi] || 0) + (node.gain || 0);
+    walk(node.left);
+    walk(node.right);
+  }
+  for (const tree of model.trees) walk(tree);
+  return gain;
+}
+
 export const MODEL_COMPARISON = [
   {
-    id: 'ols', name: 'OLS Regression', name_mn: 'OLS Регресс (Одоогийн)', color: '#3a8fd4',
+    id: 'xgboost', name: 'XGBoost (n=60, d=4)', name_mn: 'XGBoost (Үндсэн загвар)', color: '#e9c46a',
+    ...XGB_METRICS, f1: XGB_F1,
+    coverage: +(xgb_w20 / y_test.length * 100).toFixed(1),
+    note_mn: 'Gradient boosting — үндсэн таамаглалын хэрэгсэл.',
+    note_en: 'Gradient boosting — main prediction engine.',
+  },
+  {
+    id: 'ols', name: 'OLS Regression', name_mn: 'OLS Регресс (Суурь загвар)', color: '#3a8fd4',
     ...TEST_METRICS, f1: TEST_F1,
     coverage: +(within20 / y_test.length * 100).toFixed(1),
-    note_mn: 'Суурь шугаман загвар. Тогтвортой, тайлбарлахад хялбар.',
-    note_en: 'Baseline linear model. Stable and interpretable.',
+    note_mn: 'Суурь шугаман загвар. Дипломын харьцуулалтын загвар.',
+    note_en: 'Baseline linear model. Used for thesis comparison.',
   },
   {
     id: 'ridge', name: 'Ridge (λ=200)', name_mn: 'Ридж Регресс (λ=200)', color: '#2a9d8f',
@@ -417,7 +523,7 @@ export const MODEL_COMPARISON = [
     note_en: 'Regularized linear model preventing overfitting.',
   },
   {
-    id: 'dt', name: 'Decision Tree (d=6)', name_mn: 'Шийдвэрийн Мод (d=6)', color: '#e9c46a',
+    id: 'dt', name: 'Decision Tree (d=6)', name_mn: 'Шийдвэрийн Мод (d=6)', color: '#f4a261',
     ...DT_M, f1: DT_F1,
     coverage: +(dt_w20 / y_test.length * 100).toFixed(1),
     note_mn: 'Шугаман бус загвар. Харилцан хамаарлыг барьж чадна.',
@@ -425,13 +531,12 @@ export const MODEL_COMPARISON = [
   },
 ];
 
-// ─── 11. Feature importance (normalized |β| of scaled features) ──────────────
-//   Equivalent to permutation importance for linear models on scaled data
-const raw_importance = BETA.slice(1).map(Math.abs);
-const max_imp        = Math.max(...raw_importance);
+// ─── 11. Feature importance (XGBoost gain — total gain across all splits) ─────
+const xgb_gain    = xgbFeatureGain(XGB_MODEL, FEATURE_NAMES.length);
+const max_xgb_gain = Math.max(...xgb_gain.slice(1)) || 1;
 
 export const FEATURE_IMPORTANCE = FEATURE_NAMES.slice(1)
-  .map((name, i) => ({ name, importance: +(raw_importance[i] / max_imp).toFixed(3) }))
+  .map((name, i) => ({ name, importance: +(xgb_gain[i + 1] / max_xgb_gain).toFixed(3) }))
   .sort((a, b) => b.importance - a.importance);
 
 // ─── 12. Predict function ─────────────────────────────────────────────────────
@@ -468,10 +573,10 @@ export function predict(form) {
 
   const rawVec    = featurize(safeForm);
   const scaledVec = applyScaler([rawVec], SCALER)[0];
-  const olsRaw    = BETA.reduce((s, b, i) => s + b * scaledVec[i], 0);
-  // Fallback to physics formula if OLS returns 0 or NaN (out-of-distribution input)
-  const annual    = (Number.isFinite(olsRaw) && olsRaw > 0)
-    ? Math.round(olsRaw)
+  const xgbRaw    = xgbPredictOne(XGB_MODEL, scaledVec);
+  // Fallback to physics formula if XGBoost returns 0 or NaN (out-of-distribution input)
+  const annual    = (Number.isFinite(xgbRaw) && xgbRaw > 0)
+    ? Math.round(xgbRaw)
     : Math.max(100, Math.round(safeForm.area * physicsEUI(safeForm)));
 
   const monthly_avg = Math.round(annual / 12);
@@ -485,7 +590,7 @@ export function predict(form) {
     usage: Math.round(annual * SEASONAL_WEIGHTS[i] / wSum),
   }));
 
-  // SHAP-lite: β_i × x_i  per feature (absolute contribution to this prediction)
+  // Attribution proxy: β_i × x_i from OLS (interpretable surrogate for XGBoost contributions)
   const contribs = FEATURE_NAMES.slice(1).map((name, i) => ({
     key: name,
     abs: Math.abs(BETA[i + 1] * scaledVec[i + 1]),
