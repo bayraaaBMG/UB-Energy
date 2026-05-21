@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { monthlyEnergyData, buildingsData, ulaanbaatarDistricts } from "../data/mockData";
 import { predict, METRICS } from "../ml/model";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
+import { HEAT_FRACTIONS } from "../data/mockData";
 import "leaflet/dist/leaflet.css";
 import "./MapPage.css";
 
@@ -1022,19 +1024,18 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
               <span className="ch-total">{calc.total.toLocaleString()}</span>
               <span className="ch-unit">kWh/yr</span>
             </div>
-            <div className="chart-wrap">
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={monthly} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="m" tick={{ fill: "#667788", fontSize: 9 }}
-                    axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#667788", fontSize: 9 }} axisLine={false} tickLine={false}
-                    tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(58,143,212,0.07)" }} />
-                  <Bar dataKey="kwh" fill="#3a8fd4" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <EnergyDualChart
+              lang={mn ? "mn" : "en"}
+              height={175}
+              leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+              rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total (MWh)"}
+              data={monthly.map((d, i) => ({
+                month:    d.m,
+                heating:  Math.round(d.kwh * HEAT_FRACTIONS[i]),
+                electric: Math.round(d.kwh * (1 - HEAT_FRACTIONS[i])),
+                total:    d.kwh,
+              }))}
+            />
             <div className="chart-note">{t.map.chart_note_climate}</div>
           </div>
         )}

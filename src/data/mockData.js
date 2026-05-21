@@ -3,7 +3,9 @@
 // Өгөгдөл нь 2020–2025 оны цаг тутмын dataset-ээс нэгтгэсэн realistic synthetic data
 
 // Heat fraction by month — УБ-ийн дүүргийн халаалтын хэв маяг (БНТУ 23-02-09)
-const _HF = [0.77, 0.76, 0.65, 0.50, 0.20, 0.04, 0.04, 0.04, 0.30, 0.55, 0.65, 0.77];
+// Jan…Dec: heating share of total monthly energy
+export const HEAT_FRACTIONS = [0.77, 0.76, 0.65, 0.50, 0.20, 0.04, 0.04, 0.04, 0.30, 0.55, 0.65, 0.77];
+const _HF = HEAT_FRACTIONS;
 
 export const monthlyEnergyData = [
   { month: "1-р",  month_en: "Jan", usage: 165610, temperature: -20.3, hdd: 28521, predicted: 163126 },

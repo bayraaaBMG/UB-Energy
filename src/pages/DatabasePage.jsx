@@ -14,8 +14,9 @@ import {
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   CartesianGrid, ReferenceLine,
 } from "recharts";
-import { monthlyEnergyData, yearlyEnergyData } from "../data/mockData";
+import { monthlyEnergyData, yearlyEnergyData, HEAT_FRACTIONS } from "../data/mockData";
 import { useData } from "../contexts/DataContext";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
 import "./DatabasePage.css";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -262,13 +263,13 @@ function ResultsModal({ building, lang, t, onClose }) {
             {/* Source legend with explanation */}
             <div className="res-source-legend">
               <div className="rsl-item">
-                <span className="rsl-swatch bar" style={{ background: "#3a8fd4" }} />
+                <span className="rsl-swatch bar" style={{ background: "#e63946" }} />
                 <div>
-                  <span className="rsl-name">{t.database.modal_pred_bars}</span>
+                  <span className="rsl-name">{mn ? "Дулаалга + Цахилгаан" : "Heating + Electric"}</span>
                   <span className="rsl-desc">
                     {mn
-                      ? "EUI загвар: талбай × тохируулагдсан коэффициент — УБ-ын цаг агаарын хэв маягаар 12 сард хуваарилсан"
-                      : "EUI model: area × adjusted coefficient — distributed across 12 months using UB climate pattern"}
+                      ? "XGBoost загвараар тооцсон нийт хэрэглээг дулаалга (улаан) + цахилгаан (хөх) хэлбэрээр харуулав"
+                      : "XGBoost predicted total split into heating (red) + electric (blue) by UB seasonal pattern"}
                   </span>
                 </div>
               </div>
@@ -288,28 +289,18 @@ function ResultsModal({ building, lang, t, onClose }) {
             </div>
 
             <div className="res-chart-wrap">
-              <ResponsiveContainer width="100%" height={170}>
-                <BarChart data={chartData} margin={{ top: 4, right: 48, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="m" tick={{ fill: "#667788", fontSize: 9 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#667788", fontSize: 9 }} axisLine={false} tickLine={false}
-                    tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    contentStyle={{ background: "#0e1825", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 11 }}
-                    formatter={(v, name) => [
-                      `${v.toLocaleString()} kWh`,
-                      name === "pred"
-                        ? t.database.modal_pred_model
-                        : t.database.modal_actual,
-                    ]}
-                  />
-                  <Bar dataKey="pred" fill="#3a8fd4" radius={[3,3,0,0]} maxBarSize={22} name="pred" />
-                  {actualMonthly != null && (
-                    <ReferenceLine y={actualMonthly} stroke="#f4a261" strokeDasharray="5 3"
-                      label={{ value: t.database.modal_actual_short, fill: "#f4a261", fontSize: 9, position: "insideRight" }} />
-                  )}
-                </BarChart>
-              </ResponsiveContainer>
+              <EnergyDualChart
+                lang={mn ? "mn" : "en"}
+                height={185}
+                leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+                rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                data={chartData.map((d, i) => ({
+                  month:    d.m,
+                  heating:  Math.round(d.pred * HEAT_FRACTIONS[i]),
+                  electric: Math.round(d.pred * (1 - HEAT_FRACTIONS[i])),
+                  total:    d.pred,
+                }))}
+              />
             </div>
 
             {/* Methodology note */}

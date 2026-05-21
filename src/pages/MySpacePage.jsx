@@ -18,6 +18,8 @@ import { clearPredictions, deletePrediction, deleteScenario, removeFavorite } fr
 import { deleteUserBuilding, updateUserBuilding } from "../utils/buildingStorage";
 import { useData } from "../contexts/DataContext";
 import { predict } from "../ml/model";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
+import { HEAT_FRACTIONS } from "../data/mockData";
 import "./MySpacePage.css";
 
 // ─── Forecast engine ──────────────────────────────────────────────────────────
@@ -159,57 +161,73 @@ function ForecastPanel({ prediction, lang }) {
         ))}
       </div>
 
-      <ResponsiveContainer width="100%" height={180}>
-        {tab === "yearly" ? (
-          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-            <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
-            <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
-            <Tooltip
-              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
-              formatter={v => [`${Math.round(v).toLocaleString()} ${unit}`, lang === "mn" ? "Таамаглал" : "Forecast"]}
-            />
-            <Area type="monotone" dataKey={dataKey} fill="#1a6eb522" stroke="#1a6eb5" strokeWidth={2} dot={{ r: 4, fill: "#1a6eb5" }} />
-            <Line type="monotone" dataKey={dataKey} stroke="#1a6eb5" strokeWidth={0} dot={false} />
-          </ComposedChart>
-        ) : (
-          <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-            <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
-            <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
-            <Tooltip
-              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
-              formatter={(v, _n, props) => {
-                const d = props.payload;
-                const extra = tab === "daily" && d?.isWeekend
-                  ? (lang === "mn" ? " (амралт +20%)" : " (weekend +20%)")
-                  : tab === "hourly" && d?.peak
-                  ? (lang === "mn" ? " (оргил цаг)" : " (peak hour)")
-                  : tab === "monthly"
-                  ? ` (${d?.days || 30} ${lang === "mn" ? "өдөр" : "days"})`
-                  : "";
-                return [`${v.toLocaleString ? v.toLocaleString() : v} ${unit}${extra}`, lang === "mn" ? "Таамаглал" : "Forecast"];
-              }}
-              labelFormatter={l => tab === "daily"
-                ? `${l} (${chartData.find(d => d.label === l)?.dayLabel || ""})`
-                : l}
-            />
-            <Bar dataKey={dataKey} radius={[3, 3, 0, 0]} maxBarSize={32}>
-              {chartData.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={
-                    tab === "monthly" ? SEASON_COLOR[d.season] || "#3a8fd4"
-                    : tab === "daily"  ? (d.isWeekend ? "#f4a261" : "#3a8fd4")
-                    : tab === "hourly" ? (d.peak ? "#e9c46a" : "#3a8fd4")
-                    : "#3a8fd4"
-                  }
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        )}
-      </ResponsiveContainer>
+      {tab === "monthly" ? (
+        <EnergyDualChart
+          lang={lang}
+          height={200}
+          leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+          rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+          data={fc.monthly.map((d, i) => {
+            const hf = HEAT_FRACTIONS[i] ?? 0.5;
+            const label = lang === "mn" ? d.label : d.label_en;
+            return {
+              month:    label,
+              heating:  Math.round(d.kwh * hf),
+              electric: Math.round(d.kwh * (1 - hf)),
+              total:    d.kwh,
+            };
+          })}
+        />
+      ) : (
+        <ResponsiveContainer width="100%" height={180}>
+          {tab === "yearly" ? (
+            <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+              <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+              <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={v => [`${Math.round(v).toLocaleString()} ${unit}`, lang === "mn" ? "Таамаглал" : "Forecast"]}
+              />
+              <Area type="monotone" dataKey={dataKey} fill="#1a6eb522" stroke="#1a6eb5" strokeWidth={2} dot={{ r: 4, fill: "#1a6eb5" }} />
+              <Line type="monotone" dataKey={dataKey} stroke="#1a6eb5" strokeWidth={0} dot={false} />
+            </ComposedChart>
+          ) : (
+            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
+              <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
+              <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
+                formatter={(v, _n, props) => {
+                  const d = props.payload;
+                  const extra = tab === "daily" && d?.isWeekend
+                    ? (lang === "mn" ? " (амралт +20%)" : " (weekend +20%)")
+                    : tab === "hourly" && d?.peak
+                    ? (lang === "mn" ? " (оргил цаг)" : " (peak hour)")
+                    : "";
+                  return [`${v.toLocaleString ? v.toLocaleString() : v} ${unit}${extra}`, lang === "mn" ? "Таамаглал" : "Forecast"];
+                }}
+                labelFormatter={l => tab === "daily"
+                  ? `${l} (${chartData.find(d => d.label === l)?.dayLabel || ""})`
+                  : l}
+              />
+              <Bar dataKey={dataKey} radius={[3, 3, 0, 0]} maxBarSize={32}>
+                {chartData.map((d, i) => (
+                  <Cell
+                    key={i}
+                    fill={
+                      tab === "daily"  ? (d.isWeekend ? "#f4a261" : "#3a8fd4")
+                      : tab === "hourly" ? (d.peak ? "#e9c46a" : "#3a8fd4")
+                      : "#3a8fd4"
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      )}
 
       {tab === "daily" && (
         <div className="ms-fc-legend">
@@ -217,13 +235,7 @@ function ForecastPanel({ prediction, lang }) {
           <span className="ms-fc-leg-dot" style={{ background: "#f4a261", marginLeft: 12 }} /> {lang === "mn" ? "Амралтын өдөр (+20%)" : "Weekend (+20%)"}
         </div>
       )}
-      {tab === "monthly" && (
-        <div className="ms-fc-legend">
-          <span className="ms-fc-leg-dot" style={{ background: "#3a8fd4" }} /> {lang === "mn" ? "Өвлийн улирал" : "Winter"}
-          <span className="ms-fc-leg-dot" style={{ background: "#e9c46a", marginLeft: 12 }} /> {lang === "mn" ? "Дунд улирал" : "Shoulder"}
-          <span className="ms-fc-leg-dot" style={{ background: "#2a9d8f", marginLeft: 12 }} /> {lang === "mn" ? "Зуны улирал" : "Summer"}
-        </div>
-      )}
+      {/* monthly legend now built into EnergyDualChart */}
       {tab === "hourly" && (
         <div className="ms-fc-legend">
           <span className="ms-fc-leg-dot" style={{ background: "#3a8fd4" }} /> {lang === "mn" ? "Ердийн цаг" : "Normal"}
