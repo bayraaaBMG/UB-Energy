@@ -570,109 +570,95 @@ export default function PredictorPage() {
                     : 150 * 175 + 150 * 256 + (mKwh - 300) * 285;
                   const annualElecCost  = Math.round(mCost * 12);
                   const monthlyElecCost = Math.round(mCost);
-                  const totalEnergyKwh  = result.annual + (heating?.annual_kwh_equiv || 0);
-                  const kwhPerM2Total   = form.area > 0 ? Math.round(totalEnergyKwh / form.area) : result.intensity;
                   const heatingCost     = heating?.annual_heat_cost || 0;
                   const hotWaterCost    = heating?.hot_water_annual  || 0;
                   const serviceCost     = heating?.service_annual    || 0;
                   const totalAnnualCost = annualElecCost + heatingCost + hotWaterCost + serviceCost;
                   return (<>
 
-                  {/* A. Цахилгаан */}
-                  <div style={{ marginBottom:"0.75rem", padding:"0.85rem 1rem", background:"rgba(26,110,181,0.06)", border:"1px solid rgba(58,143,212,0.22)", borderRadius:10 }}>
-                    <div style={{ fontSize:"0.71rem", fontWeight:700, color:"#3a8fd4", marginBottom:"0.5rem" }}>
-                      ⚡ {lang==="mn" ? "A. Цахилгаан" : "A. Electricity"}
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.5rem" }}>
-                      {[
-                        { label: lang==="mn"?"Сарын хэрэглээ":"Monthly use", val: `${result.monthly_avg.toLocaleString()} kWh` },
-                        { label: lang==="mn"?"Жилийн хэрэглээ":"Annual use",  val: `${result.annual.toLocaleString()} kWh` },
-                        { label: lang==="mn"?"Жилийн зардал":"Annual cost",   val: `${annualElecCost.toLocaleString()} ₮`, color:"#f4a261" },
-                      ].map((item, idx) => (
-                        <div key={idx} style={{ textAlign:"center", borderLeft: idx>0 ? "1px solid var(--border)" : undefined }}>
-                          <div style={{ fontSize:"1rem", fontWeight:800, color: item.color || "#3a8fd4" }}>{item.val}</div>
-                          <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginTop:2 }}>{item.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* B. Дулаан */}
-                  {heating && (
-                  <div style={{ marginBottom:"0.75rem", padding:"0.85rem 1rem", background:"rgba(244,162,97,0.06)", border:"1px solid rgba(244,162,97,0.22)", borderRadius:10 }}>
-                    <div style={{ fontSize:"0.71rem", fontWeight:700, color:"#f4a261", marginBottom:"0.5rem" }}>
-                      🔥 {lang==="mn" ? "B. Дулаан" : "B. Heating"}
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.5rem" }}>
-                      {[
-                        { label: lang==="mn"?"Жилийн дулаан":"Annual heating",  val: `${heating.annual_gcal} Гкал`,                         color:"#f4a261" },
-                        { label: "kWh " + (lang==="mn"?"эквивалент":"equiv"),   val: `${heating.annual_kwh_equiv.toLocaleString()} kWh`,      color:"#e9a84b" },
-                        { label: lang==="mn"?"Жилийн зардал":"Annual cost",     val: `${heating.annual_heat_cost.toLocaleString()} ₮`,        color:"#e76f51" },
-                      ].map((item, idx) => (
-                        <div key={idx} style={{ textAlign:"center", borderLeft: idx>0 ? "1px solid var(--border)" : undefined }}>
-                          <div style={{ fontSize:"1rem", fontWeight:800, color: item.color }}>{item.val}</div>
-                          <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginTop:2 }}>{item.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* C. Нийт эрчим хүч */}
-                  <div style={{ marginBottom:"0.75rem", padding:"0.85rem 1rem", background:"rgba(42,157,143,0.06)", border:"1px solid rgba(42,157,143,0.22)", borderRadius:10 }}>
-                    <div style={{ fontSize:"0.71rem", fontWeight:700, color:"#2a9d8f", marginBottom:"0.5rem" }}>
-                      ⚡🔥 {lang==="mn" ? "C. Нийт эрчим хүч" : "C. Total Energy"}
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.5rem" }}>
-                      <div style={{ textAlign:"center" }}>
-                        <div style={{ fontSize:"1rem", fontWeight:800, color:"#2a9d8f" }}>{totalEnergyKwh.toLocaleString()} kWh</div>
-                        <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginTop:2 }}>{lang==="mn"?"Цахилгаан + Дулаан":"Electricity + Heating"}</div>
+                  {/* ── Two main metric blocks ── */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.65rem", marginBottom:"0.65rem" }}>
+                    <div style={{ background:"rgba(26,110,181,0.08)", border:"1px solid rgba(58,143,212,0.22)", borderRadius:10, padding:"1rem 1.1rem" }}>
+                      <div style={{ fontSize:"1.75rem", fontWeight:900, color:"#f4a261", lineHeight:1.1 }}>
+                        {result.annual.toLocaleString()}
+                        <span style={{ fontSize:"0.88rem", fontWeight:600, marginLeft:5 }}>кВт·цаг</span>
                       </div>
-                      <div style={{ textAlign:"center", borderLeft:"1px solid var(--border)" }}>
-                        <div style={{ fontSize:"1rem", fontWeight:800, color:"#2a9d8f" }}>{kwhPerM2Total} kWh/m²</div>
-                        <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginTop:2 }}>{lang==="mn"?"Нийт эрчмийн утга/жил":"Total intensity/yr"}</div>
+                      <div style={{ fontSize:"0.7rem", color:"var(--text3)", marginTop:5 }}>
+                        {lang==="mn" ? "Жилийн хэрэглээ" : "Annual consumption"}
                       </div>
-                      <div style={{ textAlign:"center", borderLeft:"1px solid var(--border)" }}>
-                        <div style={{ fontSize:"1.25rem", fontWeight:900, color: GRADE_COLORS[result.grade] }}>{result.grade}</div>
-                        <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginTop:2 }}>{lang==="mn"?"Үр ашгийн зэрэглэл":"Efficiency class"}</div>
+                    </div>
+                    <div style={{ background:"rgba(26,110,181,0.08)", border:"1px solid rgba(58,143,212,0.22)", borderRadius:10, padding:"1rem 1.1rem" }}>
+                      <div style={{ fontSize:"1.75rem", fontWeight:900, color:"#f4a261", lineHeight:1.1 }}>
+                        {annualElecCost.toLocaleString()}
+                        <span style={{ fontSize:"0.88rem", fontWeight:600, marginLeft:5 }}>₮</span>
+                      </div>
+                      <div style={{ fontSize:"0.7rem", color:"var(--text3)", marginTop:5 }}>
+                        {lang==="mn" ? "Жилийн цахилгааны зардал" : "Annual electricity cost"}
                       </div>
                     </div>
                   </div>
 
-                  {/* D. Нийт зардал */}
-                  <div style={{ marginBottom:"0.75rem", padding:"0.85rem 1rem", background:"rgba(155,114,207,0.06)", border:"1px solid rgba(155,114,207,0.22)", borderRadius:10 }}>
-                    <div style={{ fontSize:"0.71rem", fontWeight:700, color:"#9b72cf", marginBottom:"0.5rem" }}>
-                      💰 {lang==="mn" ? "D. Нийт жилийн зардал" : "D. Total Annual Cost"}
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.4rem", marginBottom:"0.5rem" }}>
-                      {[
-                        { label: lang==="mn"?"Цахилгааны зардал":"Electricity cost", val: annualElecCost, color:"#3a8fd4" },
-                        { label: lang==="mn"?"Дулааны зардал":"Heating cost",         val: heatingCost,   color:"#f4a261" },
-                        { label: lang==="mn"?"Халуун усны зардал":"Hot water cost",   val: hotWaterCost,  color:"#e9c46a" },
-                        { label: lang==="mn"?"Үйлчилгээний хөлс":"Service fee",       val: serviceCost,   color:"#a8c5e0" },
-                      ].map(item => (
-                        <div key={item.label} style={{ background:"var(--bg3)", borderRadius:7, padding:"0.45rem 0.6rem", border:"1px solid var(--border)" }}>
-                          <div style={{ fontSize:"0.61rem", color:"var(--text3)", marginBottom:2 }}>{item.label}</div>
-                          <div style={{ fontSize:"0.9rem", fontWeight:700, color:item.color }}>{item.val > 0 ? `${item.val.toLocaleString()} ₮` : "—"}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"0.5rem 0.65rem", background:"rgba(42,157,143,0.1)", borderRadius:7, border:"1px solid rgba(42,157,143,0.3)" }}>
-                      <span style={{ fontSize:"0.75rem", fontWeight:700, color:"var(--text2)" }}>{lang==="mn"?"Нийт жилийн зардал":"Total annual cost"}</span>
-                      <div style={{ textAlign:"right" }}>
-                        <div style={{ fontSize:"1.1rem", fontWeight:900, color:"#2a9d8f" }}>{totalAnnualCost.toLocaleString()} ₮</div>
-                        <div style={{ fontSize:"0.62rem", color:"var(--text3)" }}>≈ {Math.round(totalAnnualCost/12).toLocaleString()} ₮/{lang==="mn"?"сар":"mo"}</div>
+                  {/* ── Three smaller stats ── */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.5rem", marginBottom:"0.65rem" }}>
+                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
+                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#3a8fd4", lineHeight:1.1 }}>
+                        {result.monthly_avg.toLocaleString()}
+                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>кВт·цаг</span>
+                      </div>
+                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>
+                        {lang==="mn" ? "Сарын дундаж" : "Monthly avg"}
+                      </div>
+                      <div style={{ fontSize:"0.6rem", color:"var(--text3)" }}>
+                        {monthlyElecCost.toLocaleString()} ₮/сар
                       </div>
                     </div>
+                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
+                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#2a9d8f", lineHeight:1.1 }}>
+                        {result.co2}
+                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>т</span>
+                      </div>
+                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>CO₂ т/жил</div>
+                      <div style={{ fontSize:"0.6rem", color:"var(--text3)" }}>= {result.pm25.toLocaleString()} μg PM2.5</div>
+                    </div>
+                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
+                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#e9c46a", lineHeight:1.1 }}>
+                        {result.intensity}
+                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>кВт·цаг/м²</span>
+                      </div>
+                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>
+                        {lang==="mn" ? "Эрчим хүчний эрчмэлт" : "Energy intensity"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Cost breakdown row ── */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:10, overflow:"hidden", marginBottom:"0.65rem" }}>
+                    {[
+                      { icon:"⚡", label: lang==="mn"?"Цахилгаан/жил":"Electricity/yr", val: annualElecCost, monthly: monthlyElecCost, color:"#3a8fd4" },
+                      { icon:"🔥", label: lang==="mn"?"Дулаан/жил":"Heating/yr",        val: heatingCost,    monthly: Math.round(heatingCost/12), color:"#f4a261" },
+                      { icon:"🔥", label: lang==="mn"?"Нийт зардал/жил":"Total cost/yr", val: totalAnnualCost, monthly: Math.round(totalAnnualCost/12), color:"#2a9d8f" },
+                    ].map((item, i) => (
+                      <div key={item.label} style={{ padding:"0.8rem 0.85rem", borderLeft: i>0 ? "1px solid var(--border)" : undefined }}>
+                        <div style={{ fontSize:"0.62rem", color:"var(--text3)", marginBottom:4 }}>
+                          {item.icon} {item.label}
+                        </div>
+                        <div style={{ fontSize:"1.05rem", fontWeight:800, color:item.color }}>
+                          {item.val.toLocaleString()} ₮
+                        </div>
+                        <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:2 }}>
+                          ≈ {item.monthly.toLocaleString()} ₮/сар
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   </>);
                 })()}
 
-                {/* Grade bar */}
+                {/* ── Grade bar ── */}
                 <div className="pred-grade-section">
                   <div className="pred-grade-label">
                     <TrendingUp size={13} />
-                    {t.predictor.efficiency_grade}
+                    {lang === "mn" ? "УР АШГИЙН ЗЭРЭГЛЭЛ" : "ENERGY GRADE"}
                     <span className="pred-grade-badge" style={{ background: GRADE_COLORS[result.grade] }}>{result.grade}</span>
                   </div>
                   <GradeBar grade={result.grade} />
@@ -680,23 +666,6 @@ export default function PredictorPage() {
                     {t.predictor.intensity_detail.replace("{val}", result.intensity)}
                   </div>
                 </div>
-
-                {/* Confidence interval */}
-                {(() => {
-                  const mape = METRICS.mape / 100;
-                  const lo = Math.round(result.annual * (1 - mape));
-                  const hi = Math.round(result.annual * (1 + mape));
-                  return (
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.75rem", padding: "0.65rem 0.9rem", background: "rgba(58,143,212,0.07)", border: "1px solid rgba(58,143,212,0.2)", borderRadius: 8, fontSize: "0.8rem" }}>
-                      <Info size={13} style={{ color: "#3a8fd4", flexShrink: 0 }} />
-                      <span style={{ color: "var(--text2)" }}>
-                        {lang === "mn" ? "Магадлалын муж" : "Confidence range"}:&nbsp;
-                        <strong style={{ color: "#3a8fd4" }}>{lo.toLocaleString()} – {hi.toLocaleString()} kWh</strong>
-                        &nbsp;({lang === "mn" ? `±${METRICS.mape}% MAPE` : `±${METRICS.mape}% MAPE`})
-                      </span>
-                    </div>
-                  );
-                })()}
 
                 {/* User bill vs Model comparison (shown when elecBill was provided) */}
                 {result.isHybrid && (() => {
