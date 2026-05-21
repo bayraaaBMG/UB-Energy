@@ -2,20 +2,27 @@
 // Энэ файл нь dashboard дээр харагдах chart, map, model metric, feature importance-ийн өгөгдлийг өгнө
 // Өгөгдөл нь 2020–2025 оны цаг тутмын dataset-ээс нэгтгэсэн realistic synthetic data
 
+// Heat fraction by month — УБ-ийн дүүргийн халаалтын хэв маяг (БНТУ 23-02-09)
+const _HF = [0.77, 0.76, 0.65, 0.50, 0.20, 0.04, 0.04, 0.04, 0.30, 0.55, 0.65, 0.77];
+
 export const monthlyEnergyData = [
-  { month: "1-р сар", month_en: "Jan", usage: 165610, temperature: -20.3, hdd: 28521, predicted: 163126 },
-  { month: "2-р сар", month_en: "Feb", usage: 147808, temperature: -16.8, hdd: 23696, predicted: 146477 },
-  { month: "3-р сар", month_en: "Mar", usage: 95311, temperature: -5.7, hdd: 17598, predicted: 95025 },
-  { month: "4-р сар", month_en: "Apr", usage: 86206, temperature: 3.4, hdd: 10561, predicted: 86465 },
-  { month: "5-р сар", month_en: "May", usage: 86532, temperature: 9.9, hdd: 6289, predicted: 87311 },
-  { month: "6-р сар", month_en: "Jun", usage: 35197, temperature: 16.1, hdd: 2531, predicted: 34669 },
-  { month: "7-р сар", month_en: "Jul", usage: 36309, temperature: 18.6, hdd: 1188, predicted: 35982 },
-  { month: "8-р сар", month_en: "Aug", usage: 36264, temperature: 15.9, hdd: 2302, predicted: 36156 },
-  { month: "9-р сар", month_en: "Sep", usage: 91802, temperature: 10.4, hdd: 5740, predicted: 92077 },
-  { month: "10-р сар", month_en: "Oct", usage: 99375, temperature: 0.1, hdd: 13345, predicted: 100270 },
-  { month: "11-р сар", month_en: "Nov", usage: 104640, temperature: -10.2, hdd: 20306, predicted: 103071 },
-  { month: "12-р сар", month_en: "Dec", usage: 165810, temperature: -20.4, hdd: 28582, predicted: 164318 },
-];
+  { month: "1-р",  month_en: "Jan", usage: 165610, temperature: -20.3, hdd: 28521, predicted: 163126 },
+  { month: "2-р",  month_en: "Feb", usage: 147808, temperature: -16.8, hdd: 23696, predicted: 146477 },
+  { month: "3-р",  month_en: "Mar", usage: 95311,  temperature: -5.7,  hdd: 17598, predicted: 95025  },
+  { month: "4-р",  month_en: "Apr", usage: 86206,  temperature: 3.4,   hdd: 10561, predicted: 86465  },
+  { month: "5-р",  month_en: "May", usage: 86532,  temperature: 9.9,   hdd: 6289,  predicted: 87311  },
+  { month: "6-р",  month_en: "Jun", usage: 35197,  temperature: 16.1,  hdd: 2531,  predicted: 34669  },
+  { month: "7-р",  month_en: "Jul", usage: 36309,  temperature: 18.6,  hdd: 1188,  predicted: 35982  },
+  { month: "8-р",  month_en: "Aug", usage: 36264,  temperature: 15.9,  hdd: 2302,  predicted: 36156  },
+  { month: "9-р",  month_en: "Sep", usage: 91802,  temperature: 10.4,  hdd: 5740,  predicted: 92077  },
+  { month: "10-р", month_en: "Oct", usage: 99375,  temperature: 0.1,   hdd: 13345, predicted: 100270 },
+  { month: "11-р", month_en: "Nov", usage: 104640, temperature: -10.2, hdd: 20306, predicted: 103071 },
+  { month: "12-р", month_en: "Dec", usage: 165810, temperature: -20.4, hdd: 28582, predicted: 164318 },
+].map((d, i) => ({
+  ...d,
+  heating:  Math.round(d.usage * _HF[i]),
+  electric: Math.round(d.usage * (1 - _HF[i])),
+}));
 
 // Өдрийн хэрэглээний chart-д ашиглана
 // Энэ нь 2025 оны 1-р сарын өдөр бүрийн хэрэглээний жишээ

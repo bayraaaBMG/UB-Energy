@@ -10,6 +10,7 @@ import {
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
 import { monthlyEnergyData } from "../data/mockData";
 import { METRICS } from "../ml/model";
 import { computeStats } from "../utils/buildingStorage";
@@ -445,50 +446,37 @@ export default function HomePage() {
                   {lang === "mn" ? "Синтетик өгөгдөл" : "Synthetic data"}
                 </span>
               </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={monthlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1a6eb5" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="#1a6eb5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.4)" />
-                  <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} />
-                  <YAxis tick={{ fill: "#6a9bbf", fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)" }}
-                    labelStyle={{ color: "var(--accent)" }}
-                    formatter={(v, name) => [
-                      `${v.toLocaleString()} kWh`,
-                      name === "usage"
-                        ? t.home.chart_src_usage
-                        : t.home.chart_src_pred,
-                    ]}
-                  />
-                  <Area type="monotone" dataKey="usage"     stroke="#1a6eb5" fill="url(#colorUsage)" strokeWidth={2} name="usage" />
-                  <Area type="monotone" dataKey="predicted" stroke="#2a9d8f" fill="none" strokeWidth={2} strokeDasharray="4 4" name="predicted" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <EnergyDualChart
+                lang={lang}
+                height={200}
+                leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+                rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                data={monthlyData.map(d => ({
+                  month:    lang === "mn" ? d.month : d.month_en,
+                  heating:  d.heating,
+                  electric: d.electric,
+                  total:    d.usage,
+                }))}
+              />
 
-              {/* Chart source explanation */}
-              <div className="chart-source-box">
+              {/* Chart source note */}
+              <div className="chart-source-box" style={{ marginTop: "0.5rem" }}>
                 <div className="csb-head">
                   <Info size={13} />
                   {t.home.chart_src_title}
                 </div>
                 <div className="csb-items">
                   <div className="csb-item">
-                    <span className="csb-swatch" style={{ background: "#1a6eb5" }} />
+                    <span className="csb-swatch" style={{ background: "#e63946" }} />
                     <div>
-                      <strong>{t.home.chart_src_usage}</strong>
-                      <span>{t.home.chart_src_usage_desc}</span>
+                      <strong>{lang === "mn" ? "Дулаалга" : "Heating"}</strong>
+                      <span>{lang === "mn" ? "Дүүргийн халаалт — БНТУ 23-02-09 коэффициент" : "District heating — БНТУ 23-02-09 seasonal coefficient"}</span>
                     </div>
                   </div>
                   <div className="csb-item">
-                    <span className="csb-swatch dashed" style={{ borderColor: "#2a9d8f" }} />
+                    <span className="csb-swatch" style={{ background: "#1a6eb5" }} />
                     <div>
-                      <strong>{t.home.chart_src_pred}</strong>
+                      <strong>{lang === "mn" ? "Цахилгаан" : "Electric"}</strong>
                       <span>{t.home.chart_src_pred_desc}</span>
                     </div>
                   </div>

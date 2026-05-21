@@ -19,6 +19,7 @@ import {
   monthlyEnergyData, dailyEnergyData, yearlyEnergyData,
   ulaanbaatarDistricts,
 } from "../data/mockData";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
 import { METRICS, ACTUAL_VS_PREDICTED, MODEL_COMPARISON, FEATURE_IMPORTANCE } from "../ml/model";
 import { computeStats } from "../utils/buildingStorage";
 import { useData } from "../contexts/DataContext";
@@ -907,38 +908,32 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", alignItems: "flex-end" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text2)" }}>
+                <span style={{ width: 12, height: 12, borderRadius: 2, background: "#e63946", display: "inline-block" }} />
+                {lang === "mn" ? "Дулаалга" : "Heating"}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text2)" }}>
                 <span style={{ width: 12, height: 12, borderRadius: 2, background: "#1a6eb5", display: "inline-block" }} />
-                {lang === "mn" ? "Синтетик хэрэглээ (kWh)" : "Synthetic usage (kWh)"}
+                {lang === "mn" ? "Цахилгаан" : "Electric"}
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--text2)" }}>
                 <span style={{ width: 12, height: 12, borderRadius: 2, background: "#2a9d8f", display: "inline-block" }} />
-                {lang === "mn" ? "Загварын таамаглал (kWh)" : "Model prediction (kWh)"}
+                {lang === "mn" ? "Нийт" : "Total"}
               </span>
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart
-              data={monthlyData}
-              margin={{ top: 8, right: 10, left: -10, bottom: 0 }}
-              barGap={2}
-              barCategoryGap="28%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.35)" />
-              <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
-              <YAxis
-                tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false}
-                tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
-              />
-              <Tooltip
-                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
-                formatter={(v, name) => [`${v != null ? v.toLocaleString() : "—"} kWh`, name]}
-              />
-              <Legend wrapperStyle={{ color: "var(--text2)", fontSize: 11 }} />
-              <Bar dataKey="usage"     fill="#1a6eb5" name={lang === "mn" ? "Синтетик хэрэглээ" : "Synthetic usage"}  radius={[3,3,0,0]} />
-              <Bar dataKey="predicted" fill="#2a9d8f" name={lang === "mn" ? "Загварын таамаглал" : "Model prediction"} radius={[3,3,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <EnergyDualChart
+            lang={lang}
+            height={240}
+            leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+            rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+            data={monthlyData.map(d => ({
+              month:    lang === "mn" ? d.month : d.month_en,
+              heating:  d.heating,
+              electric: d.electric,
+              total:    d.usage,
+            }))}
+          />
 
           {/* Per-month % error row */}
           <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.85rem", flexWrap: "wrap", paddingLeft: 2 }}>
@@ -954,7 +949,7 @@ export default function DashboardPage() {
                     {err.toFixed(1)}%
                   </div>
                   <div style={{ fontSize: "0.6rem", color: "var(--text3)" }}>
-                    {lang === "mn" ? d.month.replace("-р сар", "") : d.month_en}
+                    {lang === "mn" ? d.month : d.month_en}
                   </div>
                 </div>
               );

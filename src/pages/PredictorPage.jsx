@@ -13,6 +13,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
 } from "recharts";
+import EnergyDualChart from "../components/charts/EnergyDualChart";
 import {
   predict, METRICS, GRADE_COLORS,
   convertElecMoneyToKwh, convertHeatBillToEstimates,
@@ -791,22 +792,20 @@ export default function PredictorPage() {
                   );
                 })()}
 
-                {/* Monthly chart */}
+                {/* Monthly chart — heating + electric dual panel */}
                 <h4 className="chart-sub-title">{t.predictor.monthly_breakdown}</h4>
-                <div className="result-chart">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={result.chart_data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-                      <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} />
-                      <YAxis tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} axisLine={false} />
-                      <Tooltip
-                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 11 }}
-                        formatter={(val) => [`${val.toLocaleString()} ${t.common.units_kwh}`]}
-                      />
-                      <Bar dataKey="usage" fill="#1a6eb5" name={t.predictor.predicted_usage} radius={[3, 3, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <EnergyDualChart
+                  lang={lang}
+                  height={210}
+                  leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+                  rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                  data={result.chart_data.map((d, i) => ({
+                    month: d.month,
+                    heating:  heating?.monthly_heat_kwh?.[i] ?? Math.round(d.usage * 0.65),
+                    electric: d.usage,
+                    total:    d.usage + (heating?.monthly_heat_kwh?.[i] ?? Math.round(d.usage * 0.65)),
+                  }))}
+                />
 
                 {/* Top 3 Factors */}
                 <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
@@ -1142,24 +1141,18 @@ export default function PredictorPage() {
                       <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
                         {lang === "mn" ? "Дараагийн 12 сарын таамаглал" : "Next 12-month forecast"}
                       </h4>
-                      <div className="result-chart">
-                        <ResponsiveContainer width="100%" height={175}>
-                          <BarChart data={next12} margin={{ top: 4, right: 4, left: -25, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-                            <XAxis dataKey="month" tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} />
-                            <YAxis tick={{ fill: "#6a9bbf", fontSize: 9 }} tickLine={false} axisLine={false} />
-                            <Tooltip
-                              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 11 }}
-                              formatter={(v, name) => [`${v.toLocaleString()} kWh`, name]}
-                            />
-                            <Legend iconSize={9} wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
-                            <Bar dataKey="elec" stackId="a" fill="#1a6eb5" maxBarSize={22}
-                              name={lang === "mn" ? "Цахилгаан" : "Electricity"} />
-                            <Bar dataKey="heat" stackId="a" fill="#f4a261" radius={[3,3,0,0]} maxBarSize={22}
-                              name={lang === "mn" ? "Дулаан (kWh)" : "Heating (kWh)"} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                      <EnergyDualChart
+                        lang={lang}
+                        height={185}
+                        leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+                        rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                        data={next12.map(d => ({
+                          month:    d.month,
+                          heating:  d.heat,
+                          electric: d.elec,
+                          total:    d.total,
+                        }))}
+                      />
                       <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: "0.35rem", textAlign: "center" }}>
                         {lang === "mn" ? "Одоогийн сараас эхлэн 12 сар · цахилгаан + дулааны хэрэглээ (kWh эквивалент)" : "12 months from now · electricity + heating consumption (kWh equivalent)"}
                       </div>
