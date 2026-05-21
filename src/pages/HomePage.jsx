@@ -75,7 +75,7 @@ export default function HomePage() {
         <div className="container hero-content animate-fade">
           <div className="hero-badge">
             <Zap size={14} />
-            <span>OLS Regression · EUI Model · Open-Meteo · {mn ? "Монголын нөхцөлд" : "Mongolia-adapted"}</span>
+            <span>XGBoost · EUI Model · Open-Meteo · {mn ? "Монголын нөхцөлд" : "Mongolia-adapted"}</span>
           </div>
           {user && (
             <div className="hero-welcome">
@@ -202,11 +202,11 @@ export default function HomePage() {
                     : "Calibrated Regression Model"}
                 </div>
                 <div className="meth-body">
-                  <div className="meth-formula">ŷ = β₀ + β₁·area + β₂·age + β₃·HDD + … + β₃₀·x₃₀</div>
+                  <div className="meth-formula">ŷ = XGBoost(area, age, HDD, insulation, …, x₃₀)</div>
                   <div className="meth-detail">
                     {mn
-                      ? "Хэрэглээний түүхэн өгөгдөлд суурилсан OLS + Ridge (λ=0.01) · EUI физик томьёогоор баталгаажуулсан"
-                      : "Historical consumption–calibrated OLS + Ridge (λ=0.01) · validated against physics EUI formula"}
+                      ? "Gradient Boosting (n=60, depth=4, eta=0.15) · EUI физик томьёогоор баталгаажуулсан"
+                      : "Gradient Boosting (n=60, depth=4, eta=0.15) · validated against physics EUI formula"}
                   </div>
                   <div className="meth-dataset-row">
                     <span className="meth-ds-chip">N = {METRICS.n_total}</span>
@@ -425,7 +425,7 @@ export default function HomePage() {
                 {t.home.intro_text}
               </p>
               <div className="tech-tags">
-                {["OLS Regression", "EUI Formula", "Ridge Regression", "Open-Meteo API", "БНТУ норм", "Shoelace Area"].map(tag => (
+                {["XGBoost", "EUI Formula", "Ridge Regression", "Open-Meteo API", "БНТУ норм", "Shoelace Area"].map(tag => (
                   <span key={tag} className="tech-tag">{tag}</span>
                 ))}
               </div>
@@ -516,9 +516,9 @@ export default function HomePage() {
             {[
               {
                 label: mn ? "Ашигласан арга" : "Method used",
-                value: "OLS Linear Regression",
-                sub:   mn ? "(Ordinary Least Squares — Ridge λ=0.01)" : "(Ordinary Least Squares — Ridge λ=0.01)",
-                color: "#3a8fd4",
+                value: "XGBoost",
+                sub:   mn ? "(Gradient Boosting — n=60, depth=4, eta=0.15)" : "(Gradient Boosting — n=60, depth=4, eta=0.15)",
+                color: "#e9c46a",
               },
               {
                 label: mn ? "Сургалтын өгөгдөл" : "Training data",
@@ -561,7 +561,7 @@ export default function HomePage() {
           <div className="ml-cred-flow">
             {[
               { step: mn ? "Оролт" : "Input",      desc: mn ? "Барилгын параметр" : "Building parameters" },
-              { step: "OLS Model",                  desc: mn ? "β·x тооцоолол" : "β·x computation" },
+              { step: "XGBoost",                    desc: mn ? "Gradient boosting" : "Gradient boosting" },
               { step: mn ? "Таамаглал" : "Output",  desc: mn ? "kWh, зэрэглэл, CO₂" : "kWh, grade, CO₂" },
               { step: mn ? "Зөвлөмж" : "Actions",  desc: mn ? "Хэмнэлтийн санал" : "Savings recommendations" },
             ].map(({ step, desc }, i, arr) => (

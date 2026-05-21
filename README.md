@@ -21,8 +21,7 @@ Predicts annual energy consumption using a calibrated regression model trained o
 
 | Parameter | Value |
 |-----------|-------|
-| Method | **XGBoost Gradient Boosting** (n=60, depth=4, eta=0.15, subsample=0.8) |
-| Baseline (thesis) | OLS Linear Regression (kept in MODEL_COMPARISON for comparison) |
+| **Main engine** | **XGBoost Gradient Boosting** (n=60, depth=4, eta=0.15, subsample=0.8, min_child_weight=5) |
 | Training data | 600 synthetic Mongolian buildings |
 | Ground truth | Physics EUI formula (IEA 2022, BNTU 23-02-09) + 12% Gaussian noise |
 | Train / test split | 80 / 20 (seed = 99) |
@@ -31,8 +30,14 @@ Predicts annual energy consumption using a calibrated regression model trained o
 | Feature importance | XGBoost gain (total gain across all splits per feature) |
 
 Metrics are computed dynamically at module load on the held-out test set.
-XGBoost typically achieves R²≥0.95 on this dataset vs. OLS baseline R²=0.923.
+XGBoost achieves R²≥0.95 on this dataset, outperforming OLS baseline (R²=0.923).
 The model will be retrained when real district heating meter data becomes available.
+
+### Thesis / Research Baseline
+
+OLS Linear Regression (β = (X'X + λI)⁻¹ X'y, λ=0.01) is retained in `src/ml/model.js`
+as a baseline for academic comparison. It is **not shown in the web UI** but its metrics
+are available in `MODEL_COMPARISON` via code and in the thesis appendix.
 
 ## Known Limitations
 

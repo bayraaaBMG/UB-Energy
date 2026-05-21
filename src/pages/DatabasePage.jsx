@@ -447,11 +447,11 @@ function ResultsModal({ building, lang, t, onClose }) {
                   {
                     step: "3",
                     color: "#e9c46a",
-                    title: mn ? "OLS ML загварын таамаглал" : "OLS ML model prediction",
-                    formula: `${(building.area||0).toLocaleString()} м² × ${baseEUI} × (коэффициентүүд) ≈ ${totalKwh.toLocaleString()} kWh/жил`,
+                    title: mn ? "XGBoost ML загварын таамаглал" : "XGBoost ML model prediction",
+                    formula: `XGBoost(${(building.area||0).toLocaleString()} м², коэффициентүүд…) ≈ ${totalKwh.toLocaleString()} kWh/жил`,
                     note: mn
-                      ? "600 синтетик барилга дээр сургасан OLS регрессийн загвар — R² ≥ 0.87, MAE ≈ 5,400 kWh"
-                      : "OLS regression trained on 600 synthetic buildings — R² ≥ 0.87, MAE ≈ 5,400 kWh",
+                      ? "600 синтетик барилга дээр сургасан XGBoost gradient boosting — n=60, depth=4"
+                      : "XGBoost gradient boosting trained on 600 synthetic buildings — n=60, depth=4",
                   },
                   {
                     step: "4",

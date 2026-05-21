@@ -13,8 +13,8 @@ import "./Chatbot.css";
 const KB = [
   {
     keys: ["сайн байна уу", "сайн уу", "hello", "hi", "сайхан", "хэлнэ үү", "танилцуулна уу"],
-    mn: `Сайн байна уу! Би **UB Energy AI** туслагч. Дараах сэдвүүдээр дэлгэрэнгүй, эх сурвалжтай хариулт өгнө:\n\n• Цахилгаан, дулаан, усны тариф\n• Барилгын эрчим хүчний норматив (БНТУ)\n• HDD, EUI, CO₂ тооцоолол\n• ML загвар, OLS regression\n• Smart Home, нарны эрчим хүч\n• Монголын цаг уур, агаарын чанар\n\nЮу асуухыг хүсэж байна вэ?`,
-    en: `Hello! I'm the **UB Energy AI** assistant. I can answer questions with sources on:\n\n• Electricity, heating & water tariffs\n• Building energy standards (БНТУ)\n• HDD, EUI, CO₂ calculations\n• ML model & OLS regression\n• Smart Home, solar energy\n• Mongolian climate & air quality\n\nWhat would you like to know?`,
+    mn: `Сайн байна уу! Би **UB Energy AI** туслагч. Дараах сэдвүүдээр дэлгэрэнгүй, эх сурвалжтай хариулт өгнө:\n\n• Цахилгаан, дулаан, усны тариф\n• Барилгын эрчим хүчний норматив (БНТУ)\n• HDD, EUI, CO₂ тооцоолол\n• ML загвар, XGBoost gradient boosting\n• Smart Home, нарны эрчим хүч\n• Монголын цаг уур, агаарын чанар\n\nЮу асуухыг хүсэж байна вэ?`,
+    en: `Hello! I'm the **UB Energy AI** assistant. I can answer questions with sources on:\n\n• Electricity, heating & water tariffs\n• Building energy standards (БНТУ)\n• HDD, EUI, CO₂ calculations\n• ML model & XGBoost gradient boosting\n• Smart Home, solar energy\n• Mongolian climate & air quality\n\nWhat would you like to know?`,
     sources: [],
   },
   {
@@ -72,9 +72,9 @@ const KB = [
     sources: ["БНТУ 23-02-09", "EN ISO 10077", "WBCSD 2022"],
   },
   {
-    keys: ["ml", "загвар", "model", "ols", "regression", "machine learning", "r²", "mape", "mae", "таамаглагч загвар"],
-    mn: `**UB Energy ML загвар** — OLS Regression (Physics-informed):\n\nАрхитектур:\n• Физик EUI томьёо + OLS регресс хослол\n• 600 синтетик барилгын датасет\n• 30 feature: 8 тоон + 22 one-hot категориал\n• 80/20 train/test хуваалт\n\nҮзүүлэлт (test set):\n\n| Метрик | Утга | Тайлбар |\n|--------|------|----------|\n| **R²** | 0.96 | 96% тайлбарлах чадвар |\n| **MAPE** | 8–12% | Дундаж хувийн алдаа |\n| **MAE** | ~3,200 кВт·цаг | Дундаж алдаа |\n\nГол feature: Талбай, Барилгасан он, HDD, Хана материал, Дулаалгын чанар`,
-    en: `**UB Energy ML Model** — Physics-informed OLS Regression:\n\nArchitecture:\n• Physics EUI formula + OLS regression hybrid\n• 600 synthetic buildings dataset\n• 30 features: 8 numerical + 22 one-hot categorical\n• 80/20 train/test split\n\nPerformance (test set):\n\n| Metric | Value | Meaning |\n|--------|-------|----------|\n| **R²** | 0.96 | 96% variance explained |\n| **MAPE** | 8–12% | Mean absolute % error |\n| **MAE** | ~3,200 kWh | Mean absolute error |\n\nTop features: Area, Year built, HDD, Wall material, Insulation quality`,
+    keys: ["ml", "загвар", "model", "xgboost", "regression", "machine learning", "r²", "mape", "mae", "таамаглагч загвар", "gradient boosting"],
+    mn: `**UB Energy ML загвар** — XGBoost Gradient Boosting (Physics-informed):\n\nАрхитектур:\n• Физик EUI томьёо + XGBoost хослол\n• 600 синтетик барилгын датасет\n• 30 feature: 8 тоон + 22 one-hot категориал\n• 80/20 train/test хуваалт\n• n=60 мод, depth=4, eta=0.15, subsample=0.8\n\nҮзүүлэлт (test set):\n\n| Метрик | Утга | Тайлбар |\n|--------|------|----------|\n| **R²** | ≥0.95 | 95%+ тайлбарлах чадвар |\n| **MAPE** | ~3–5% | Дундаж хувийн алдаа |\n| **MAE** | ~кВт·цаг | Дундаж алдаа |\n\nГол feature: Талбай, Барилгасан он, HDD, Хана материал, Дулаалгын чанар`,
+    en: `**UB Energy ML Model** — Physics-informed XGBoost Gradient Boosting:\n\nArchitecture:\n• Physics EUI formula + XGBoost hybrid\n• 600 synthetic buildings dataset\n• 30 features: 8 numerical + 22 one-hot categorical\n• 80/20 train/test split\n• n=60 trees, depth=4, eta=0.15, subsample=0.8\n\nPerformance (test set):\n\n| Metric | Value | Meaning |\n|--------|-------|----------|\n| **R²** | ≥0.95 | 95%+ variance explained |\n| **MAPE** | ~3–5% | Mean absolute % error |\n| **MAE** | ~kWh | Mean absolute error |\n\nTop features: Area, Year built, HDD, Wall material, Insulation quality`,
     sources: ["IEA Buildings Efficiency 2022", "Khan et al. (2019)", "БНТУ 23-02-09"],
   },
   {

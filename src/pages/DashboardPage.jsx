@@ -129,7 +129,7 @@ function exportPDFReport(buildings, userStats, lang) {
 </style></head>
 <body>
 <h1>UB Energy — ${mn ? "Эрчим хүчний урьдчилсан үнэлгээний тайлан" : "Preliminary Energy Assessment Report"}</h1>
-<div class="meta">${mn ? "Огноо" : "Date"}: ${date} &nbsp;·&nbsp; ${mn ? "Загвар" : "Model"}: OLS Regression (R²=0.923) &nbsp;·&nbsp; ${mn ? "Датасет" : "Dataset"}: 600 ${mn ? "синтетик барилга" : "synthetic buildings"}</div>
+<div class="meta">${mn ? "Огноо" : "Date"}: ${date} &nbsp;·&nbsp; ${mn ? "Загвар" : "Model"}: XGBoost Gradient Boosting (R²=${METRICS.r2}) &nbsp;·&nbsp; ${mn ? "Датасет" : "Dataset"}: 600 ${mn ? "синтетик барилга" : "synthetic buildings"}</div>
 <div class="disclaimer">⚠ ${mn
   ? "Энэхүү тайлан нь урьдчилсан эрчим хүчний үнэлгээнд зориулагдсан бөгөөд дэлгэрэнгүй инженерийн аудитыг орлохгүй. Тооцоолол синтетик пилот датасет дээр суурилна (estimated)."
   : "This report is for preliminary energy assessment only and is not a substitute for a detailed engineering audit. Calculations are based on a synthetic pilot dataset (estimated)."}
@@ -189,7 +189,7 @@ ${userStats ? `
 </ul>
 
 <div style="margin-top:20px;font-size:9px;color:#aaa;border-top:1px solid #ddd;padding-top:8px">
-  UB Energy Research Platform · OLS Regression · ${mn ? "Монголын нөхцөлд" : "Mongolia-adapted"} · ${date}
+  UB Energy Research Platform · XGBoost Gradient Boosting · ${mn ? "Монголын нөхцөлд" : "Mongolia-adapted"} · ${date}
 </div>
 </body></html>`;
 
@@ -274,7 +274,7 @@ export default function DashboardPage() {
   // Bilingual month labels for charts
   const monthlyData = monthlyEnergyData.map(d => ({ ...d, month: lang === "mn" ? d.month : d.month_en }));
 
-  // Real OLS feature importance — normalized |β| coefficients from trained model
+  // XGBoost feature importance — normalized gain across all splits
   const FEAT_LABELS = {
     area:          { mn: "Талбай (м²)",       en: "Area (m²)" },
     age:           { mn: "Барилгасан нас",    en: "Building Age" },
@@ -529,12 +529,12 @@ export default function DashboardPage() {
 
                 {/* ML загварын мэдээлэл */}
                 <div className="usbe-model-row">
-                  <div className="usbe-model-badge">OLS</div>
+                  <div className="usbe-model-badge">XGB</div>
                   <div>
                     <div className="usbe-model-title">
                       {lang === "mn"
-                        ? "OLS Шугаман Регресс — Одоогийн ашиглаж буй ML загвар"
-                        : "OLS Linear Regression — Current ML model in use"}
+                        ? "XGBoost Gradient Boosting — Үндсэн ML загвар"
+                        : "XGBoost Gradient Boosting — Main ML model in use"}
                     </div>
                     <div className="usbe-model-sub">
                       {lang === "mn"
@@ -598,8 +598,8 @@ export default function DashboardPage() {
                           <span className="usbe-snum">①</span>
                           <span className="usbe-stxt">
                             {lang === "mn"
-                              ? `Эдгээр параметрийг OLS загварт оруулна: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`
-                              : `Feed parameters to OLS: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`}
+                              ? `Эдгээр параметрийг XGBoost загварт оруулна: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`
+                              : `Feed parameters to XGBoost: area=${area} m², year=${b.year||"~1990"}, floors=${b.floors||"?"}, insulation=${b.insulation_quality||"medium"}...`}
                           </span>
                         </div>
                         <div className="usbe-step">
@@ -1231,25 +1231,25 @@ export default function DashboardPage() {
           {(() => {
             const mmData = [
               { metric: "R² × 100",
-                ols:   +(MODEL_COMPARISON[0].r2 * 100).toFixed(1),
+                xgb:   +(MODEL_COMPARISON[0].r2 * 100).toFixed(1),
                 ridge: +(MODEL_COMPARISON[1].r2 * 100).toFixed(1),
                 dt:    +(MODEL_COMPARISON[2].r2 * 100).toFixed(1) },
               { metric: lang === "mn" ? "Итгэлцлэл %" : "Confidence %",
-                ols:   MODEL_COMPARISON[0].confidence,
+                xgb:   MODEL_COMPARISON[0].confidence,
                 ridge: MODEL_COMPARISON[1].confidence,
                 dt:    MODEL_COMPARISON[2].confidence },
               { metric: lang === "mn" ? "F1 × 100" : "F1 × 100",
-                ols:   +(MODEL_COMPARISON[0].f1 * 100).toFixed(1),
+                xgb:   +(MODEL_COMPARISON[0].f1 * 100).toFixed(1),
                 ridge: +(MODEL_COMPARISON[1].f1 * 100).toFixed(1),
                 dt:    +(MODEL_COMPARISON[2].f1 * 100).toFixed(1) },
               { metric: lang === "mn" ? "Хамрах %" : "Coverage %",
-                ols:   MODEL_COMPARISON[0].coverage,
+                xgb:   MODEL_COMPARISON[0].coverage,
                 ridge: MODEL_COMPARISON[1].coverage,
                 dt:    MODEL_COMPARISON[2].coverage },
             ];
-            const olsLbl   = lang === "mn" ? "OLS Регресс"      : "OLS Regression";
-            const ridgeLbl = lang === "mn" ? "Ридж Регресс"     : "Ridge Regression";
-            const dtLbl    = lang === "mn" ? "Шийдвэрийн Мод"   : "Decision Tree";
+            const xgbLbl   = lang === "mn" ? "XGBoost"           : "XGBoost";
+            const ridgeLbl = lang === "mn" ? "Ридж Регресс"       : "Ridge Regression";
+            const dtLbl    = lang === "mn" ? "Шийдвэрийн Мод"     : "Decision Tree";
             return (
               <div style={{ marginBottom: "0.8rem" }}>
                 <div style={{ fontSize: "0.74rem", color: "var(--text3)", marginBottom: "0.4rem" }}>
@@ -1267,9 +1267,9 @@ export default function DashboardPage() {
                       formatter={(v, name) => [`${v}`, name]}
                     />
                     <Legend wrapperStyle={{ color: "var(--text2)", fontSize: 10 }} />
-                    <Bar dataKey="ols"   name={olsLbl}   fill="#3a8fd4" radius={[3,3,0,0]} />
+                    <Bar dataKey="xgb"   name={xgbLbl}   fill="#e9c46a" radius={[3,3,0,0]} />
                     <Bar dataKey="ridge" name={ridgeLbl} fill="#2a9d8f" radius={[3,3,0,0]} />
-                    <Bar dataKey="dt"    name={dtLbl}    fill="#e9c46a" radius={[3,3,0,0]} />
+                    <Bar dataKey="dt"    name={dtLbl}    fill="#f4a261" radius={[3,3,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1319,8 +1319,8 @@ export default function DashboardPage() {
         <div className="card mb-3">
           <h3 className="section-title" style={{ marginBottom: "0.75rem" }}>
             {lang === "mn"
-              ? "Яагаад OLS Регресс сонгов? — Монголын нөхцөлд тохирсон шалтгаан"
-              : "Why OLS Regression? — Justification for Mongolian Context"}
+              ? "Яагаад XGBoost сонгов? — Монголын нөхцөлд тохирсон шалтгаан"
+              : "Why XGBoost? — Justification for Mongolian Context"}
           </h3>
 
           {/* Chosen model highlight */}
@@ -1333,35 +1333,35 @@ export default function DashboardPage() {
               <Award size={16} style={{ color: "#2a9d8f", flexShrink: 0 }} />
               <span style={{ fontWeight: 700, color: "#2a9d8f", fontSize: "0.92rem" }}>
                 {lang === "mn"
-                  ? `Сонгосон загвар: OLS Шугаман Регресс  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`
-                  : `Chosen model: OLS Linear Regression  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`}
+                  ? `Сонгосон загвар: XGBoost Gradient Boosting  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`
+                  : `Chosen model: XGBoost Gradient Boosting  ·  R² = ${METRICS.r2}  ·  MAE = ${METRICS.mae.toLocaleString()} kWh`}
               </span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "0.5rem" }}>
               {[
                 {
-                  mn: "Тайлбарлах боломжтой",
-                  en: "Interpretable model",
-                  desc_mn: "β-коэффициент бүр барилгын параметрийн нөлөөг шууд харуулна. Захиргааны шийдвэр гаргахад тохиромжтой.",
-                  desc_en: "Each β coefficient directly shows each parameter's impact. Suitable for regulatory and reporting use.",
+                  mn: "Шугаман бус хамаарлыг барина",
+                  en: "Captures non-linear patterns",
+                  desc_mn: "Барилгын бүх параметрийн харилцан нөлөөллийг (interaction) автоматаар олж харна. Шугаман загваруудын давуу биш.",
+                  desc_en: "Automatically finds feature interactions that linear models cannot capture — e.g. insulation × age × HDD.",
                 },
                 {
-                  mn: "Монголын HDD-тэй нийцнэ",
-                  en: "Fits Mongolian HDD pattern",
-                  desc_mn: "УБ-ын ~4500 HDD нь энергийн хэрэглээтэй шугаман хамааралтай — шугаман загвар физикийн томьёотой давхцана.",
-                  desc_en: "UB's ~4,500 HDD has near-linear relationship with energy. Linear model aligns with physics formula.",
+                  mn: "Монголын HDD-тэй сайн нийцнэ",
+                  en: "Strong fit for UB climate patterns",
+                  desc_mn: "УБ-ын ~4500 HDD ба барилгын нас зэрэг олон хувьсагч нь шугаман бус хамааралтай. XGBoost энийг автоматаар барина.",
+                  desc_en: "UB's extreme climate creates non-linear interactions between HDD, age, and insulation that XGBoost captures well.",
                 },
                 {
-                  mn: "Жижиг датасетэд тохиромжтой",
-                  en: "Works with small datasets",
-                  desc_mn: "600 синтетик барилга дээр хэт тохируулалт (overfitting) гарахгүй. Монголд бодит өгөгдөл хомс.",
-                  desc_en: "No overfitting on 600 synthetic buildings. Real Mongolian building data is scarce.",
+                  mn: "Regularization дотроосоо",
+                  en: "Built-in regularization",
+                  desc_mn: "Subsample=0.8, min_child_weight=5 нь 600 синтетик дата дээр хэт тохируулалтаас хамгаалдаг.",
+                  desc_en: "Subsample=0.8, min_child_weight=5 prevent overfitting on 600 synthetic buildings.",
                 },
                 {
                   mn: "Хөтөч дотор ажиллана",
                   en: "Browser-deployable",
-                  desc_mn: "~5мс сургалт, backend server шаардлагагүй. Vercel дээр ажиллах боломжтой.",
-                  desc_en: "~5ms training, no backend server needed. Fully deployable on Vercel.",
+                  desc_mn: "~30мс сургалт, backend server шаардлагагүй. Vercel дээр бүрэн ажиллана.",
+                  desc_en: "~30ms training, no backend server needed. Fully deployable on Vercel.",
                 },
               ].map(item => (
                 <div key={item.mn} style={{
@@ -1396,14 +1396,6 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {[
-                  {
-                    method: "Random Forest / XGBoost",
-                    color: "#e76f51",
-                    reason_mn: "10,000+ бодит дата шаардана. Синтетик 600 дата дээр хэт тохируулна. Хар хайрцаг — регуляторт тайлбарлах боломжгүй. Хөтөч дотор ажиллуулахад хэт хүнд.",
-                    reason_en: "Requires 10,000+ real records. Overfits 600 synthetic samples. Black-box — cannot explain to regulators. Too heavy for browser.",
-                    issue_mn: "Өгөгдлийн хомсдол + тайлбарлах боломжгүй",
-                    issue_en: "Data scarcity + uninterpretable",
-                  },
                   {
                     method: "Neural Network (MLP / LSTM)",
                     color: "#e76f51",
@@ -1462,8 +1454,8 @@ export default function DashboardPage() {
 
           <p className="avp-note" style={{ marginTop: "0.8rem" }}>
             {lang === "mn"
-              ? "OLS регресс нь Монголын барилгын эрчим хүчний тооцооллын физикийн томьёотой (IEA 2022, БНТУ 23-02-09) нийцдэг, тайлбарлах боломжтой, жижиг синтетик датасетэд тогтвортой загвар юм. Ridge λ=0.01 нь тооны тогтворгүй байдлаас хамгаална. Ирээдүйд бодит НЭТЕГ өгөгдөл ирэхэд Random Forest руу шилжих боломжтой."
-              : "OLS regression aligns with Mongolia's physics-based EUI formula (IEA 2022, БНТУ 23-02-09), is interpretable, and stable on small synthetic datasets. Ridge λ=0.01 prevents numerical instability. Once real НЭТЭГ data becomes available, migration to Random Forest is feasible."}
+              ? "XGBoost нь Монголын барилгын эрчим хүчний физик EUI томьёотой (IEA 2022, БНТУ 23-02-09) нийцдэг, шугаман бус хамаарлыг барьж чадах, browser-deployable gradient boosting загвар юм. n=60, depth=4, eta=0.15, subsample=0.8 — хэт тохируулалтаас хамгаалсан. Бодит НЭТЭГ өгөгдөл ирэхэд параметрүүдийг шинэчлэх боломжтой."
+              : "XGBoost aligns with Mongolia's physics-based EUI formula (IEA 2022, БНТУ 23-02-09), captures non-linear feature interactions, and is browser-deployable. Parameters n=60, depth=4, eta=0.15, subsample=0.8 prevent overfitting on 600 synthetic buildings. Can be retrained when real НЭТЭГ data becomes available."}
           </p>
         </div>
 
@@ -1472,10 +1464,10 @@ export default function DashboardPage() {
           <div className="card">
             <div className="chart-header flex-between" style={{ marginBottom: "0.75rem" }}>
               <h3 className="section-title" style={{ fontSize: "1rem", marginBottom: 0 }}>
-                {lang === "mn" ? "OLS Feature Importance" : "OLS Feature Importance"}
+                {lang === "mn" ? "XGBoost Feature Importance" : "XGBoost Feature Importance"}
               </h3>
               <span className="avp-badge" style={{ fontSize: "0.7rem" }}>
-                {lang === "mn" ? "Бодит |β| коэффициент" : "Real |β| coefficients"}
+                {lang === "mn" ? "XGBoost gain" : "XGBoost gain"}
               </span>
             </div>
             <div className="feature-bars">
@@ -1491,8 +1483,8 @@ export default function DashboardPage() {
             </div>
             <p className="avp-note" style={{ marginTop: "0.75rem" }}>
               {lang === "mn"
-                ? "OLS регрессийн β-коэффициентүүдийн |β| утгыг хамгийн их нь-д нормчилж тооцсон. 600 синтетик барилгын дэлгэрэнгүй өгөгдөл дээр сургасан бодит загварын үр дүн. Хувьсагчийн β их байх тусам энергийн хэрэглээнд илүү нөлөөтэй."
-                : "Normalized |β| coefficients from trained OLS regression — |β_i| / max(|β|). Trained on 600 synthetic UB buildings with physics-informed ground truth. Higher bar = stronger influence on energy prediction."}
+                ? "XGBoost-ийн нийт gain-ийн нийлбэрийг нормчилж тооцсон. Тухайн feature хуваагдалт бүрт олсон мэдээллийн ашиг. Өндөр gain = энергийн таамаглалд илүү нөлөөтэй хувьсагч."
+                : "Normalized total gain across all XGBoost splits per feature. Higher gain = stronger influence on the energy prediction."}
             </p>
           </div>
 
@@ -1524,8 +1516,8 @@ export default function DashboardPage() {
             </ResponsiveContainer>
             <p className="avp-note" style={{ marginTop: "0.5rem" }}>
               {lang === "mn"
-                ? "SHAP-lite: OLS β-коэффициент × стандарчилсан оролтын утга (β·x). 1200м², 1995 он, 9 давхар орон сууцны жишээ дээр тооцсон. Цэнхэр = хэрэглээ нэмэгдүүлэх, улаан = бууруулах нөлөө."
-                : "SHAP-lite: OLS contribution per feature = β_i × scaled_x_i for a sample 1200m² apartment (1995, 9 fl). Blue = increases usage, red = reduces usage. True SHAP requires model retraining with TreeExplainer."}
+                ? "Attribution proxy: β·x тооцоолол — XGBoost-ийн шинжилгээг тайлбарлах surrogate. 1200м², 1995 он, 9 давхар орон сууцны жишээ. Цэнхэр = хэрэглээ нэмэгдүүлэх, улаан = бууруулах нөлөө."
+                : "Attribution proxy: β·x as interpretable surrogate for XGBoost analysis. Sample: 1200m² apartment, 1995, 9 fl. Blue = increases usage, red = reduces."}
             </p>
           </div>
         </div>

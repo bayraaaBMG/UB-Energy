@@ -500,6 +500,8 @@ function xgbFeatureGain(model, nF) {
   return gain;
 }
 
+// Thesis note: OLS baseline metrics (TEST_METRICS, TEST_F1, within20) are retained
+// in code for SHAP-proxy attribution in predict(), but excluded from UI comparison.
 export const MODEL_COMPARISON = [
   {
     id: 'xgboost', name: 'XGBoost (n=60, d=4)', name_mn: 'XGBoost (Үндсэн загвар)', color: '#e9c46a',
@@ -507,13 +509,6 @@ export const MODEL_COMPARISON = [
     coverage: +(xgb_w20 / y_test.length * 100).toFixed(1),
     note_mn: 'Gradient boosting — үндсэн таамаглалын хэрэгсэл.',
     note_en: 'Gradient boosting — main prediction engine.',
-  },
-  {
-    id: 'ols', name: 'OLS Regression', name_mn: 'OLS Регресс (Суурь загвар)', color: '#3a8fd4',
-    ...TEST_METRICS, f1: TEST_F1,
-    coverage: +(within20 / y_test.length * 100).toFixed(1),
-    note_mn: 'Суурь шугаман загвар. Дипломын харьцуулалтын загвар.',
-    note_en: 'Baseline linear model. Used for thesis comparison.',
   },
   {
     id: 'ridge', name: 'Ridge (λ=200)', name_mn: 'Ридж Регресс (λ=200)', color: '#2a9d8f',

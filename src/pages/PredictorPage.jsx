@@ -217,7 +217,7 @@ export default function PredictorPage() {
         ...form,
         hdd:       currentHdd,
         residents: Math.max(1, Math.round(form.area / 100 * (resPer100[form.building_type] || 4))),
-        // Cap at 15 — training data has appliances in [2,15]; exceeding this causes out-of-distribution scaling that clamps OLS output to 0
+        // Cap at 15 — training data has appliances in [2,15]; out-of-distribution inputs cause XGBoost extrapolation
         appliances: Math.min(15, Math.max(2, Math.round(form.area / 100 * (appPer100[form.building_type] || 6)))),
       };
       const modelR = predict(enriched);
@@ -1052,8 +1052,8 @@ export default function PredictorPage() {
                     })}
                     <div style={{ marginTop: "0.5rem", padding: "0.7rem 0.9rem", background: "rgba(58,143,212,0.07)", border: "1px solid rgba(58,143,212,0.2)", borderRadius: 8, fontSize: "0.75rem", color: "var(--text2)", lineHeight: 1.6 }}>
                       {lang === "mn"
-                        ? "Загвар нь физик EUI томьёо + OLS regression хосолсон. Бодит өгөгдлийн хязгаарлалтаас болж synthetic dataset ашигласан. Жишилтийн утгуудыг тооцоологдсон болохыг анхаарна уу."
-                        : "Model uses physics-informed EUI formula + OLS regression. Synthetic dataset used due to limited public Mongolian building data. Note: actual consumption figures are referenced from published sources."}
+                        ? "Загвар нь физик EUI томьёо + XGBoost gradient boosting хосолсон. Бодит өгөгдлийн хязгаарлалтаас болж synthetic dataset ашигласан. Жишилтийн утгуудыг тооцоологдсон болохыг анхаарна уу."
+                        : "Model uses physics-informed EUI formula + XGBoost gradient boosting. Synthetic dataset used due to limited public Mongolian building data. Note: actual consumption figures are referenced from published sources."}
                     </div>
                   </div>
                 )}
@@ -1201,7 +1201,7 @@ export default function PredictorPage() {
 
                 {/* Model info + save */}
                 <div className="model-info-row">
-                  <span className="model-badge" title="Physics-informed OLS regression trained on 600 UB buildings">OLS + EUI</span>
+                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings">XGBoost + EUI</span>
                   <span className="model-badge" title={`n_train=${METRICS.n_train}, n_test=${METRICS.n_test}`}>
                     R² = {METRICS.r2}
                   </span>

@@ -12,7 +12,7 @@ import {
   ThermometerSnowflake, Layers, MapPin, FlaskConical, Info,
 } from "lucide-react";
 import { monthlyEnergyData, buildingsData, ulaanbaatarDistricts } from "../data/mockData";
-import { predict } from "../ml/model";
+import { predict, METRICS } from "../ml/model";
 import "leaflet/dist/leaflet.css";
 import "./MapPage.css";
 
@@ -915,7 +915,7 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
               <div className="ml-hero-badge">ML</div>
               <div className="ml-hero-body">
                 <div className="ml-hero-val">{calc.ml.annual.toLocaleString()} <span className="ml-hero-unit">kWh/жил</span></div>
-                <div className="ml-hero-sub">{mn ? "Машин сургалтын таамаглал (OLS · R² ≥ 0.87)" : "ML prediction (OLS · R² ≥ 0.87)"}</div>
+                <div className="ml-hero-sub">{mn ? `Машин сургалтын таамаглал (XGBoost · R²=${METRICS.r2})` : `ML prediction (XGBoost · R²=${METRICS.r2})`}</div>
               </div>
             </div>
 
@@ -1201,7 +1201,7 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
                 )}
               </div>
               <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: "0.5rem" }}>
-                {mn ? "Симуляц нь ML OLS загварт суурилсан. Бодит хэмнэлт нэмэлт хэмжилтээс хамаарна." : "Simulation is ML OLS-based. Actual savings depend on real conditions."}
+                {mn ? "Симуляц нь XGBoost ML загварт суурилсан. Бодит хэмнэлт нэмэлт хэмжилтээс хамаарна." : "Simulation is XGBoost ML-based. Actual savings depend on real conditions."}
               </div>
             </div>
           );
@@ -1223,7 +1223,7 @@ function NoSelection({ t }) {
       <div className="no-sel-steps">
         {[
           t.map.geom_hint,
-          "ML OLS → kWh таамаглал",
+          "XGBoost ML → kWh таамаглал",
           "CO₂ · зэрэглэл A–G · зөвлөмж",
         ].map((s, i) => <div key={i} className="nss">{s}</div>)}
       </div>
@@ -1256,11 +1256,11 @@ function HowItWorks({ t, lang }) {
     {
       Icon: Zap,
       color: "#f4a261",
-      title: mn ? "3. ML OLS загвар — эрчим хүчний таамаглал" : "3. ML OLS model — energy prediction",
+      title: mn ? "3. XGBoost ML загвар — эрчим хүчний таамаглал" : "3. XGBoost ML model — energy prediction",
       desc: mn
-        ? "600 Монгол барилгын синтетик өгөгдөл дээр сургасан OLS (дэс хамгийн бага квадратын) шугаман регрессийн загвар ашиглана. Загвар нь 30+ feature (талбай, нас, дулаалга, халаалт, материал г.м.) хүлээн авч жилийн kWh таамагладаг. Туршилтын R² ≥ 0.87."
-        : "An OLS (Ordinary Least Squares) linear regression trained on 600 synthetic Mongolian buildings. It takes 30+ features (area, age, insulation, heating type, wall material, etc.) and predicts annual kWh. Test R² ≥ 0.87. EUI is shown as a secondary breakdown.",
-      formula: "ML: annual_kWh = Xβ   where X = [area, age, floors, insulation, heating, material, ...]",
+        ? "600 Монгол барилгын синтетик өгөгдөл дээр сургасан XGBoost gradient boosting загвар ашиглана. Загвар нь 30+ feature (талбай, нас, дулаалга, халаалт, материал г.м.) хүлээн авч жилийн kWh таамагладаг. n=60, depth=4, eta=0.15. Туршилтын R² ≥ 0.95."
+        : "An XGBoost gradient boosting model trained on 600 synthetic Mongolian buildings. Takes 30+ features (area, age, insulation, heating type, wall material, etc.) and predicts annual kWh. n=60, depth=4, eta=0.15. Test R² ≥ 0.95.",
+      formula: "XGBoost: annual_kWh = Σ η·fₜ(area, age, insulation, heating, material, …)",
     },
     {
       Icon: Leaf,
