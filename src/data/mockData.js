@@ -2,12 +2,42 @@
 // Энэ файл нь dashboard дээр харагдах chart, map, model metric, feature importance-ийн өгөгдлийг өгнө
 // Өгөгдөл нь 2020–2025 оны цаг тутмын dataset-ээс нэгтгэсэн realistic synthetic data
 
-// Heat fraction by month — УБ-ийн дүүргийн халаалтын хэв маяг (БНТУ 23-02-09)
-// Jan…Dec: heating share of total monthly energy
-export const HEAT_FRACTIONS = [0.77, 0.76, 0.65, 0.50, 0.20, 0.04, 0.04, 0.04, 0.30, 0.55, 0.65, 0.77];
-const _HF = HEAT_FRACTIONS;
+// ─── УБ хотын бодит HDD суурьт улирлын жингүүд ───────────────────────────────
+// Heating: Jan=1.00 (хамгийн өндөр), Dec=0.95, Feb=0.88, Jun–Aug ≈ 0
+// Эх сурвалж: БНТУ 23-02-09, NOAA UB HDD history, IEA 2022
+export const UB_HDD_WEIGHTS  = [1.00, 0.88, 0.65, 0.40, 0.18, 0.05, 0.03, 0.05, 0.18, 0.45, 0.72, 0.95];
 
-export const monthlyEnergyData = [
+// Electricity: харьцангуй тогтвортой, өвлийн гэрэлтүүлгийн улмаас бага нэмэгддэг
+export const UB_ELEC_WEIGHTS = [1.15, 1.10, 1.05, 1.00, 0.95, 0.88, 0.85, 0.88, 0.95, 1.00, 1.08, 1.14];
+
+const _HDD_SUM  = UB_HDD_WEIGHTS.reduce((a, b) => a + b, 0);   // ~6.54
+const _ELEC_SUM = UB_ELEC_WEIGHTS.reduce((a, b) => a + b, 0);  // ~12.03
+
+// УБ барилгын эрчим хүчний бүтэц (IEA 2022, БНТУ норматив)
+const HEAT_SHARE = 0.70; // 70% дүүргийн халаалт + халуун ус
+const ELEC_SHARE = 0.30; // 30% цахилгаан
+
+/**
+ * Жилийн нийт kWh-г сар бүрийн халаалт + цахилгаанд хувааж өгнө.
+ * Heating: HDD жинг ашиглан, Electric: тогтвортой жинтэй.
+ * Returns: [{heating, electric, total}, ...] (Jan=0 … Dec=11)
+ */
+export function splitMonthlyEnergy(annualTotal) {
+  return UB_HDD_WEIGHTS.map((hw, i) => {
+    const heating  = Math.round(annualTotal * HEAT_SHARE * hw / _HDD_SUM);
+    const electric = Math.round(annualTotal * ELEC_SHARE * UB_ELEC_WEIGHTS[i] / _ELEC_SUM);
+    return { heating, electric, total: heating + electric };
+  });
+}
+
+// Derived heat fractions per month (heating / total) — backward-compat
+export const HEAT_FRACTIONS = UB_HDD_WEIGHTS.map((hw, i) => {
+  const hn = hw / _HDD_SUM;
+  const en = UB_ELEC_WEIGHTS[i] / _ELEC_SUM;
+  return +(HEAT_SHARE * hn / (HEAT_SHARE * hn + ELEC_SHARE * en)).toFixed(4);
+});
+
+const _rawMonthly = [
   { month: "1-р",  month_en: "Jan", usage: 165610, temperature: -20.3, hdd: 28521, predicted: 163126 },
   { month: "2-р",  month_en: "Feb", usage: 147808, temperature: -16.8, hdd: 23696, predicted: 146477 },
   { month: "3-р",  month_en: "Mar", usage: 95311,  temperature: -5.7,  hdd: 17598, predicted: 95025  },
@@ -20,10 +50,14 @@ export const monthlyEnergyData = [
   { month: "10-р", month_en: "Oct", usage: 99375,  temperature: 0.1,   hdd: 13345, predicted: 100270 },
   { month: "11-р", month_en: "Nov", usage: 104640, temperature: -10.2, hdd: 20306, predicted: 103071 },
   { month: "12-р", month_en: "Dec", usage: 165810, temperature: -20.4, hdd: 28582, predicted: 164318 },
-].map((d, i) => ({
+];
+const _annualUsage = _rawMonthly.reduce((s, d) => s + d.usage, 0);
+const _splits = splitMonthlyEnergy(_annualUsage);
+
+export const monthlyEnergyData = _rawMonthly.map((d, i) => ({
   ...d,
-  heating:  Math.round(d.usage * _HF[i]),
-  electric: Math.round(d.usage * (1 - _HF[i])),
+  heating:  _splits[i].heating,
+  electric: _splits[i].electric,
 }));
 
 // Өдрийн хэрэглээний chart-д ашиглана

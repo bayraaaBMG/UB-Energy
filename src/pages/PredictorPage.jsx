@@ -21,6 +21,7 @@ import {
   TARIFF_TIERS,
 } from "../ml/model";
 import { useData } from "../contexts/DataContext";
+import { splitMonthlyEnergy } from "../data/mockData";
 import "./PredictorPage.css";
 
 const BUILDING_COLORS = {
@@ -763,18 +764,29 @@ export default function PredictorPage() {
 
                 {/* Monthly chart — heating + electric dual panel */}
                 <h4 className="chart-sub-title">{t.predictor.monthly_breakdown}</h4>
-                <EnergyDualChart
-                  lang={lang}
-                  height={210}
-                  leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
-                  rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
-                  data={result.chart_data.map((d, i) => ({
-                    month: d.month,
-                    heating:  heating?.monthly_heat_kwh?.[i] ?? Math.round(d.usage * 0.65),
-                    electric: d.usage,
-                    total:    d.usage + (heating?.monthly_heat_kwh?.[i] ?? Math.round(d.usage * 0.65)),
-                  }))}
-                />
+                {(() => {
+                  // Use physics heating model if available, else HDD-based split
+                  const totalAnnual = result.annual + (heating?.annual_kwh_equiv || 0);
+                  const fallbackSplit = splitMonthlyEnergy(totalAnnual);
+                  const dualData = result.chart_data.map((d, i) => {
+                    const heatKwh = heating?.monthly_heat_kwh?.[i] ?? fallbackSplit[i].heating;
+                    return {
+                      month:    d.month,
+                      heating:  heatKwh,
+                      electric: d.usage,
+                      total:    d.usage + heatKwh,
+                    };
+                  });
+                  return (
+                    <EnergyDualChart
+                      lang={lang}
+                      height={210}
+                      leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
+                      rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                      data={dualData}
+                    />
+                  );
+                })()}
 
                 {/* Top 3 Factors */}
                 <h4 className="chart-sub-title" style={{ marginTop: "1.25rem" }}>
@@ -1038,12 +1050,15 @@ export default function PredictorPage() {
                   const remainMonth  = Math.round(result.daily_avg * remainDays);
 
                   // Next 12 months starting from today
+                  const totalAnnual12 = result.annual + (heating?.annual_kwh_equiv || 0);
+                  const fbSplit12 = splitMonthlyEnergy(totalAnnual12);
                   const next12 = Array.from({ length: 12 }, (_, i) => {
-                    const mi       = (mIdx + i) % 12;
-                    const d        = new Date(now.getFullYear(), mIdx + i, 1);
-                    const lbl      = d.toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", year: "2-digit" });
-                    const elecKwh  = result.chart_data[mi].usage;
-                    const heatKwh  = heating?.monthly_heat_kwh?.[mi] || 0;
+                    const mi      = (mIdx + i) % 12;
+                    const d       = new Date(now.getFullYear(), mIdx + i, 1);
+                    const lbl     = d.toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", year: "2-digit" });
+                    const elecKwh = result.chart_data[mi].usage;
+                    // Physics heating model first; HDD-based fallback if unavailable
+                    const heatKwh = heating?.monthly_heat_kwh?.[mi] ?? fbSplit12[mi].heating;
                     return { month: lbl, elec: elecKwh, heat: heatKwh, total: elecKwh + heatKwh, isCurrent: i === 0 };
                   });
 

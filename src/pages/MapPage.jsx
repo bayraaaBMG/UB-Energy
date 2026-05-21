@@ -14,7 +14,7 @@ import {
 import { monthlyEnergyData, buildingsData, ulaanbaatarDistricts } from "../data/mockData";
 import { predict, METRICS } from "../ml/model";
 import EnergyDualChart from "../components/charts/EnergyDualChart";
-import { HEAT_FRACTIONS } from "../data/mockData";
+import { splitMonthlyEnergy } from "../data/mockData";
 import "leaflet/dist/leaflet.css";
 import "./MapPage.css";
 
@@ -675,10 +675,13 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
     });
   }, [building, wi]);
 
+  // Mini chart still uses MONTH_FRACS for a quick distribution preview
   const monthly = MONTH_FRACS.map((frac, i) => ({
     m:   mn ? monthlyEnergyData[i].month.split("-")[0] : monthlyEnergyData[i].month_en,
     kwh: Math.round(calc.total * frac),
   }));
+  // Full HDD-based split for EnergyDualChart
+  const monthlySplit = splitMonthlyEnergy(calc.total);
 
   const TABS = [
     { id: "energy", label: t.map.sec_energy },
@@ -1029,11 +1032,11 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
               height={175}
               leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
               rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total (MWh)"}
-              data={monthly.map((d, i) => ({
-                month:    d.m,
-                heating:  Math.round(d.kwh * HEAT_FRACTIONS[i]),
-                electric: Math.round(d.kwh * (1 - HEAT_FRACTIONS[i])),
-                total:    d.kwh,
+              data={monthlySplit.map((s, i) => ({
+                month:    monthly[i].m,
+                heating:  s.heating,
+                electric: s.electric,
+                total:    s.total,
               }))}
             />
             <div className="chart-note">{t.map.chart_note_climate}</div>

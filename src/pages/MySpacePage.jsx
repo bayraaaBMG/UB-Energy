@@ -19,7 +19,7 @@ import { deleteUserBuilding, updateUserBuilding } from "../utils/buildingStorage
 import { useData } from "../contexts/DataContext";
 import { predict } from "../ml/model";
 import EnergyDualChart from "../components/charts/EnergyDualChart";
-import { HEAT_FRACTIONS } from "../data/mockData";
+import { splitMonthlyEnergy } from "../data/mockData";
 import "./MySpacePage.css";
 
 // ─── Forecast engine ──────────────────────────────────────────────────────────
@@ -167,16 +167,12 @@ function ForecastPanel({ prediction, lang }) {
           height={200}
           leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
           rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
-          data={fc.monthly.map((d, i) => {
-            const hf = HEAT_FRACTIONS[i] ?? 0.5;
-            const label = lang === "mn" ? d.label : d.label_en;
-            return {
-              month:    label,
-              heating:  Math.round(d.kwh * hf),
-              electric: Math.round(d.kwh * (1 - hf)),
-              total:    d.kwh,
-            };
-          })}
+          data={splitMonthlyEnergy(annual).map((s, i) => ({
+            month:    lang === "mn" ? fc.monthly[i].label : fc.monthly[i].label_en,
+            heating:  s.heating,
+            electric: s.electric,
+            total:    s.total,
+          }))}
         />
       ) : (
         <ResponsiveContainer width="100%" height={180}>

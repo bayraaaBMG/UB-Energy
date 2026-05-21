@@ -14,7 +14,7 @@ import {
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   CartesianGrid, ReferenceLine,
 } from "recharts";
-import { monthlyEnergyData, yearlyEnergyData, HEAT_FRACTIONS } from "../data/mockData";
+import { monthlyEnergyData, yearlyEnergyData, splitMonthlyEnergy } from "../data/mockData";
 import { useData } from "../contexts/DataContext";
 import EnergyDualChart from "../components/charts/EnergyDualChart";
 import "./DatabasePage.css";
@@ -105,9 +105,9 @@ function ResultsModal({ building, lang, t, onClose }) {
   const impactColor = co2 > 60 ? "#e63946" : co2 > 30 ? "#f4a261" : "#2a9d8f";
 
   const actualMonthly = building.has_actual_data ? monthlyPred : null;
-  const diff = null; // actual vs predicted tracked via has_actual_data badge
 
-  // Monthly chart data — predicted bars + actual line reference
+  // Monthly heating + electric split based on UB HDD profile
+  const monthlySplit = splitMonthlyEnergy(totalKwh);
   const chartData = MONTH_FRACS.map((frac, i) => ({
     m:    months[i],
     pred: Math.round(totalKwh * frac),
@@ -294,11 +294,11 @@ function ResultsModal({ building, lang, t, onClose }) {
                 height={185}
                 leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
                 rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
-                data={chartData.map((d, i) => ({
-                  month:    d.m,
-                  heating:  Math.round(d.pred * HEAT_FRACTIONS[i]),
-                  electric: Math.round(d.pred * (1 - HEAT_FRACTIONS[i])),
-                  total:    d.pred,
+                data={monthlySplit.map((s, i) => ({
+                  month:    months[i],
+                  heating:  s.heating,
+                  electric: s.electric,
+                  total:    s.total,
                 }))}
               />
             </div>
