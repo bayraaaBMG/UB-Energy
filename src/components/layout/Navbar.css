@@ -312,6 +312,11 @@
   .nb-logout { min-width: 36px; padding: 0; }
 }
 
+/* Desktop: persistent sidebar is always visible — hamburger not needed */
+@media (min-width: 900px) {
+  .navbar-hamburger { display: none; }
+}
+
 /* ── Light mode ──────────────────────────────────────────────────────────── */
 [data-theme="light"] .navbar {
   background: rgba(248, 250, 252, 0.96);

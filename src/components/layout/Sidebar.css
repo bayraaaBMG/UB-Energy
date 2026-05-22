@@ -47,6 +47,11 @@
     border-right: 1px solid var(--border);
   }
 
+  /* Navbar already shows the logo — hide redundant header inside sidebar */
+  .sidebar-header {
+    display: none;
+  }
+
   .sidebar-overlay {
     display: none !important;
   }
