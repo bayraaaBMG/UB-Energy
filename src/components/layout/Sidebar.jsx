@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Home, Brain, Map, CloudSun, BarChart2, Lightbulb,
@@ -33,6 +33,10 @@ export default function Sidebar() {
   const { open, close } = useSidebar();
   const location = useLocation();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  // Guarantee close on every route change — belt-and-suspenders alongside SidebarContext
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { close(); }, [location.pathname]);
 
   const items = mainNavItems(t, user);
 
