@@ -74,63 +74,18 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-bg-grid" />
         <div className="container hero-content animate-fade">
-
-          {/* Research badge */}
           <div className="hero-badge">
-            <FlaskConical size={13} />
-            <span>
-              {mn
-                ? "Судалгааны систем · XGBoost · EUI загвар · Монгол нөхцөл · 2026"
-                : "Research system · XGBoost · EUI model · Mongolia context · 2026"}
-            </span>
+            <Zap size={14} />
+            <span>XGBoost · EUI Model · Open-Meteo · {mn ? "Монголын нөхцөлд" : "Mongolia-adapted"}</span>
           </div>
-
           {user && (
             <div className="hero-welcome">
               <div className="hw-avatar">{user.name.charAt(0)}</div>
               <span>{t.home.welcome.replace("{name}", user.name)}</span>
             </div>
           )}
-
-          {/* Main research title */}
           <h1 className="hero-title">{t.home.hero_title}</h1>
 
-          {/* Research summary — object / data / model / results */}
-          <div className="hero-research-grid">
-            {[
-              {
-                label: mn ? "Судлах объект" : "Object",
-                value: mn
-                  ? "УБ-ын орон сууцны барилга — панель, тоосго, бетон (хуучин болон шинэ барилга)"
-                  : "UB residential buildings — panel, brick, concrete (aged and new stock)",
-              },
-              {
-                label: mn ? "Өгөгдлийн эх" : "Data sources",
-                value: mn
-                  ? "Open-Meteo цаг уур · HDD тооцоолол · Барилгын 30+ параметр · EUI физик норм · 600 синтетик датасет"
-                  : "Open-Meteo weather · HDD calculation · 30+ building parameters · EUI physics norms · 600-sample synthetic dataset",
-              },
-              {
-                label: mn ? "Ашигласан загвар" : "Model",
-                value: mn
-                  ? "XGBoost Gradient Boosting (n=60, depth=4, eta=0.15) · EUI физик томьёоны баталгаажуулалт · 80/20 train/test"
-                  : "XGBoost Gradient Boosting (n=60, depth=4, eta=0.15) · EUI physics validation · 80/20 train/test split",
-              },
-              {
-                label: mn ? "Гаралт / Үр дүн" : "Output / Results",
-                value: mn
-                  ? `kWh/жил таамаглал · A–G үр ашгийн зэрэглэл · CO₂ ялгарал · R²=${(METRICS.r2 * 100).toFixed(1)}%, MAPE=${METRICS.mape}%`
-                  : `kWh/year forecast · A–G efficiency grade · CO₂ emissions · R²=${(METRICS.r2 * 100).toFixed(1)}%, MAPE=${METRICS.mape}%`,
-              },
-            ].map(({ label, value }) => (
-              <div key={label} className="hrg-row">
-                <span className="hrg-label">{label}</span>
-                <span className="hrg-value">{value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* CTAs */}
           <div className="hero-actions">
             <Link to="/predictor" className="btn btn-accent">
               <Brain size={18} />
@@ -141,7 +96,6 @@ export default function HomePage() {
               {t.home.hero_btn3}
             </Link>
           </div>
-
           {!user && (
             <p className="hero-login-hint">
               <LogIn size={13} />
@@ -152,41 +106,40 @@ export default function HomePage() {
             </p>
           )}
 
-          {/* Key metrics strip */}
+          {/* ── Dashboard preview strip ── */}
           <div className="hero-preview-strip">
             <div className="hps-header">
               <span className="hps-dot" style={{ background: "#2a9d8f" }} />
               <span className="hps-dot" style={{ background: "#e9c46a" }} />
-              <span className="hps-dot" style={{ background: "#3a8fd4" }} />
-              <span className="hps-label">{mn ? "Загварын үзүүлэлт" : "Model metrics"}</span>
+              <span className="hps-dot" style={{ background: "#e63946" }} />
+              <span className="hps-label">{mn ? "Dashboard харагдац" : "Dashboard Preview"}</span>
             </div>
             <div className="hps-metrics">
+              <div className="hps-metric">
+                <span className="hps-val" style={{ color: "#3a8fd4" }}>
+                  {stats ? stats.count : "—"}
+                </span>
+                <span className="hps-lbl">{mn ? "Барилга" : "Buildings"}</span>
+              </div>
+              <span className="hps-sep" />
               <div className="hps-metric">
                 <span className="hps-val" style={{ color: "#2a9d8f" }}>
                   {(METRICS.r2 * 100).toFixed(1)}%
                 </span>
-                <span className="hps-lbl">R²</span>
-              </div>
-              <span className="hps-sep" />
-              <div className="hps-metric">
-                <span className="hps-val" style={{ color: "#3a8fd4" }}>
-                  ±{METRICS.mape}%
-                </span>
-                <span className="hps-lbl">MAPE</span>
+                <span className="hps-lbl">R² {mn ? "нарийвчлал" : "Accuracy"}</span>
               </div>
               <span className="hps-sep" />
               <div className="hps-metric">
                 <span className="hps-val" style={{ color: "#e9c46a" }}>~4,500</span>
-                <span className="hps-lbl">HDD/{mn ? "жил" : "yr"}</span>
+                <span className="hps-lbl">HDD / {mn ? "жил" : "year"}</span>
               </div>
               <span className="hps-sep" />
               <div className="hps-metric">
                 <span className="hps-val" style={{ color: "#f4a261" }}>30+</span>
-                <span className="hps-lbl">{mn ? "Параметр" : "Features"}</span>
+                <span className="hps-lbl">{mn ? "Параметр" : "Parameters"}</span>
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
