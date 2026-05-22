@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Home, Brain, Map, CloudSun, BarChart2, Lightbulb,
@@ -7,6 +8,7 @@ import {
 import { useLang } from "../../contexts/LanguageContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSidebar } from "../../contexts/SidebarContext";
+import FeedbackModal from "./FeedbackModal";
 import "./Sidebar.css";
 
 const mainNavItems = (t, user) => [
@@ -30,8 +32,14 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const { open, close } = useSidebar();
   const location = useLocation();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const items = mainNavItems(t, user);
+
+  function openFeedback() {
+    close();          // sidebar хаах
+    setFeedbackOpen(true);
+  }
 
   return (
     <>
@@ -87,7 +95,7 @@ export default function Sidebar() {
             <Settings size={17} aria-hidden="true" />
             <span>{t.nav.settingsLabel}</span>
           </Link>
-          <button className="sidebar-link sidebar-link-btn">
+          <button className="sidebar-link sidebar-link-btn" onClick={openFeedback}>
             <MessageSquare size={17} aria-hidden="true" />
             <span>{t.nav.feedback}</span>
           </button>
@@ -102,6 +110,13 @@ export default function Sidebar() {
           )}
         </div>
       </aside>
+
+      {/* Feedback modal — rendered outside sidebar for correct z-index stacking */}
+      <FeedbackModal
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        user={user}
+      />
     </>
   );
 }
