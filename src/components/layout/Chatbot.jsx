@@ -435,6 +435,7 @@ export default function Chatbot() {
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKey}
                   placeholder={t.chatbot.placeholder}
+                  aria-label={t.chatbot.placeholder}
                   maxLength={300}
                 />
                 <button

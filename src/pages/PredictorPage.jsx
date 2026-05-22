@@ -907,12 +907,13 @@ export default function PredictorPage() {
                       <div style={{ background: "#1a3a5c", padding: "0.3rem 0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#7ec8ff" }}>
                         🔥 {lang === "mn" ? "Дулааны тариф (НӨАТ-гүй) — Эрчим хүчний зохицуулах хороо" : "Heating Tariff (excl. VAT) — Energy Regulatory Commission"}
                       </div>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }} aria-label={lang === "mn" ? "Дулааны тариф" : "Heating tariff"}>
+                        <caption className="visually-hidden">{lang === "mn" ? "Дулааны тариф — Эрчим хүчний зохицуулах хороо" : "Heating tariff — Energy Regulatory Commission"}</caption>
                         <thead>
                           <tr style={{ background: "rgba(255,255,255,0.04)" }}>
-                            <th style={{ padding: "0.2rem 0.6rem", textAlign: "left", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Ангилал" : "Category"}</th>
-                            <th style={{ padding: "0.2rem 0.5rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Нэгж" : "Unit"}</th>
-                            <th style={{ padding: "0.2rem 0.6rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Тариф" : "Tariff"}</th>
+                            <th scope="col" style={{ padding: "0.2rem 0.6rem", textAlign: "left", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Ангилал" : "Category"}</th>
+                            <th scope="col" style={{ padding: "0.2rem 0.5rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Нэгж" : "Unit"}</th>
+                            <th scope="col" style={{ padding: "0.2rem 0.6rem", textAlign: "right", color: "var(--text3)", fontWeight: 600 }}>{lang === "mn" ? "Тариф" : "Tariff"}</th>
                           </tr>
                         </thead>
                         <tbody>

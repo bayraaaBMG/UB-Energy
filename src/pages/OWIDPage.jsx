@@ -479,13 +479,14 @@ export default function OWIDPage() {
               {lang === "mn" ? "Барилгын ангиллаар дулааны хэрэглээ" : "Heat Consumption by Building Type"}
             </h4>
             <div className="owid-local-table-scroll">
-              <table className="owid-local-table">
+              <table className="owid-local-table" aria-label={lang === "mn" ? "УБ барилгуудын дулааны эрчим хүч" : "UB Buildings Heat Intensity"}>
+                <caption className="visually-hidden">{lang === "mn" ? "Улаанбаатар хотын барилгуудын дулааны эрчим хүчний хэрэглээний харьцуулалт" : "Ulaanbaatar buildings heat energy intensity comparison"}</caption>
                 <thead>
                   <tr>
-                    <th>{lang === "mn" ? "Барилгын төрөл" : "Building Type"}</th>
-                    <th>{lang === "mn" ? "Баригдсан он" : "Built"}</th>
-                    <th>{lang === "mn" ? "Дулааны эрчим хүч (кВт·цаг/м²/жил)" : "Heat Intensity (kWh/m²/yr)"}</th>
-                    <th>{lang === "mn" ? "Тайлбар" : "Notes"}</th>
+                    <th scope="col">{lang === "mn" ? "Барилгын төрөл" : "Building Type"}</th>
+                    <th scope="col">{lang === "mn" ? "Баригдсан он" : "Built"}</th>
+                    <th scope="col">{lang === "mn" ? "Дулааны эрчим хүч (кВт·цаг/м²/жил)" : "Heat Intensity (kWh/m²/yr)"}</th>
+                    <th scope="col">{lang === "mn" ? "Тайлбар" : "Notes"}</th>
                   </tr>
                 </thead>
                 <tbody>

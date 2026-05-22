@@ -1271,15 +1271,16 @@ export default function DashboardPage() {
             );
           })()}
           <div className="mc-table-wrap">
-            <table className="mc-table">
+            <table className="mc-table" aria-label={lang === "mn" ? "Загваруудын харьцуулалт" : "Model comparison"}>
+              <caption className="visually-hidden">{lang === "mn" ? "Машин сургалтын загваруудын гүйцэтгэлийн харьцуулалт" : "Machine learning model performance comparison"}</caption>
               <thead>
                 <tr>
-                  <th>{lang === "mn" ? "Загвар" : "Model"}</th>
-                  <th>R²</th>
-                  <th>MAE <em>kWh</em></th>
-                  <th>RMSE</th>
-                  <th>{lang === "mn" ? "Итгэлцлэл" : "Confidence"}</th>
-                  <th>F1</th>
+                  <th scope="col">{lang === "mn" ? "Загвар" : "Model"}</th>
+                  <th scope="col">R²</th>
+                  <th scope="col">MAE <em>kWh</em></th>
+                  <th scope="col">RMSE</th>
+                  <th scope="col">{lang === "mn" ? "Итгэлцлэл" : "Confidence"}</th>
+                  <th scope="col">F1</th>
                 </tr>
               </thead>
               <tbody>

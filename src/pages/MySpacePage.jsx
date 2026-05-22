@@ -756,12 +756,13 @@ function DatasetTab({ t, buildings }) {
       </div>
 
       <div className="ms-table-scroll">
-        <table className="ms-table">
+        <table className="ms-table" aria-label={t.myspace.history_building}>
+          <caption className="visually-hidden">Миний барилгуудын эрчим хүчний хэрэглээний түүх</caption>
           <thead>
             <tr>
-              <th>{t.myspace.history_building}</th>
-              <th>Төрөл</th><th>Талбай</th><th>Он</th>
-              <th>Дүүрэг</th><th>Зэрэглэл</th><th>Эх сурвалж</th><th>кВт·цаг/жил</th><th>кВт·цаг/м²</th>
+              <th scope="col">{t.myspace.history_building}</th>
+              <th scope="col">Төрөл</th><th scope="col">Талбай</th><th scope="col">Он</th>
+              <th scope="col">Дүүрэг</th><th scope="col">Зэрэглэл</th><th scope="col">Эх сурвалж</th><th scope="col">кВт·цаг/жил</th><th scope="col">кВт·цаг/м²</th>
             </tr>
           </thead>
           <tbody>

@@ -1164,7 +1164,9 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
                   </div>
                   <input type="range" min={1940} max={2026} value={wi.year}
                     onChange={e => setWi(w => ({ ...w, year: parseInt(e.target.value) }))}
-                    style={{ width: "100%", accentColor: "#9b72cf" }} />
+                    style={{ width: "100%", accentColor: "#9b72cf" }}
+                    aria-label={mn ? `Шинэчлэлийн он: ${wi.year}` : `Renovation year: ${wi.year}`}
+                    aria-valuemin={1940} aria-valuemax={2026} aria-valuenow={wi.year} />
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.68rem", color: "var(--text3)" }}>
                     <span>1940</span><span>2026</span>
                   </div>
@@ -2007,14 +2009,15 @@ export default function MapPage() {
                   </span>
                 </div>
                 <div className="dc-table-wrap">
-                  <table className="dc-table">
+                  <table className="dc-table" aria-label={lang === "mn" ? "Дүүргийн харьцуулалт" : "District comparison"}>
+                    <caption className="visually-hidden">{lang === "mn" ? "Дүүрэг тус бүрийн эрчим хүчний хэрэглээний харьцуулалт" : "Energy usage comparison by district"}</caption>
                     <thead>
                       <tr>
-                        <th>{lang === "mn" ? "Дүүрэг" : "District"}</th>
-                        <th>{lang === "mn" ? "Барилга" : "Buildings"}</th>
-                        <th>{lang === "mn" ? "Дунд эрч" : "Avg intensity"}</th>
-                        <th>{lang === "mn" ? "Зэрэглэл" : "Top grade"}</th>
-                        <th>{lang === "mn" ? "Харьцуулалт" : "vs avg"}</th>
+                        <th scope="col">{lang === "mn" ? "Дүүрэг" : "District"}</th>
+                        <th scope="col">{lang === "mn" ? "Барилга" : "Buildings"}</th>
+                        <th scope="col">{lang === "mn" ? "Дунд эрч" : "Avg intensity"}</th>
+                        <th scope="col">{lang === "mn" ? "Зэрэглэл" : "Top grade"}</th>
+                        <th scope="col">{lang === "mn" ? "Харьцуулалт" : "vs avg"}</th>
                       </tr>
                     </thead>
                     <tbody>

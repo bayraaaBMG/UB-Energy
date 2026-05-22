@@ -1558,13 +1558,13 @@ export default function DataInputPage() {
                 {geocodeStatus === "error" && (
                   <div className="grid grid-2" style={{ marginTop: "0.5rem" }}>
                     <div className="form-group">
-                      <label className="form-label">{t.dataInput.latitude}</label>
-                      <input name="latitude" value={form.latitude} onChange={handleChange}
+                      <label className="form-label" htmlFor="input-latitude">{t.dataInput.latitude}</label>
+                      <input id="input-latitude" name="latitude" value={form.latitude} onChange={handleChange}
                         className="form-input" placeholder="47.9xxx" />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">{t.dataInput.longitude}</label>
-                      <input name="longitude" value={form.longitude} onChange={handleChange}
+                      <label className="form-label" htmlFor="input-longitude">{t.dataInput.longitude}</label>
+                      <input id="input-longitude" name="longitude" value={form.longitude} onChange={handleChange}
                         className="form-input" placeholder="106.9xxx" />
                     </div>
                   </div>
@@ -1699,6 +1699,7 @@ export default function DataInputPage() {
                     type="file"
                     accept=".csv,.json,.txt"
                     className="csv-file-input"
+                    aria-label={lang === "mn" ? "CSV, JSON эсвэл TXT файл оруулах" : "Upload CSV, JSON or TXT file"}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;

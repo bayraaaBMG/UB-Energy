@@ -276,20 +276,22 @@ function UsersTab({ users, buildings, onRefresh }) {
         <div className="adm-search-wrap">
           <Search size={14} className="adm-search-icon" />
           <input
+            id="admin-user-search"
             className="adm-search"
             placeholder="Нэр, имэйлээр хайх…"
+            aria-label="Хэрэглэгч нэр эсвэл имэйлээр хайх"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          {search && <button className="adm-search-clear" onClick={() => setSearch("")}>×</button>}
+          {search && <button className="adm-search-clear" onClick={() => setSearch("")} aria-label="Хайлт арилгах">×</button>}
         </div>
-        <select className="adm-filter-sel" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+        <select className="adm-filter-sel" aria-label="Эрхээр шүүх" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
           <option value="all">Бүх эрх</option>
           <option value="admin">Админ</option>
           <option value="manager">Менежер</option>
           <option value="user">Хэрэглэгч</option>
         </select>
-        <select className="adm-filter-sel" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+        <select className="adm-filter-sel" aria-label="Төрлөөр шүүх" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
           <option value="all">Бүх төрөл</option>
           <option value="official">Байгуулга</option>
           <option value="personal">Хувь хүн</option>
@@ -299,19 +301,20 @@ function UsersTab({ users, buildings, onRefresh }) {
 
       <div className="card adm-table-card">
         <div className="adm-table-scroll">
-          <table className="adm-table">
+          <table className="adm-table" aria-label="Хэрэглэгчдийн жагсаалт">
+            <caption className="visually-hidden">Хэрэглэгчдийн удирдлагын хүснэгт</caption>
             <thead>
               <tr>
-                <th>#</th>
-                <th>Нэр</th>
-                <th>Имэйл</th>
-                <th>Төрөл</th>
-                <th>Байгуулга</th>
-                <th>Эрх</th>
-                <th>Барилга</th>
-                <th>Бүртгэлтэй</th>
-                <th>Төлөв</th>
-                <th>Үйлдэл</th>
+                <th scope="col">#</th>
+                <th scope="col">Нэр</th>
+                <th scope="col">Имэйл</th>
+                <th scope="col">Төрөл</th>
+                <th scope="col">Байгуулга</th>
+                <th scope="col">Эрх</th>
+                <th scope="col">Барилга</th>
+                <th scope="col">Бүртгэлтэй</th>
+                <th scope="col">Төлөв</th>
+                <th scope="col">Үйлдэл</th>
               </tr>
             </thead>
             <tbody>
@@ -440,18 +443,20 @@ function DataTab({ buildings, users, onRefresh }) {
         <div className="adm-search-wrap">
           <Search size={14} className="adm-search-icon" />
           <input
+            id="admin-bldg-search"
             className="adm-search"
             placeholder="Нэр, дүүрэгээр хайх…"
+            aria-label="Барилга нэр эсвэл дүүрэгээр хайх"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          {search && <button className="adm-search-clear" onClick={() => setSearch("")}>×</button>}
+          {search && <button className="adm-search-clear" onClick={() => setSearch("")} aria-label="Хайлт арилгах">×</button>}
         </div>
-        <select className="adm-filter-sel" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+        <select className="adm-filter-sel" aria-label="Барилгын төрлөөр шүүх" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
           <option value="all">Бүх төрөл</option>
           {Object.entries(TYPE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <select className="adm-filter-sel" value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}>
+        <select className="adm-filter-sel" aria-label="Зэрэглэлээр шүүх" value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}>
           <option value="all">Бүх зэрэглэл</option>
           {["A","B","C","D","E","F","G"].map(g => <option key={g} value={g}>{g}</option>)}
         </select>
@@ -463,12 +468,13 @@ function DataTab({ buildings, users, onRefresh }) {
 
       <div className="card adm-table-card">
         <div className="adm-table-scroll">
-          <table className="adm-table">
+          <table className="adm-table" aria-label="Барилгуудын жагсаалт">
+            <caption className="visually-hidden">Барилгуудын удирдлагын хүснэгт</caption>
             <thead>
               <tr>
-                <th>#</th><th>Нэр</th><th>Төрөл</th><th>Талбай</th>
-                <th>Зэрэглэл</th><th>кВт·цаг/жил</th><th>Дүүрэг</th>
-                <th>Хэрэглэгч</th><th>Оруулсан</th><th>Үйлдэл</th>
+                <th scope="col">#</th><th scope="col">Нэр</th><th scope="col">Төрөл</th><th scope="col">Талбай</th>
+                <th scope="col">Зэрэглэл</th><th scope="col">кВт·цаг/жил</th><th scope="col">Дүүрэг</th>
+                <th scope="col">Хэрэглэгч</th><th scope="col">Оруулсан</th><th scope="col">Үйлдэл</th>
               </tr>
             </thead>
             <tbody>

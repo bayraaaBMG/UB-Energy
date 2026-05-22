@@ -332,7 +332,9 @@ export default function LoginPage() {
                         <input id="reset-pw" name="password" type={showNewPw ? "text" : "password"}
                           value={form.password} onChange={handleChange}
                           className="form-input" required minLength={8} placeholder="••••••••" autoFocus />
-                        <button type="button" className="pw-toggle" onClick={() => setShowNewPw(!showNewPw)}>
+                        <button type="button" className="pw-toggle" onClick={() => setShowNewPw(!showNewPw)}
+                          aria-label={showNewPw ? "Нууц үгийг нуух" : "Нууц үгийг харуулах"}
+                          aria-pressed={showNewPw}>
                           {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
@@ -447,7 +449,9 @@ export default function LoginPage() {
                     value={form.password} onChange={handleChange}
                     className="form-input" required placeholder="••••••••" disabled={isLocked}
                     minLength={mode === "register" ? 8 : undefined} />
-                  <button type="button" className="pw-toggle" onClick={() => setShowPw(!showPw)}>
+                  <button type="button" className="pw-toggle" onClick={() => setShowPw(!showPw)}
+                    aria-label={showPw ? "Нууц үгийг нуух" : "Нууц үгийг харуулах"}
+                    aria-pressed={showPw}>
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>

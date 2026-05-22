@@ -1004,7 +1004,8 @@ export default function DatabasePage() {
 
         {/* Table */}
         <div className="data-table-wrap card" style={{ padding: 0 }}>
-          <table className="data-table">
+          <table className="data-table" aria-label="Барилгуудын дата сан">
+            <caption className="visually-hidden">Барилгуудын эрчим хүчний хэрэглээний дата сан</caption>
             <thead>
               <tr>
                 <th scope="col">#</th>
