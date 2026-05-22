@@ -810,51 +810,6 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
         )}
       </div>
 
-      {/* ── Additional info row ── */}
-      <div className="bp-info-row">
-        <div className="bp-info-item">
-          <span className="bp-info-key">{mn ? "Халаалт" : "Heating"}</span>
-          <span className="bp-info-val">
-            {{ central: mn ? "Дүүргийн" : "District", local: mn ? "Орон нутаг" : "Local", electric: mn ? "Цахилгаан" : "Electric" }[building.heating_type || "central"] || "—"}
-          </span>
-        </div>
-        <span className="bp-info-sep" />
-        <div className="bp-info-item">
-          <span className="bp-info-key">{mn ? "Дулаалга" : "Insulation"}</span>
-          <span className="bp-info-val" style={{ color: { poor: "#e63946", medium: "#f4a261", good: "#2a9d8f" }[building.insulation_quality || "medium"] }}>
-            {{ poor: mn ? "Муу" : "Poor", medium: mn ? "Дунд" : "Medium", good: mn ? "Сайн" : "Good" }[building.insulation_quality || "medium"]}
-          </span>
-        </div>
-        <span className="bp-info-sep" />
-        <div className="bp-info-item">
-          <span className="bp-info-key">{mn ? "Хана" : "Wall"}</span>
-          <span className="bp-info-val">
-            {{ panel: mn ? "Панел" : "Panel", brick: mn ? "Тоосго" : "Brick", concrete: mn ? "Бетон" : "Concrete", wood: mn ? "Мод" : "Wood" }[building.wall_material || "panel"] || "—"}
-          </span>
-        </div>
-        <span className="bp-info-sep" />
-        <div className="bp-info-item">
-          <span className="bp-info-key">{mn ? "Цонх" : "Window"}</span>
-          <span className="bp-info-val">
-            {{ single: mn ? "Нэг" : "Single", double: mn ? "Хос" : "Double", triple: mn ? "Гурван" : "Triple" }[building.window_type || "double"] || "—"}
-          </span>
-        </div>
-        <span className="bp-info-sep" />
-        <div className="bp-info-item">
-          <span className="bp-info-key">{mn ? "Эрч хүч" : "EUI"}</span>
-          <span className="bp-info-val">
-            {calc.intensity}<span style={{ fontSize: "0.6rem", color: "var(--text3)", marginLeft: 2 }}>kWh/m²</span>
-          </span>
-        </div>
-        <span className="bp-info-sep" />
-        <div className="bp-info-item">
-          <span className="bp-info-key">PM2.5</span>
-          <span className="bp-info-val" style={{ color: calc.pm25 > 5000 ? "#e63946" : calc.pm25 > 2000 ? "#f4a261" : "#2a9d8f" }}>
-            {(calc.pm25 / 1000).toFixed(1)}<span style={{ fontSize: "0.6rem", color: "var(--text3)", marginLeft: 2 }}>t/жил</span>
-          </span>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="bp-tabs">
         {TABS.map(tb => (
