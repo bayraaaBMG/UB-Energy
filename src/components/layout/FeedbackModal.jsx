@@ -3,10 +3,10 @@ import { X, Star, Send, CheckCircle, MessageSquare } from "lucide-react";
 import "./FeedbackModal.css";
 
 const CATEGORIES = [
-  { value: "bug",        label: "🐛  Алдааны мэдэгдэл" },
-  { value: "suggestion", label: "💡  Санал дэвшүүлэх" },
-  { value: "compliment", label: "⭐  Магтаал" },
-  { value: "other",      label: "💬  Бусад" },
+  { value: "bug",        label: "Алдааны мэдэгдэл" },
+  { value: "suggestion", label: "Санал дэвшүүлэх" },
+  { value: "compliment", label: "Магтаал" },
+  { value: "other",      label: "Бусад" },
 ];
 
 export default function FeedbackModal({ open, onClose, user }) {
@@ -23,12 +23,13 @@ export default function FeedbackModal({ open, onClose, user }) {
     e.preventDefault();
     if (!message.trim()) return;
 
-    const subject = encodeURIComponent(`[UB Energy] Санал хүсэлт — ${CATEGORIES.find(c => c.value === category)?.label.replace(/^.{3}/, "").trim()}`);
+    const categoryLabel = CATEGORIES.find(c => c.value === category)?.label ?? "";
+    const subject = encodeURIComponent(`[UB Energy] Санал хүсэлт — ${categoryLabel}`);
     const body = encodeURIComponent(
       [
         `Нэр: ${name || "—"}`,
         `Үнэлгээ: ${"★".repeat(rating) + "☆".repeat(5 - rating)} (${rating}/5)`,
-        `Төрөл: ${CATEGORIES.find(c => c.value === category)?.label.replace(/^.{3}/, "").trim()}`,
+        `Төрөл: ${categoryLabel}`,
         "",
         "Санал хүсэлт:",
         message.trim(),
