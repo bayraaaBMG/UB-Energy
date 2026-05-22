@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your UB Energy email</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: #0f1923;
+      color: #e8f4fd;
+      padding: 40px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      max-width: 540px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1a2d42;
+      border: 1px solid #2a4a6b;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    /* Header gradient */
+    .header {
+      background: linear-gradient(135deg, #162433 0%, #1e3348 100%);
+      padding: 36px 40px 32px;
+      text-align: center;
+      border-bottom: 1px solid #2a4a6b;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(26,110,181,0.15) 0%, transparent 70%);
+      top: -80px; left: -60px;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(10,147,150,0.1) 0%, transparent 70%);
+      bottom: -60px; right: -30px;
+    }
+    .logo {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: rgba(233,196,106,0.15);
+      border: 1px solid rgba(233,196,106,0.3);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: #e9c46a;
+      letter-spacing: -0.5px;
+    }
+    .header-icon {
+      position: relative;
+      z-index: 1;
+      width: 64px; height: 64px;
+      background: rgba(58,143,212,0.15);
+      border: 2px solid rgba(58,143,212,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .header h1 {
+      position: relative;
+      z-index: 1;
+      font-size: 22px;
+      font-weight: 800;
+      color: #e8f4fd;
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+    }
+    /* Body */
+    .body {
+      padding: 36px 40px;
+    }
+    .greeting {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e8f4fd;
+      margin-bottom: 12px;
+    }
+    .text {
+      font-size: 14px;
+      color: #a8c5e0;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    /* CTA button */
+    .btn-wrap {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #1a6eb5 0%, #0d4f8a 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 40px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      box-shadow: 0 4px 20px rgba(26,110,181,0.4);
+    }
+    .link-fallback {
+      font-size: 12px;
+      color: #6a9bbf;
+      line-height: 1.6;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+    .link-fallback a {
+      color: #3a8fd4;
+      text-decoration: underline;
+    }
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #2a4a6b;
+      margin: 24px 0;
+    }
+    /* Info chips */
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .chip-blue  { background: rgba(58,143,212,0.1);  border: 1px solid rgba(58,143,212,0.25);  color: #3a8fd4; }
+    .chip-teal  { background: rgba(42,157,143,0.1);  border: 1px solid rgba(42,157,143,0.25);  color: #2a9d8f; }
+    .chip-gold  { background: rgba(233,196,106,0.1); border: 1px solid rgba(233,196,106,0.25); color: #e9c46a; }
+    /* Warning */
+    .warning {
+      font-size: 12px;
+      color: #6a9bbf;
+      line-height: 1.6;
+      padding: 12px 16px;
+      background: rgba(244,162,97,0.05);
+      border: 1px solid rgba(244,162,97,0.18);
+      border-left: 3px solid rgba(244,162,97,0.5);
+      border-radius: 8px;
+    }
+    /* Footer */
+    .footer {
+      padding: 20px 40px;
+      text-align: center;
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid #2a4a6b;
+    }
+    .footer p {
+      font-size: 12px;
+      color: #4a7a9b;
+      line-height: 1.6;
+    }
+    .footer a { color: #3a8fd4; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">
+          <div class="logo-icon">
+            <!-- Zap SVG -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e9c46a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <span class="logo-text">UB Energy</span>
+        </div>
+
+        <div class="header-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3a8fd4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+        </div>
+
+        <h1>Verify your email address</h1>
+      </div>
+
+      <!-- Body -->
+      <div class="body">
+        <p class="greeting">Hi %DISPLAY_NAME%,</p>
+        <p class="text">
+          Welcome to <strong style="color:#e8f4fd;">UB Energy</strong> — Ulaanbaatar's AI-powered building energy intelligence platform.<br><br>
+          Please verify your email address to complete your registration and unlock full access to the platform.
+        </p>
+
+        <!-- Chips -->
+        <div class="chips">
+          <span class="chip chip-blue">⚡ XGBoost Predictor</span>
+          <span class="chip chip-teal">📊 Dashboard</span>
+          <span class="chip chip-gold">💡 Recommendations</span>
+        </div>
+
+        <!-- CTA -->
+        <div class="btn-wrap">
+          <a href="%LINK%" class="btn">Verify Email Address →</a>
+        </div>
+
+        <!-- Link fallback -->
+        <div class="link-fallback">
+          <strong style="display:block; margin-bottom:6px; color:#a8c5e0;">Button not working?</strong>
+          Copy and paste this link in your browser:<br />
+          <a href="%LINK%">%LINK%</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Warning -->
+        <div class="warning">
+          ⚠️ If you didn't create an account with UB Energy, you can safely ignore this email. This link will expire in 24 hours.
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>
+          © 2026 UB Energy · Ulaanbaatar, Mongolia<br />
+          This is an automated message, please do not reply.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

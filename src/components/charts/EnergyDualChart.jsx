@@ -1,16 +1,15 @@
 /**
- * EnergyDualChart — two-panel monthly energy breakdown chart
+ * EnergyDualChart — two-panel monthly energy breakdown
  *
- * Left panel : ComposedChart — Heating (red) + Electric (blue) stacked bars
- *              with a total "Use" line (green, with dots)
- * Right panel: BarChart — grouped bars for Heating / Electric / Total in MWh
+ * Left : ComposedChart — Heating + Electric stacked bars + total line
+ * Right: BarChart — grouped Heating / Electric / Total in MWh
  *
  * Props:
- *   data        [{month, heating, electric, total?}, ...]  — kWh values
- *   lang        "mn" | "en"
- *   height      number  (default 220)
- *   leftTitle   string  (optional subtitle above left panel)
- *   rightTitle  string  (optional subtitle above right panel)
+ *   data       [{month, heating, electric, total?}, ...]  — kWh
+ *   lang       "mn" | "en"
+ *   height     number  (default 230)
+ *   leftTitle  string
+ *   rightTitle string
  */
 
 import {
@@ -18,83 +17,131 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 
-const C_HEAT  = "#e63946";
-const C_ELEC  = "#1a6eb5";
-const C_TOTAL = "#2a9d8f";
+const C_HEAT  = "#e05252";
+const C_ELEC  = "#3a8fd4";
+const C_TOTAL = "#2db8a8";
 
-const TICK  = { fill: "#6a9bbf", fontSize: 9 };
-const TT_STYLE = {
-  background: "var(--card)",
-  border: "1px solid var(--border)",
-  borderRadius: 8,
-  color: "var(--text)",
-  fontSize: 11,
-};
+const TICK_STYLE = { fill: "#6a9bbf", fontSize: 10, fontFamily: "Inter, sans-serif" };
+const GRID_PROPS = { strokeDasharray: "4 4", stroke: "rgba(42,74,107,0.22)", strokeWidth: 1 };
 
 function kFmt(v) {
-  if (v >= 1000) return `${(v / 1000).toFixed(0)}k`;
-  return v;
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v;
 }
 
-export default function EnergyDualChart({ data, lang, height = 220, leftTitle, rightTitle }) {
-  const mn = lang === "mn";
-  const heatLbl  = mn ? "Дулаалга (kWh)" : "Heating (kWh)";
-  const elecLbl  = mn ? "Цахилгаан (kWh)" : "Electric (kWh)";
-  const totalLbl = mn ? "Нийт (Use)" : "Total (Use)";
+/* ─── Custom tooltip ─────────────────────────────────────────────────────── */
+function ChartTooltip({ active, payload, label, unit = "kWh" }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "rgba(15, 25, 35, 0.92)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      border: "1px solid rgba(58,143,212,0.25)",
+      borderRadius: 10,
+      padding: "0.65rem 0.9rem",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+      minWidth: 140,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: "#a8c5e0", marginBottom: 6, letterSpacing: "0.02em" }}>
+        {label}
+      </p>
+      {payload.map(({ name, value, color }) => (
+        <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+          <span style={{ fontSize: 11, color: "#a8c5e0", flex: 1 }}>{name}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#e8f4fd", fontFamily: "monospace" }}>
+            {typeof value === "number" ? value.toLocaleString() : value} {unit}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  // Compute total if not pre-computed
+function MwhTooltip(props) {
+  return <ChartTooltip {...props} unit="MWh" />;
+}
+
+/* ─── Shared legend style ────────────────────────────────────────────────── */
+const LEGEND_STYLE = { fontSize: 10, paddingTop: 4, color: "#6a9bbf" };
+
+/* ─── Panel label ────────────────────────────────────────────────────────── */
+function PanelLabel({ text }) {
+  if (!text) return null;
+  return (
+    <p style={{
+      fontSize: "0.68rem",
+      color: "var(--text3)",
+      textAlign: "center",
+      marginBottom: 6,
+      letterSpacing: "0.03em",
+      textTransform: "uppercase",
+      fontWeight: 600,
+    }}>
+      {text}
+    </p>
+  );
+}
+
+/* ─── Main chart ──────────────────────────────────────────────────────────── */
+export default function EnergyDualChart({ data, lang, height = 230, leftTitle, rightTitle }) {
+  const mn = lang === "mn";
+
+  const heatLbl  = mn ? "Дулаалга (кВт·ц)" : "Heating (kWh)";
+  const elecLbl  = mn ? "Цахилгаан (кВт·ц)" : "Electric (kWh)";
+  const totalLbl = mn ? "Нийт"              : "Total";
+
   const enriched = data.map(d => ({
     ...d,
     total: d.total ?? (d.heating + d.electric),
   }));
 
-  // MWh version for right panel
+  const mwhHeat  = mn ? "Дулаалга"  : "Heating";
+  const mwhElec  = mn ? "Цахилгаан" : "Electric";
+  const mwhTotal = mn ? "Нийт"      : "Total";
+
   const mwhData = enriched.map(d => ({
     month: d.month,
-    [mn ? "Дулаалга" : "Heating"]:   +(d.heating / 1000).toFixed(2),
-    [mn ? "Цахилгаан" : "Electric"]: +(d.electric / 1000).toFixed(2),
-    [mn ? "Нийт" : "Total"]:         +((d.heating + d.electric) / 1000).toFixed(2),
+    [mwhHeat]:  +(d.heating  / 1000).toFixed(2),
+    [mwhElec]:  +(d.electric / 1000).toFixed(2),
+    [mwhTotal]: +((d.heating + d.electric) / 1000).toFixed(2),
   }));
 
-  const mwhHeat  = mn ? "Дулаалга"   : "Heating";
-  const mwhElec  = mn ? "Цахилгаан"  : "Electric";
-  const mwhTotal = mn ? "Нийт"       : "Total";
-
-  const subStyle = {
-    fontSize: "0.68rem", color: "var(--text3)",
-    textAlign: "center", marginBottom: 4,
-  };
-  const yAxisLabel = {
+  const yLabel = {
     angle: -90, position: "insideLeft", offset: 18,
     style: { fill: "#6a9bbf", fontSize: 9 },
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
 
-      {/* ── Left: Stacked bar + total line ── */}
+      {/* ── Left: Stacked bars + total line ── */}
       <div>
-        {leftTitle && <div style={subStyle}>{leftTitle}</div>}
+        <PanelLabel text={leftTitle} />
         <ResponsiveContainer width="100%" height={height}>
-          <ComposedChart data={enriched} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-            <XAxis dataKey="month" tick={TICK} tickLine={false} />
-            <YAxis tick={TICK} tickLine={false} axisLine={false}
+          <ComposedChart data={enriched} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="month" tick={TICK_STYLE} tickLine={false} axisLine={false} />
+            <YAxis
+              tick={TICK_STYLE} tickLine={false} axisLine={false}
               tickFormatter={kFmt}
-              label={{ value: mn ? "кВт·цаг" : "kWh", ...yAxisLabel }}
+              label={{ value: mn ? "кВт·ц" : "kWh", ...yLabel }}
             />
-            <Tooltip
-              contentStyle={TT_STYLE}
-              formatter={(v, name) => [`${v.toLocaleString()} kWh`, name]}
-            />
-            <Legend iconSize={9} wrapperStyle={{ fontSize: 9, paddingTop: 2 }} />
-            <Bar dataKey="heating" stackId="a" fill={C_HEAT}  name={heatLbl} />
-            <Bar dataKey="electric" stackId="a" fill={C_ELEC} name={elecLbl} radius={[3, 3, 0, 0]} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(58,143,212,0.06)" }} />
+            <Legend iconSize={8} iconType="square" wrapperStyle={LEGEND_STYLE} />
+            <Bar dataKey="heating"  stackId="a" fill={C_HEAT}  name={heatLbl} />
+            <Bar dataKey="electric" stackId="a" fill={C_ELEC}  name={elecLbl} radius={[3, 3, 0, 0]} />
             <Line
-              type="monotone" dataKey="total" stroke={C_TOTAL} strokeWidth={2}
+              type="natural"
+              dataKey="total"
+              stroke={C_TOTAL}
+              strokeWidth={2.5}
               dot={{ fill: C_TOTAL, r: 3, strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: "rgba(45,184,168,0.4)" }}
               name={totalLbl}
+              isAnimationActive
+              animationDuration={800}
+              animationEasing="ease-out"
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -102,24 +149,25 @@ export default function EnergyDualChart({ data, lang, height = 220, leftTitle, r
 
       {/* ── Right: Grouped bars in MWh ── */}
       <div>
-        {rightTitle && <div style={subStyle}>{rightTitle}</div>}
+        <PanelLabel text={rightTitle} />
         <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={mwhData} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}
-            barCategoryGap="22%" barGap={1}
+          <BarChart
+            data={mwhData}
+            margin={{ top: 8, right: 8, left: -14, bottom: 0 }}
+            barCategoryGap="24%"
+            barGap={2}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
-            <XAxis dataKey="month" tick={TICK} tickLine={false} />
-            <YAxis tick={TICK} tickLine={false} axisLine={false}
-              label={{ value: "MWh", ...yAxisLabel }}
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="month" tick={TICK_STYLE} tickLine={false} axisLine={false} />
+            <YAxis
+              tick={TICK_STYLE} tickLine={false} axisLine={false}
+              label={{ value: "MWh", ...yLabel }}
             />
-            <Tooltip
-              contentStyle={TT_STYLE}
-              formatter={(v, name) => [`${v.toFixed(2)} MWh`, name]}
-            />
-            <Legend iconSize={9} wrapperStyle={{ fontSize: 9, paddingTop: 2 }} />
-            <Bar dataKey={mwhHeat}  fill={C_HEAT}  radius={[2, 2, 0, 0]} />
-            <Bar dataKey={mwhElec}  fill={C_ELEC}  radius={[2, 2, 0, 0]} />
-            <Bar dataKey={mwhTotal} fill={C_TOTAL} radius={[2, 2, 0, 0]} />
+            <Tooltip content={<MwhTooltip />} cursor={{ fill: "rgba(58,143,212,0.06)" }} />
+            <Legend iconSize={8} iconType="square" wrapperStyle={LEGEND_STYLE} />
+            <Bar dataKey={mwhHeat}  fill={C_HEAT}  radius={[3, 3, 0, 0]} isAnimationActive animationDuration={700} />
+            <Bar dataKey={mwhElec}  fill={C_ELEC}  radius={[3, 3, 0, 0]} isAnimationActive animationDuration={800} />
+            <Bar dataKey={mwhTotal} fill={C_TOTAL} radius={[3, 3, 0, 0]} isAnimationActive animationDuration={900} />
           </BarChart>
         </ResponsiveContainer>
       </div>

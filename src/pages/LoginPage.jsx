@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   LogIn, UserPlus, Building2, User, Eye, EyeOff, Zap,
   KeyRound, ArrowLeft, CheckCircle, Shield, AlertTriangle,
-  Lock, ChevronDown, ChevronRight,
+  Lock, ChevronDown, ChevronRight, Brain, CloudSun, Lightbulb,
 } from "lucide-react";
 import { APP_NAME } from "../config/constants";
 import { FIREBASE_CONFIGURED } from "../lib/firebase";
@@ -230,8 +230,67 @@ export default function LoginPage() {
 
   const isLocked = lockout > 0;
 
+  const brandFeatures = [
+    {
+      icon: Brain,
+      color: "#3a8fd4",
+      bg: "rgba(58,143,212,0.15)",
+      title: lang === "mn" ? "XGBoost таамаглагч" : "XGBoost Predictor",
+      desc: lang === "mn" ? "R² 94.7% нарийвчлалтай таамаглал" : "94.7% R² accuracy on building data",
+    },
+    {
+      icon: CloudSun,
+      color: "#2a9d8f",
+      bg: "rgba(42,157,143,0.15)",
+      title: lang === "mn" ? "Цаг уурын өгөгдөл" : "Live Weather Data",
+      desc: lang === "mn" ? "Open-Meteo API-аас шууд авдаг" : "Integrated with Open-Meteo API",
+    },
+    {
+      icon: Lightbulb,
+      color: "#e9c46a",
+      bg: "rgba(233,196,106,0.15)",
+      title: lang === "mn" ? "Хэмнэлтийн зөвлөмж" : "Energy Recommendations",
+      desc: lang === "mn" ? "Барилгын эрчим хүчийг хэмнэх арга замыг санал болгоно" : "Actionable energy savings recommendations",
+    },
+  ];
+
   return (
-    <div className="login-page">
+    <div className="login-layout">
+      {/* ── Brand panel (desktop only) ── */}
+      <div className="login-brand-panel">
+        <div className="login-brand-inner">
+          <div className="login-brand-logo">
+            <Zap size={36} />
+            <span>{APP_NAME}</span>
+          </div>
+          <h2 className="lbp-title">
+            {lang === "mn"
+              ? "Улаанбаатарын барилгын эрчим хүчийг ухаалгаар тооцоол"
+              : "Smart Energy Intelligence for Ulaanbaatar Buildings"}
+          </h2>
+          <p className="lbp-subtitle">
+            {lang === "mn"
+              ? "XGBoost загвар болон бодит цаг уурын өгөгдөл ашиглан барилгын жилийн дулааны болон цахилгааны хэрэглээг нарийвчлалтайгаар таамаглана."
+              : "Powered by XGBoost machine learning and real-time weather data to precisely predict building heating and electricity consumption."}
+          </p>
+          <ul className="lbp-features">
+            {brandFeatures.map(({ icon: Icon, color, bg, title, desc }) => (
+              <li className="lbp-feature" key={title}>
+                <div className="lbp-feature-icon" style={{ background: bg, color }}>
+                  <Icon size={18} />
+                </div>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* ── Form panel ── */}
+      <div className="login-form-panel">
       <div className="login-card card animate-fade">
         <div className="login-logo">
           <Zap size={28} />
@@ -446,6 +505,7 @@ export default function LoginPage() {
             <SecurityNotice lang={lang} />
           </>
         )}
+      </div>
       </div>
     </div>
   );

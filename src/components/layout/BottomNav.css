@@ -1,0 +1,96 @@
+/* ── Mobile bottom navigation ─────────────────────────────────────────────── */
+/* Replaced by the sidebar — hidden on all screen sizes */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: none; /* sidebar handles mobile nav */
+    align-items: stretch;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: rgba(15, 25, 35, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    /* Safe area inset for iOS notch */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Bottom nav removed — no content padding needed */
+}
+
+/* ── Nav item ─────────────────────────────────────────────────────────────── */
+.bnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  flex: 1;
+  padding: 0.6rem 0.25rem;
+  min-height: 56px;
+  color: var(--text3);
+  text-decoration: none;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: color var(--transition), background var(--transition);
+  position: relative;
+}
+
+.bnav-item svg {
+  transition: transform var(--transition), filter var(--transition);
+  flex-shrink: 0;
+}
+
+.bnav-item:hover {
+  color: var(--text2);
+}
+
+/* Active state */
+.bnav-item.active {
+  color: var(--primary-light);
+}
+
+.bnav-item.active svg {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 0 6px rgba(58, 143, 212, 0.55));
+}
+
+/* Active indicator dot */
+.bnav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary-light);
+}
+
+/* ── Light mode ───────────────────────────────────────────────────────────── */
+[data-theme="light"] .bottom-nav {
+  background: rgba(248, 250, 252, 0.97);
+  border-top-color: var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .bnav-item.active {
+  color: var(--primary);
+}
+
+[data-theme="light"] .bnav-item.active svg {
+  filter: drop-shadow(0 0 6px rgba(26, 110, 181, 0.4));
+}
+
+[data-theme="light"] .bnav-item.active::after {
+  background: var(--primary);
+}

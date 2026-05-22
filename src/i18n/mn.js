@@ -17,6 +17,9 @@ const mn = {
     profile: "Профайл",
     mySpace: "Миний орон зай",
     about: "Системийн тухай",
+    help: "Тусламж",
+    settingsLabel: "Тохиргоо",
+    feedback: "Санал хүсэлт",
   },
   common: {
     usage: "Хэрэглээ",

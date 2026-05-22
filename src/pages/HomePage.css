@@ -42,10 +42,10 @@
 }
 
 .hero-title {
-  font-size: 2.2rem;
-  font-weight: 800;
-  line-height: 1.25;
-  letter-spacing: -0.3px;
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
   color: var(--text);
   max-width: 780px;
 }
@@ -128,6 +128,86 @@
   text-align: center;
   margin-top: -0.6rem;
   letter-spacing: 0.01em;
+}
+
+/* ── Dashboard preview strip ── */
+.hero-preview-strip {
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 560px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hps-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hps-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hps-label {
+  font-size: 0.72rem;
+  color: var(--text3);
+  font-weight: 500;
+  margin-left: 0.3rem;
+  letter-spacing: 0.01em;
+}
+
+.hps-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 1.1rem 1rem;
+  gap: 0.5rem;
+}
+
+.hps-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.hps-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.hps-lbl {
+  font-size: 0.68rem;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.hps-sep {
+  width: 1px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .hero-preview-strip { max-width: 100%; }
+  .hps-val { font-size: 1.15rem; }
+  .hps-sep { display: none; }
+  .hps-metrics { gap: 0.75rem; padding: 0.85rem 0.75rem; }
 }
 
 /* Stats */
@@ -515,7 +595,7 @@
 
 @media (max-width: 768px) {
   .hero { padding: 3rem 0 2.5rem; }
-  .hero-title { font-size: 1.75rem; }
+  .hero-title { font-size: 2rem; }
   .hero-subtitle { font-size: 1rem; }
   .chart-preview-grid { grid-template-columns: 1fr; }
   .ssb-row { grid-template-columns: 80px 1fr; }
@@ -536,7 +616,7 @@
 
 @media (max-width: 600px) {
   .hero { padding: 2rem 0 1.75rem; }
-  .hero-title { font-size: 1.45rem; }
+  .hero-title { font-size: 1.65rem; }
   .hero-subtitle { font-size: 0.9rem; }
   .hero-actions { gap: 0.6rem; }
   .hero-actions .btn { padding: 0.65rem 1.2rem; font-size: 0.9rem; }
@@ -553,7 +633,7 @@
 }
 
 @media (max-width: 480px) {
-  .hero-title { font-size: 1.25rem; }
+  .hero-title { font-size: 1.4rem; }
   .hero-badge { font-size: 0.75rem; padding: 0.3rem 0.75rem; }
   .hero-actions { flex-direction: column; align-items: stretch; }
   .hero-actions .btn { justify-content: center; }

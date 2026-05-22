@@ -105,6 +105,41 @@ export default function HomePage() {
               </Link>
             </p>
           )}
+
+          {/* ── Dashboard preview strip ── */}
+          <div className="hero-preview-strip">
+            <div className="hps-header">
+              <span className="hps-dot" style={{ background: "#2a9d8f" }} />
+              <span className="hps-dot" style={{ background: "#e9c46a" }} />
+              <span className="hps-dot" style={{ background: "#e63946" }} />
+              <span className="hps-label">{mn ? "Dashboard харагдац" : "Dashboard Preview"}</span>
+            </div>
+            <div className="hps-metrics">
+              <div className="hps-metric">
+                <span className="hps-val" style={{ color: "#3a8fd4" }}>
+                  {stats ? stats.count : "—"}
+                </span>
+                <span className="hps-lbl">{mn ? "Барилга" : "Buildings"}</span>
+              </div>
+              <span className="hps-sep" />
+              <div className="hps-metric">
+                <span className="hps-val" style={{ color: "#2a9d8f" }}>
+                  {(METRICS.r2 * 100).toFixed(1)}%
+                </span>
+                <span className="hps-lbl">R² {mn ? "нарийвчлал" : "Accuracy"}</span>
+              </div>
+              <span className="hps-sep" />
+              <div className="hps-metric">
+                <span className="hps-val" style={{ color: "#e9c46a" }}>~4,500</span>
+                <span className="hps-lbl">HDD / {mn ? "жил" : "year"}</span>
+              </div>
+              <span className="hps-sep" />
+              <div className="hps-metric">
+                <span className="hps-val" style={{ color: "#f4a261" }}>30+</span>
+                <span className="hps-lbl">{mn ? "Параметр" : "Parameters"}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

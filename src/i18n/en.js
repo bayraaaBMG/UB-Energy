@@ -17,6 +17,9 @@ const en = {
     profile: "Profile",
     mySpace: "My Space",
     about: "About",
+    help: "Help",
+    settingsLabel: "Settings",
+    feedback: "Feedback",
   },
   common: {
     usage: "Usage",

@@ -17,4 +17,5 @@ export const STORAGE_KEYS = {
   scenarios:    "ub_scenarios",
   favorites:    "ub_favorites",
   reduceMotion: "ub_reduce_motion",
+  colorMode:    "ub_color_mode",
 };
