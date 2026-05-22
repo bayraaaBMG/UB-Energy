@@ -88,30 +88,72 @@ const PM25_HEAT_FACTOR = { central: 1.0, local: 2.4, electric: 0.15 };
 // Insulation multiplier: worse insulation = more fuel burned = more PM2.5
 const PM25_INSUL_FACTOR = { poor: 1.3, medium: 1.0, good: 0.8 };
 
+// District-level energy adjustment factors
+// hddMul: local microclimate multiplier (peripheral areas are colder than urban core)
+// heatingDefault / insulDefault: typical values when OSM tags are absent
+const DISTRICT_FACTORS = {
+  "Сүхбаатар":      { hddMul: 0.92, heatingDefault: "central", insulDefault: "medium" },
+  "Чингэлтэй":      { hddMul: 0.94, heatingDefault: "central", insulDefault: "medium" },
+  "Баянгол":        { hddMul: 0.97, heatingDefault: "central", insulDefault: "medium" },
+  "Баянзүрх":       { hddMul: 1.00, heatingDefault: "central", insulDefault: "medium" },
+  "Хан-Уул":        { hddMul: 1.04, heatingDefault: "central", insulDefault: "medium" },
+  "Сонгинохайрхан": { hddMul: 1.09, heatingDefault: "local",   insulDefault: "poor"   },
+  "Налайх":         { hddMul: 1.16, heatingDefault: "local",   insulDefault: "poor"   },
+  "Багануур":       { hddMul: 1.22, heatingDefault: "local",   insulDefault: "poor"   },
+  "Багахангай":     { hddMul: 1.19, heatingDefault: "local",   insulDefault: "poor"   },
+};
+
+function getDistrictFactor(district) {
+  const d = district || "";
+  for (const [name, factor] of Object.entries(DISTRICT_FACTORS)) {
+    if (d.includes(name)) return factor;
+  }
+  return { hddMul: 1.0, heatingDefault: "central", insulDefault: "medium" };
+}
+
+// Approximate district lookup from lat/lng when OSM address tags are absent
+function latLngToDistrict(lat, lng) {
+  if (lng < 106.84)                   return "Сонгинохайрхан";
+  if (lng > 107.05)                   return "Баянзүрх";
+  if (lat < 47.86)                    return "Хан-Уул";
+  if (lat > 47.925 && lng < 106.915)  return "Чингэлтэй";
+  if (lat < 47.910 && lng < 106.925)  return "Баянгол";
+  if (lng > 106.95)                   return "Баянзүрх";
+  return "Сүхбаатар";
+}
+
 function calcBuilding(b, hdd = 4500) {
+  const df           = getDistrictFactor(b.district);
+  const effectiveHdd = Math.round(hdd * df.hddMul);
+
+  // Use district-based defaults when building-specific values are absent
+  const heatingType  = b.heating_type       || df.heatingDefault;
+  const insulQuality = b.insulation_quality || df.insulDefault;
+
   const eui    = TYPE_EUI[b.type] || TYPE_EUI.apartment;
   const height = b.floors * FLOOR_HEIGHT;
   const volume = b.area * height;
 
-  // EUI split (heating vs electric share)
-  const heating  = Math.round(b.area * eui.heating);
+  // Scale heating EUI by effective HDD relative to the 4500 HDD baseline
+  const hddRatio = effectiveHdd / 4500;
+  const heating  = Math.round(b.area * eui.heating * hddRatio);
   const electric = Math.round(b.area * eui.electric);
 
-  // ML prediction — uses building properties if available, else defaults
+  // ML prediction — uses building properties if available, else district defaults
   const mlForm = {
     building_type:      b.type || "apartment",
     area:               b.area,
     year:               b.year || 1990,
     floors:             b.floors,
     rooms:              b.rooms || Math.max(1, Math.round(b.area / 50)),
-    hdd,
+    hdd:                effectiveHdd,
     window_ratio:       25,
     residents:          Math.max(1, Math.round(b.area / 30)),
     appliances:         5,
-    wall_material:      b.wall_material      || "panel",
-    heating_type:       b.heating_type       || "central",
-    insulation_quality: b.insulation_quality || "medium",
-    window_type:        b.window_type        || "double",
+    wall_material:      b.wall_material || "panel",
+    heating_type:       heatingType,
+    insulation_quality: insulQuality,
+    window_type:        b.window_type   || "double",
   };
   const ml = predict(mlForm);
 
@@ -123,8 +165,8 @@ function calcBuilding(b, hdd = 4500) {
   const co2            = +((heating * EF_HEAT + electric * EF_ELEC) / 1000).toFixed(1);
 
   // Rule-based PM2.5: base from CO₂, then scale by heating source + insulation
-  const heatMul  = PM25_HEAT_FACTOR[b.heating_type  || "central"];
-  const insulMul = PM25_INSUL_FACTOR[b.insulation_quality || "medium"];
+  const heatMul  = PM25_HEAT_FACTOR[heatingType];
+  const insulMul = PM25_INSUL_FACTOR[insulQuality];
   const pm25     = Math.round(co2 * 1350 * heatMul * insulMul);
 
   const grade =
@@ -355,14 +397,15 @@ function inferYear(tags, osmId, type) {
     const y = parseInt(c.slice(0, 4));
     if (!isNaN(y) && y >= 1920 && y <= 2025) return { year: y, yearKnown: true };
   }
-  // Type-based realistic range — deterministic via OSM element ID
+  // Type-based ranges calibrated to Ulaanbaatar building stock history
+  // Soviet-era panel apartments (1960–1985) dominate UB; commercial is post-socialist
   const ranges = {
-    apartment:  [1985, 2023],
-    office:     [1990, 2022],
-    school:     [1965, 2010],
-    hospital:   [1975, 2015],
-    commercial: [1980, 2020],
-    warehouse:  [1975, 2015],
+    apartment:  [1962, 2022],  // panel blocks + modern developments
+    office:     [1985, 2022],  // mostly post-perestroika
+    school:     [1955, 2010],  // Soviet-era schools prevalent
+    hospital:   [1958, 2015],  // Soviet-era hospitals + some modern
+    commercial: [1993, 2022],  // post-socialist commercial sector
+    warehouse:  [1970, 2015],
   };
   const [lo, hi] = ranges[type] || [1975, 2015];
   const seed = Math.abs((osmId || 0) % 1000) / 1000; // 0.0–1.0 deterministic
@@ -412,7 +455,16 @@ function osmToBuilding(el) {
     id: el.id, name, type,
     area: Math.max(30, area), floors, year,
     yearKnown, floorsKnown,
-    district: tags["addr:district"] || tags["addr:suburb"] || tags["addr:city"] || "Улаанбаатар",
+    district: (() => {
+      const fromTag = tags["addr:district"] || tags["addr:suburb"] ||
+                      tags["addr:quarter"]  || tags["addr:city_district"] ||
+                      tags["is_in:district"];
+      if (fromTag) return fromTag;
+      // Infer from polygon centroid when address tags are absent
+      const centLat = geom.reduce((s, n) => s + n.lat, 0) / geom.length;
+      const centLng = geom.reduce((s, n) => s + n.lon, 0) / geom.length;
+      return latLngToDistrict(centLat, centLng);
+    })(),
     osmGeom: geom, tags,
     source: "osm",
   };
@@ -650,11 +702,12 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
   const typeLbl = types[building.type] || building.type;
   const mn = lang === "mn";
 
-  // What-if simulation state
+  // What-if simulation state — seed from district defaults when building values absent
+  const _df = getDistrictFactor(building.district);
   const [wi, setWi] = useState({
-    insulation_quality: building.insulation_quality || "medium",
+    insulation_quality: building.insulation_quality || _df.insulDefault,
     window_type:        building.window_type        || "double",
-    heating_type:       building.heating_type       || "central",
+    heating_type:       building.heating_type       || _df.heatingDefault,
     wall_material:      building.wall_material      || "panel",
     year:               building.year               || 1990,
   });
@@ -662,9 +715,10 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
     const resPer100 = { apartment: 5, office: 3, school: 4, hospital: 6, commercial: 2, warehouse: 1 };
     const appPer100 = { apartment: 8, office: 5, school: 4, hospital: 10, commercial: 6, warehouse: 3 };
     const type = building.type || "apartment";
+    const effectiveHdd = Math.round(hdd * _df.hddMul);
     return predict({
       building_type: type, area: building.area, year: wi.year,
-      floors: building.floors, hdd, window_ratio: 25,
+      floors: building.floors, hdd: effectiveHdd, window_ratio: 25,
       rooms: building.rooms || Math.max(1, Math.round(building.area / 50)),
       residents: Math.max(1, Math.round(building.area / 100 * (resPer100[type] || 4))),
       appliances: Math.min(50, Math.max(2, Math.round(building.area / 100 * (appPer100[type] || 6)))),
@@ -875,13 +929,18 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
               <div className="pp-item">
                 <span className="pp-key">{mn ? "Халаалтын төрөл" : "Heating type"}</span>
                 <span className="pp-val">
-                  {{central: mn?"Дүүргийн":"District", local: mn?"Орон нутаг":"Local", electric: mn?"Цахилгаан":"Electric"}[building.heating_type||"central"] || (building.heating_type || "—")}
+                  {(() => {
+                    const ht = building.heating_type || getDistrictFactor(building.district).heatingDefault;
+                    return ({central: mn?"Дүүргийн":"District", local: mn?"Орон нутаг":"Local", electric: mn?"Цахилгаан":"Electric"}[ht] || ht);
+                  })()}
+                  {!building.heating_type && <em style={{ color: "var(--text3)", fontSize: "0.68rem", marginLeft: 4 }}>{mn ? "(дүүргийн дундаж)" : "(district avg)"}</em>}
                 </span>
               </div>
               <div className="pp-item">
                 <span className="pp-key">{mn ? "Дулаалга" : "Insulation"}</span>
-                <span className="pp-val" style={{ color: {poor:"#e63946",medium:"#f4a261",good:"#2a9d8f"}[building.insulation_quality||"medium"] }}>
-                  {{poor:mn?"Муу":"Poor", medium:mn?"Дунд":"Medium", good:mn?"Сайн":"Good"}[building.insulation_quality||"medium"]}
+                <span className="pp-val" style={{ color: {poor:"#e63946",medium:"#f4a261",good:"#2a9d8f"}[building.insulation_quality || getDistrictFactor(building.district).insulDefault] }}>
+                  {({poor:mn?"Муу":"Poor", medium:mn?"Дунд":"Medium", good:mn?"Сайн":"Good"})[building.insulation_quality || getDistrictFactor(building.district).insulDefault]}
+                  {!building.insulation_quality && <em style={{ color: "var(--text3)", fontSize: "0.68rem", marginLeft: 4 }}>{mn ? "(дүүргийн дундаж)" : "(district avg)"}</em>}
                 </span>
               </div>
               <div className="pp-item">

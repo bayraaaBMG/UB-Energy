@@ -476,6 +476,60 @@ export default function PredictorPage() {
             )}
 
             {canRun && (
+            <Section icon={Info} title={lang === "mn" ? "Оролтын параметрүүд" : "Input Parameters"} defaultOpen={false}>
+              <div className="pred-params-grid">
+                {[
+                  {
+                    key: "area", label: lang === "mn" ? "Талбай" : "Area",
+                    val: `${form.area} м²`,
+                    desc: lang === "mn" ? "Барилгын нийт ашиглалтын талбай — том байх тусам нийт хэрэглээ нэмэгдэнэ" : "Total usable floor area — larger area increases total consumption",
+                  },
+                  {
+                    key: "floors", label: lang === "mn" ? "Давхар" : "Floors",
+                    val: form.floors,
+                    desc: lang === "mn" ? "Барилгын нийт давхарын тоо — дулаан алдагдал, агааржуулалтад нөлөөлнө" : "Total number of floors — affects heat loss and ventilation",
+                  },
+                  {
+                    key: "year", label: lang === "mn" ? "Барилгын он" : "Built year",
+                    val: form.year,
+                    desc: lang === "mn" ? "Барилга ашиглалтад орсон жил — хуучин байх тусам дулааны алдагдал ихэснэ (+0.4%/жил)" : "Construction year — older buildings lose more heat (+0.4%/yr)",
+                  },
+                  {
+                    key: "material", label: lang === "mn" ? "Материал" : "Material",
+                    val: lang === "mn" ? (wMaterials[form.wall_material] || form.wall_material) : form.wall_material,
+                    desc: lang === "mn" ? "Гадна хананы материал — дулаан дамжуулалтын коэффициентэд нөлөөлнө (мод > панель > тоосго > бетон)" : "Wall material — affects thermal conductivity (wood > panel > brick > concrete)",
+                  },
+                  {
+                    key: "district", label: lang === "mn" ? "Дүүрэг" : "District",
+                    val: form.district,
+                    desc: lang === "mn" ? "Барилгын байршлын дүүрэг — микроцаг уурын нөлөөллийг тодорхойлно" : "Location district — determines microclimate exposure",
+                  },
+                  {
+                    key: "hdd", label: "HDD",
+                    val: currentHdd,
+                    desc: lang === "mn" ? "Халааны зэрэглэлийн өдрүүд (Heating Degree Days) — хүйтний эрчмийг илэрхийлнэ. УБ дундаж ~5,000 HDD" : "Heating Degree Days — measures cold severity. UB average ~5,000 HDD",
+                  },
+                  {
+                    key: "insulation", label: lang === "mn" ? "Дулаалгын чанар" : "Insulation",
+                    val: lang === "mn"
+                      ? ({ good: "Сайн", medium: "Дунд", poor: "Муу" }[form.insulation_quality] || form.insulation_quality)
+                      : form.insulation_quality,
+                    desc: lang === "mn" ? "Дулаан хамгааллын зэрэглэл — хэрэглээнд хамгийн их нөлөөлдөг хүчин зүйлийн нэг" : "Insulation rating — one of the strongest drivers of energy use",
+                  },
+                ].map(p => (
+                  <div key={p.key} className="pred-param-row">
+                    <div className="pred-param-left">
+                      <span className="pred-param-label">{p.label}</span>
+                      <span className="pred-param-val">{p.val}</span>
+                    </div>
+                    <div className="pred-param-desc">{p.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+            )}
+
+            {canRun && (
             <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
               <button
                 className={`btn btn-accent predict-btn ${loading ? "loading" : ""}`}
@@ -575,60 +629,56 @@ export default function PredictorPage() {
                   const hotWaterCost    = heating?.hot_water_annual  || 0;
                   const serviceCost     = heating?.service_annual    || 0;
                   const totalAnnualCost = annualElecCost + heatingCost + hotWaterCost + serviceCost;
+                  const heatKwhAnnual   = heating?.annual_kwh_equiv || 0;
+                  const totalKwhAnnual  = result.annual + heatKwhAnnual;
+                  const totalIntensity  = Math.round(totalKwhAnnual / form.area);
                   return (<>
 
-                  {/* ── Two main metric blocks ── */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.65rem", marginBottom:"0.65rem" }}>
-                    <div style={{ background:"rgba(26,110,181,0.08)", border:"1px solid rgba(58,143,212,0.22)", borderRadius:10, padding:"1rem 1.1rem" }}>
-                      <div style={{ fontSize:"1.75rem", fontWeight:900, color:"#f4a261", lineHeight:1.1 }}>
-                        {result.annual.toLocaleString()}
-                        <span style={{ fontSize:"0.88rem", fontWeight:600, marginLeft:5 }}>кВт·цаг</span>
-                      </div>
-                      <div style={{ fontSize:"0.7rem", color:"var(--text3)", marginTop:5 }}>
-                        {lang==="mn" ? "Жилийн хэрэглээ" : "Annual consumption"}
-                      </div>
+                  {/* ── 5 Output Categories ── */}
+                  <div className="pred-output-5">
+                    <div className="pred-out-card pred-out-total">
+                      <div className="pred-out-lbl">{lang==="mn" ? "Жилийн нийт хэрэглээ" : "Annual Total Consumption"}</div>
+                      <div className="pred-out-num">{totalKwhAnnual.toLocaleString()}</div>
+                      <div className="pred-out-unit">кВт·цаг/жил</div>
+                      <div className="pred-out-sub">{lang==="mn" ? `цахилгаан + дулаан нийлсэн` : "electricity + heating combined"}</div>
                     </div>
-                    <div style={{ background:"rgba(26,110,181,0.08)", border:"1px solid rgba(58,143,212,0.22)", borderRadius:10, padding:"1rem 1.1rem" }}>
-                      <div style={{ fontSize:"1.75rem", fontWeight:900, color:"#f4a261", lineHeight:1.1 }}>
-                        {annualElecCost.toLocaleString()}
-                        <span style={{ fontSize:"0.88rem", fontWeight:600, marginLeft:5 }}>₮</span>
-                      </div>
-                      <div style={{ fontSize:"0.7rem", color:"var(--text3)", marginTop:5 }}>
-                        {lang==="mn" ? "Жилийн цахилгааны зардал" : "Annual electricity cost"}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* ── Three smaller stats ── */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"0.5rem", marginBottom:"0.65rem" }}>
-                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
-                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#3a8fd4", lineHeight:1.1 }}>
-                        {result.monthly_avg.toLocaleString()}
-                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>кВт·цаг</span>
+                    <div className="pred-out-card pred-out-elec">
+                      <div className="pred-out-lbl">
+                        <Zap size={12} style={{ verticalAlign:"middle", marginRight:3 }} />
+                        {lang==="mn" ? "Цахилгаан" : "Electricity"}
                       </div>
-                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>
-                        {lang==="mn" ? "Сарын дундаж" : "Monthly avg"}
+                      <div className="pred-out-num">{result.annual.toLocaleString()}</div>
+                      <div className="pred-out-unit">кВт·цаг/жил</div>
+                      <div className="pred-out-sub">{annualElecCost.toLocaleString()} ₮/жил · {monthlyElecCost.toLocaleString()} ₮/сар</div>
+                    </div>
+
+                    <div className="pred-out-card pred-out-heat">
+                      <div className="pred-out-lbl">
+                        <Flame size={12} style={{ verticalAlign:"middle", marginRight:3 }} />
+                        {lang==="mn" ? "Дулаан" : "Heating"}
                       </div>
-                      <div style={{ fontSize:"0.6rem", color:"var(--text3)" }}>
-                        {monthlyElecCost.toLocaleString()} ₮/сар
+                      <div className="pred-out-num">{heating ? heating.annual_gcal : "—"}</div>
+                      <div className="pred-out-unit">{heating ? "Гкал/жил" : ""}</div>
+                      <div className="pred-out-sub">
+                        {heating
+                          ? `${heatingCost.toLocaleString()} ₮/жил · ≈${heatKwhAnnual.toLocaleString()} кВт·цаг`
+                          : (lang==="mn" ? "Дата ачааллаагүй" : "No data")}
                       </div>
                     </div>
-                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
-                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#2a9d8f", lineHeight:1.1 }}>
-                        {result.co2}
-                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>т</span>
-                      </div>
-                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>CO₂ т/жил</div>
-                      <div style={{ fontSize:"0.6rem", color:"var(--text3)" }}>= {result.pm25.toLocaleString()} μg PM2.5</div>
+
+                    <div className="pred-out-card pred-out-sqm">
+                      <div className="pred-out-lbl">{lang==="mn" ? "1м²-д ногдох хэрэглээ" : "Per m² Consumption"}</div>
+                      <div className="pred-out-num">{totalIntensity}</div>
+                      <div className="pred-out-unit">кВт·цаг/м²/жил</div>
+                      <div className="pred-out-sub">{lang==="mn" ? `нийт · цахилгаан: ${result.intensity} кВт·цаг/м²` : `total · elec only: ${result.intensity} kWh/m²`}</div>
                     </div>
-                    <div style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:9, padding:"0.7rem 0.85rem" }}>
-                      <div style={{ fontSize:"1.15rem", fontWeight:800, color:"#e9c46a", lineHeight:1.1 }}>
-                        {result.intensity}
-                        <span style={{ fontSize:"0.65rem", marginLeft:3 }}>кВт·цаг/м²</span>
-                      </div>
-                      <div style={{ fontSize:"0.6rem", color:"var(--text3)", marginTop:3 }}>
-                        {lang==="mn" ? "Эрчим хүчний эрчмэлт" : "Energy intensity"}
-                      </div>
+
+                    <div className="pred-out-card pred-out-grade" style={{ borderColor: GRADE_COLORS[result.grade] }}>
+                      <div className="pred-out-lbl">{lang==="mn" ? "Эрчим хүчний ангилал" : "Energy Classification"}</div>
+                      <div className="pred-out-grade-letter" style={{ color: GRADE_COLORS[result.grade] }}>{result.grade}</div>
+                      <div className="pred-out-unit" style={{ color: GRADE_COLORS[result.grade] }}>{lang==="mn" ? "зэрэглэл" : "grade"}</div>
+                      <div className="pred-out-sub">{lang==="mn" ? `${result.intensity} кВт·цаг/м² (цахилгаан)` : `${result.intensity} kWh/m² (electricity)`}</div>
                     </div>
                   </div>
 
@@ -1178,8 +1228,11 @@ export default function PredictorPage() {
                 })()}
 
                 {/* Model info + save */}
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text2)", marginTop: "0.85rem", marginBottom: "0.35rem" }}>
+                  {lang === "mn" ? "Үндсэн загвар:" : "Model:"} <span style={{ color: "var(--primary-light)" }}>XGBoost Regression</span>
+                </div>
                 <div className="model-info-row">
-                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings">XGBoost + EUI</span>
+                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings (n_estimators=60, max_depth=4, eta=0.15)">XGBoost + EUI</span>
                   <span className="model-badge" title={`n_train=${METRICS.n_train}, n_test=${METRICS.n_test}`}>
                     R² = {METRICS.r2}
                   </span>
