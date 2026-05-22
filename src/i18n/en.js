@@ -47,8 +47,8 @@ const en = {
     refresh: "Refresh page",
   },
   home: {
-    hero_title: "ML-Based Building Energy Prediction for Mongolian Conditions",
-    hero_subtitle: "Calculate and forecast energy use based on building structure, insulation, and climate data using XGBoost gradient boosting and physics-based EUI models",
+    hero_title: "A machine-learning system for predicting residential building energy consumption in Ulaanbaatar based on weather data, building parameters, and usage metrics",
+    hero_subtitle: "Combining XGBoost gradient boosting with physics-based EUI methodology, adapted to Mongolian climate conditions — a research platform for building energy analysis",
     hero_sentence: "40–60% of energy costs in UB's aging buildings stem from heat loss. Calculate your building's consumption and identify your savings potential.",
     hero_btn: "Start Prediction",
     hero_btn2: "View Map",
