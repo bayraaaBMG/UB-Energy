@@ -607,8 +607,8 @@ export default function DashboardPage() {
                           <span className="usbe-snum">②</span>
                           <span className="usbe-stxt">
                             {lang === "mn"
-                              ? `Загварын β коэффициентүүдтэй үржүүлж нэмнэ: annual_kWh = Xβ = `
-                              : `Multiply by β coefficients and sum: annual_kWh = Xβ = `}
+                              ? `XGBoost шийдвэрийн модны ensemble таамаглал: annual_kWh = `
+                              : `XGBoost decision trees ensemble prediction: annual_kWh = `}
                             <strong style={{ color: "#f4a261" }}>{kw.toLocaleString()} kWh/жил</strong>
                           </span>
                         </div>
