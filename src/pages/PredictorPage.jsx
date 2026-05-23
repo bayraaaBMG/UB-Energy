@@ -1232,7 +1232,7 @@ export default function PredictorPage() {
                   {lang === "mn" ? "Үндсэн загвар:" : "Model:"} <span style={{ color: "var(--primary-light)" }}>XGBoost Regression</span>
                 </div>
                 <div className="model-info-row">
-                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings (n_estimators=60, max_depth=4, eta=0.15)">XGBoost + EUI</span>
+                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings (n_estimators=60, max_depth=4, eta=0.15)">XGBoost + EUI Model</span>
                   <span className="model-badge" title={`n_train=${METRICS.n_train}, n_test=${METRICS.n_test}`}>
                     R² = {METRICS.r2}
                   </span>

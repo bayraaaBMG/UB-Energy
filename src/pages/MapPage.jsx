@@ -979,7 +979,7 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
               <div className="ml-hero-badge">ML</div>
               <div className="ml-hero-body">
                 <div className="ml-hero-val">{calc.ml.annual.toLocaleString()} <span className="ml-hero-unit">kWh/жил</span></div>
-                <div className="ml-hero-sub">{mn ? `Машин сургалтын таамаглал (XGBoost · R²=${METRICS.r2})` : `ML prediction (XGBoost · R²=${METRICS.r2})`}</div>
+                <div className="ml-hero-sub">{mn ? `XGBoost + EUI Model · R²=${METRICS.r2}` : `XGBoost + EUI Model · R²=${METRICS.r2}`}</div>
               </div>
             </div>
 
