@@ -271,6 +271,9 @@ export default function DashboardPage() {
     }));
   }, [selectedBuilding, lang]);
 
+  // Bilingual month labels for charts — must be defined before peakMonth
+  const monthlyData = monthlyEnergyData.map(d => ({ ...d, month: lang === "mn" ? d.month : d.month_en }));
+
   const peakMonth = React.useMemo(() => {
     const data = buildingMonthlyData || monthlyData;
     return data.reduce((max, d) => (d.usage > max.usage ? d : max), data[0]);
@@ -299,9 +302,6 @@ export default function DashboardPage() {
                 : avgIntensity < 200 ? "D" : avgIntensity < 250 ? "E" : avgIntensity < 300 ? "F" : "G";
     return { totalAnnual, avgMonthly, totalArea, avgIntensity, grade };
   })() : null;
-
-  // Bilingual month labels for charts
-  const monthlyData = monthlyEnergyData.map(d => ({ ...d, month: lang === "mn" ? d.month : d.month_en }));
 
   // XGBoost feature importance — normalized gain across all splits
   const FEAT_LABELS = {
