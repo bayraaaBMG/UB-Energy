@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import {
   monthlyEnergyData, dailyEnergyData, yearlyEnergyData,
-  ulaanbaatarDistricts,
+  ulaanbaatarDistricts, splitMonthlyEnergy,
 } from "../data/mockData";
 import EnergyDualChart from "../components/charts/EnergyDualChart";
 import { METRICS, ACTUAL_VS_PREDICTED, MODEL_COMPARISON, FEATURE_IMPORTANCE } from "../ml/model";
@@ -231,6 +231,7 @@ export default function DashboardPage() {
   const [showExplain, setShowExplain] = useState(true);
   const [districtFilter, setDistrictFilter] = useState("all");
   const [typeFilter, setTypeFilter]         = useState("all");
+  const [selectedBuildingId, setSelectedBuildingId] = useState("all");
 
   const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
 
@@ -247,6 +248,33 @@ export default function DashboardPage() {
   }, [allBuildings, districtFilter, typeFilter]);
 
   const stats = React.useMemo(() => computeStats(filteredBuildings), [filteredBuildings]);
+
+  // Selected building — individual view
+  const selectedBuilding = React.useMemo(
+    () => selectedBuildingId !== "all"
+      ? allBuildings.find(b => String(b.id) === selectedBuildingId) || null
+      : null,
+    [allBuildings, selectedBuildingId]
+  );
+
+  // Per-building monthly distribution using HDD seasonal weights
+  const buildingMonthlyData = React.useMemo(() => {
+    if (!selectedBuilding) return null;
+    const annual = selectedBuilding.predicted_kwh || 0;
+    const splits = splitMonthlyEnergy(annual);
+    return monthlyEnergyData.map((d, i) => ({
+      month:    lang === "mn" ? d.month : d.month_en,
+      usage:    splits[i].total,
+      heating:  splits[i].heating,
+      electric: splits[i].electric,
+      predicted: Math.round(splits[i].total * (1 - (METRICS.mape / 100) * 0.3)),
+    }));
+  }, [selectedBuilding, lang]);
+
+  const peakMonth = React.useMemo(() => {
+    const data = buildingMonthlyData || monthlyData;
+    return data.reduce((max, d) => (d.usage > max.usage ? d : max), data[0]);
+  }, [buildingMonthlyData, monthlyData]);
 
   const lastUpdated = React.useMemo(() => {
     const userBuilds = allBuildings.filter(b => b.source === "user");
@@ -314,11 +342,9 @@ export default function DashboardPage() {
     { feature: lang === "mn" ? "Халаалт: Төвлөрсөн"    : "Heating: Central",       impact: -0.8 },
   ];
 
-  const chartData = {
-    daily:   dailyEnergyData,
-    monthly: monthlyData,
-    yearly:  yearlyEnergyData,
-  }[period];
+  const chartData = selectedBuilding && buildingMonthlyData && period === "monthly"
+    ? buildingMonthlyData
+    : { daily: dailyEnergyData, monthly: monthlyData, yearly: yearlyEnergyData }[period];
 
   const xKey = { daily: "day", monthly: "month", yearly: "year" }[period];
 
@@ -355,6 +381,25 @@ export default function DashboardPage() {
           <div className="dash-toolbar-left">
             <SlidersHorizontal size={15} className="dash-toolbar-icon" />
             <span className="dash-toolbar-label">{t.dashboard.filters_label}</span>
+
+            {/* Building selector — primary filter */}
+            <select
+              className="dash-filter-select"
+              value={selectedBuildingId}
+              onChange={e => { setSelectedBuildingId(e.target.value); setDistrictFilter("all"); setTypeFilter("all"); }}
+              style={{ fontWeight: selectedBuildingId !== "all" ? 700 : undefined,
+                       borderColor: selectedBuildingId !== "all" ? "var(--primary)" : undefined }}
+            >
+              <option value="all">{lang === "mn" ? "— Бүх барилга —" : "— All buildings —"}</option>
+              {allBuildings.map(b => (
+                <option key={b.id} value={String(b.id)}>
+                  {b.name || `#${b.id}`}{b.district ? ` · ${b.district}` : ""}
+                </option>
+              ))}
+            </select>
+
+            {/* District + type filters — only when no individual building selected */}
+            {selectedBuildingId === "all" && (<>
             <select
               className="dash-filter-select"
               value={districtFilter}
@@ -377,10 +422,11 @@ export default function DashboardPage() {
                 </option>
               ))}
             </select>
-            {(districtFilter !== "all" || typeFilter !== "all") && (
+            </>)}
+            {(districtFilter !== "all" || typeFilter !== "all" || selectedBuildingId !== "all") && (
               <button
                 className="dash-filter-clear"
-                onClick={() => { setDistrictFilter("all"); setTypeFilter("all"); }}
+                onClick={() => { setDistrictFilter("all"); setTypeFilter("all"); setSelectedBuildingId("all"); }}
               >
                 <X size={12} /> {lang === "mn" ? "Арилгах" : "Clear"}
               </button>
@@ -395,6 +441,88 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* ── Selected building profile card ── */}
+        {selectedBuilding && buildingMonthlyData && (() => {
+          const b  = selectedBuilding;
+          const mn = lang === "mn";
+          const GRADE_C = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
+          const peakIdx = buildingMonthlyData.reduce((mi, d, i) => d.usage > buildingMonthlyData[mi].usage ? i : mi, 0);
+          const peak    = buildingMonthlyData[peakIdx];
+          const heatingTypeLbl = { central: mn?"Дүүргийн":"District", local: mn?"Орон нутаг":"Local", electric: mn?"Цахилгаан":"Electric" }[b.heating_type] || (b.heating_type || "—");
+          const insulLbl = { poor: mn?"Муу":"Poor", medium: mn?"Дунд":"Medium", good: mn?"Сайн":"Good" }[b.insulation_quality] || "—";
+          return (
+            <div className="card mb-3" style={{ borderLeft: "3px solid var(--primary)", padding: "1rem 1.2rem" }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+                <Building2 size={20} style={{ color: "var(--primary)", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text)" }}>{b.name || "—"}</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text3)", marginTop: 2 }}>
+                    {b.district || "—"} · {b.type || "—"} · {b.source === "user" ? (mn ? "Таны барилга" : "Your building") : "Demo"}
+                  </div>
+                </div>
+                <span style={{ background: GRADE_C[b.grade] || "#888", color: "#fff", fontWeight: 800, fontSize: "1.3rem", borderRadius: 8, padding: "0.2rem 0.7rem" }}>
+                  {b.grade || "—"}
+                </span>
+                <button
+                  style={{ marginLeft: "auto", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "0.25rem 0.6rem", cursor: "pointer", color: "var(--text3)", fontSize: "0.75rem" }}
+                  onClick={() => setSelectedBuildingId("all")}
+                >
+                  <X size={12} /> {mn ? "Арилгах" : "Clear"}
+                </button>
+              </div>
+
+              {/* Key metrics grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0.5rem", marginBottom: "1rem" }}>
+                {[
+                  { lbl: mn ? "Дүүрэг" : "District",       val: b.district || "—",           color: "#3a8fd4" },
+                  { lbl: mn ? "Талбай" : "Area",            val: `${(b.area||0).toLocaleString()} m²`, color: "#9b72cf" },
+                  { lbl: mn ? "Барилгасан он" : "Year built", val: b.year || "—",             color: "#a8c5e0" },
+                  { lbl: mn ? "Давхар" : "Floors",          val: `${b.floors || "—"}`,        color: "#a8c5e0" },
+                  { lbl: mn ? "Халаалт" : "Heating",        val: heatingTypeLbl,              color: "#f4a261" },
+                  { lbl: mn ? "Дулаалга" : "Insulation",    val: insulLbl,                    color: { poor:"#e63946", medium:"#f4a261", good:"#2a9d8f" }[b.insulation_quality] || "#888" },
+                  { lbl: mn ? "Жилийн kWh" : "Annual kWh", val: (b.predicted_kwh||0).toLocaleString(), color: "#f4a261" },
+                  { lbl: mn ? "Дунд kWh/m²" : "Avg kWh/m²", val: `${b.intensity||0}`,       color: GRADE_C[b.grade] || "#888" },
+                  { lbl: mn ? "CO₂ (т/жил)" : "CO₂ (t/yr)", val: b.co2 || "—",             color: "#e76f51" },
+                  { lbl: mn ? "Оргил сар" : "Peak month",   val: `${peak.month} · ${peak.usage.toLocaleString()} kWh`, color: "#e63946" },
+                ].map(({ lbl, val, color }) => (
+                  <div key={lbl} style={{ background: "var(--bg2)", borderRadius: 8, padding: "0.55rem 0.7rem", border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginBottom: 3 }}>{lbl}</div>
+                    <div style={{ fontWeight: 700, fontSize: "0.85rem", color }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly trend chart for this building */}
+              <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text2)", marginBottom: "0.5rem" }}>
+                {mn ? "Сарын хэрэглээний чиг хандлага (kWh)" : "Monthly usage trend (kWh)"}
+                <span style={{ marginLeft: 8, fontSize: "0.7rem", fontWeight: 400, color: "var(--text3)" }}>
+                  {mn ? "· HDD жинт тархалт · ML таамаглал" : "· HDD-weighted distribution · ML estimate"}
+                </span>
+              </div>
+              <ResponsiveContainer width="100%" height={160}>
+                <ComposedChart data={buildingMonthlyData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="month" tick={{ fill: "#667788", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#667788", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ background: "#0e1825", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 11 }}
+                    formatter={(v, name) => [`${Number(v).toLocaleString()} kWh`, name === "usage" ? (mn ? "Нийт" : "Total") : name === "heating" ? (mn ? "Дулаан" : "Heating") : (mn ? "Цахилгаан" : "Electric")]}
+                  />
+                  <Bar dataKey="heating"  fill="rgba(58,143,212,0.65)"  name="heating"  radius={[3,3,0,0]} maxBarSize={22} stackId="a" />
+                  <Bar dataKey="electric" fill="rgba(244,162,97,0.75)"  name="electric" radius={[3,3,0,0]} maxBarSize={22} stackId="a" />
+                  <Line type="monotone" dataKey="usage" stroke="#e9c46a" dot={false} strokeWidth={2} name="usage" />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: "1rem", fontSize: "0.68rem", color: "var(--text3)", marginTop: "0.3rem" }}>
+                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "rgba(58,143,212,0.65)", borderRadius: 2, marginRight: 4 }} />{mn ? "Дулаан" : "Heating"}</span>
+                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "rgba(244,162,97,0.75)", borderRadius: 2, marginRight: 4 }} />{mn ? "Цахилгаан" : "Electric"}</span>
+                <span><span style={{ display: "inline-block", width: 10, height: 2, background: "#e9c46a", marginRight: 4, verticalAlign: "middle" }} />{mn ? "Нийт" : "Total"}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {showNote && (
           <div className="dash-backend-note mb-3">
