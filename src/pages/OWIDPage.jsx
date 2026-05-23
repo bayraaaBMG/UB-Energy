@@ -206,6 +206,20 @@ export default function OWIDPage() {
               {t.owid.title}
             </h1>
             <p>{t.owid.subtitle}</p>
+            <p style={{
+              marginTop: "0.6rem",
+              padding: "0.6rem 0.9rem",
+              background: "rgba(58,143,212,0.08)",
+              borderLeft: "3px solid #3a8fd4",
+              borderRadius: "0 6px 6px 0",
+              fontSize: "0.85rem",
+              color: "var(--text2)",
+              lineHeight: 1.6,
+            }}>
+              {lang === "mn"
+                ? "Дэлхийн барилгын эрчим хүчний хэрэглээний чиг хандлагыг Монголын хүйтэн уур амьсгалтай нөхцөлтэй харьцуулах зорилготой. УБ-ын 4,500+ HDD нь Европын дундажаас 2–3 дахин өндөр тул дулааны хэрэглээний ачаалал нь олон улсын жишгийг давдаг."
+                : "The goal is to compare global building energy consumption trends against Mongolia's cold-climate conditions. UB's 4,500+ HDD is 2–3× higher than the European average, making heating demand exceed international benchmarks."}
+            </p>
           </div>
           <div className="owid-header-badge">
             <img src="https://ourworldindata.org/favicon.ico" alt="OWID" width={20} height={20}
