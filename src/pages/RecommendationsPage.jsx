@@ -5,10 +5,8 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import {
   Lightbulb, Home, Sun, Thermometer, Zap, Users, TrendingDown,
   ChevronDown, ChevronUp, Calculator, Clock, DollarSign, BarChart2,
-  CheckCircle, AlertTriangle, Info, ArrowRight, Filter, Snowflake,
-  Brain, Flame,
+  CheckCircle, Info, Filter, Snowflake,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import SmartHomePage from "./SmartHomePage";
 import "./RecommendationsPage.css";
 
@@ -521,68 +519,6 @@ export default function RecommendationsPage() {
         <div className="page-header">
           <h1><Lightbulb size={28} style={{ marginRight: 8, verticalAlign: "middle" }} />{t.recommendations.title}</h1>
           <p>{t.recommendations.subtitle}</p>
-        </div>
-
-        {/* ── Prediction-linked context banner ── */}
-        <div className="card mb-3" style={{
-          padding: "1rem 1.2rem",
-          borderLeft: "3px solid #f4a261",
-          background: "rgba(244,162,97,0.06)",
-        }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-            <Brain size={18} style={{ color: "#f4a261", flexShrink: 0, marginTop: 2 }} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text)", marginBottom: "0.5rem" }}>
-                {mn
-                  ? "Predictor-ын үр дүнтэй хэрхэн холбох вэ?"
-                  : "How to use these recommendations with Predictor results?"}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.82rem", color: "var(--text2)", lineHeight: 1.65 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <Flame size={13} style={{ color: "#e63946", flexShrink: 0, marginTop: 2 }} />
-                  <span>
-                    <strong style={{ color: "#e63946" }}>
-                      {mn ? "Дулааны хэрэглээ өндөр гарвал:" : "If heating usage is high:"}
-                    </strong>{" "}
-                    {mn
-                      ? "Цонхны дулаалга (Low-E хальс / гурван давхар шил), гадна ханын EPS дулаалга, дулааны зангилааны тохиргоо (радиаторын тэнцвэржүүлэлт), шөнийн температур бууруулах хуваарь сайжруулах."
-                      : "Window Low-E film or triple glazing, exterior EPS wall insulation, heating node adjustment (radiator balancing), night-time temperature setback schedule."}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <Zap size={13} style={{ color: "#f4a261", flexShrink: 0, marginTop: 2 }} />
-                  <span>
-                    <strong style={{ color: "#f4a261" }}>
-                      {mn ? "Цахилгааны хэрэглээ өндөр гарвал:" : "If electricity usage is high:"}
-                    </strong>{" "}
-                    {mn
-                      ? "Бүх чийдэнг LED-т солих, standby горим арилгах, хөдөлгөөний мэдрэгч суурилуулах, шөнийн тарифын дулааны хуримтлуур ашиглах."
-                      : "Full LED upgrade, eliminate standby loads, install motion sensors, use UBCTS night-rate thermal storage heating."}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                  <AlertTriangle size={13} style={{ color: "#9b72cf", flexShrink: 0, marginTop: 2 }} />
-                  <span>
-                    <strong style={{ color: "#9b72cf" }}>
-                      {mn ? "Intensity (kWh/m²) өндөр — D/E/F/G зэрэглэл гарвал:" : "If intensity is high — grade D/E/F/G:"}
-                    </strong>{" "}
-                    {mn
-                      ? "Доод хэсгийн \"Өндөр\" эрэмбэтэй зөвлөмжүүдийг гүйцэтгэснээр зэрэглэлийг A/B-д хүргэж болно."
-                      : "Completing the 'High priority' retrofits below can upgrade the grade to A or B."}
-                  </span>
-                </div>
-              </div>
-              <Link to="/predictor" style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                marginTop: "0.65rem", fontSize: "0.78rem", fontWeight: 700,
-                color: "#f4a261", textDecoration: "none",
-              }}>
-                <Brain size={12} />
-                {mn ? "Predictor-т очиж тооцоол" : "Go to Predictor to estimate"}
-                <ArrowRight size={11} />
-              </Link>
-            </div>
-          </div>
         </div>
 
         {/* ── ROI Calculator ── */}
