@@ -7,7 +7,7 @@ import {
   Database, Download, Search, Trash2, Filter, UserCheck,
   BarChart2, Zap, Ruler, TrendingUp, TrendingDown,
   CheckCircle, Lightbulb, ChevronsUpDown, ChevronUp, ChevronDown, X, Star,
-  History, Clock, Info, ChevronRight, AlertCircle,
+  History, Clock, Info, ChevronRight, AlertCircle, Table2, BookOpen,
 } from "lucide-react";
 import {
   BarChart, Bar, ComposedChart, Line, Cell,
@@ -730,6 +730,7 @@ export default function DatabasePage() {
   const { t, lang, user } = useApp();
   usePageTitle(t.nav.database);
   const navigate = useNavigate();
+  const [schemaOpen, setSchemaOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -834,6 +835,148 @@ export default function DatabasePage() {
             {lang === "mn" ? "Түүх" : "History"}
             {activityLog.length > 0 && <span className="db-history-count">{activityLog.length}</span>}
           </button>
+        </div>
+
+        {/* ── Dataset Schema ── */}
+        <div className="card mb-3" style={{ overflow: "hidden" }}>
+          <button
+            onClick={() => setSchemaOpen(s => !s)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.65rem",
+              padding: "0.85rem 1.1rem", background: "none", border: "none",
+              cursor: "pointer", color: "var(--text)", textAlign: "left" }}
+          >
+            <BookOpen size={16} style={{ color: "#3a8fd4", flexShrink: 0 }} />
+            <span style={{ fontWeight: 700, fontSize: "0.9rem", flex: 1 }}>
+              {lang === "mn" ? "Dataset: эх сурвалж · багана · хугацаа" : "Dataset: source · columns · time range"}
+            </span>
+            {schemaOpen ? <ChevronUp size={15} style={{ opacity: 0.5 }} /> : <ChevronDown size={15} style={{ opacity: 0.5 }} />}
+          </button>
+
+          {schemaOpen && (() => {
+            const mn = lang === "mn";
+
+            const TS_COLS = [
+              { name: "DateTime",       type: "datetime",  desc: mn ? "Цаг огноо (цаг тутамд · UTC+8)"                       : "Timestamp (hourly · UTC+8)" },
+              { name: "OutdoorTemp",    type: "float °C",  desc: mn ? "Гадна агаарын температур"                             : "Outdoor air temperature" },
+              { name: "HDD",            type: "float",     desc: mn ? "Heating Degree Days — халааны ачаалал"                 : "Heating Degree Days — heating load proxy" },
+              { name: "Heating_kW",     type: "float kW",  desc: mn ? "Барилгын дулааны хэрэглээ"                            : "Building heating consumption" },
+              { name: "Electric_kW",    type: "float kW",  desc: mn ? "Барилгын цахилгааны хэрэглээ"                         : "Building electricity consumption" },
+              { name: "total_load_kW",  type: "float kW",  desc: mn ? "Нийт ачаалал (Heating + Electric)"                   : "Total load (Heating + Electric)" },
+            ];
+
+            const ML_COLS = [
+              { name: "building_type",      type: "category", desc: mn ? "Барилгын зориулалт (apartment / office / school / hospital / commercial)" : "Building use type" },
+              { name: "area",               type: "float m²", desc: mn ? "Барилгын нийт талбай"                              : "Total floor area" },
+              { name: "year",               type: "int",      desc: mn ? "Барилгасан он (1955–2024)"                         : "Year of construction (1955–2024)" },
+              { name: "floors",             type: "int",      desc: mn ? "Давхрын тоо"                                       : "Number of floors" },
+              { name: "hdd",                type: "float",    desc: mn ? "Жилийн нийт HDD (цаг уурын оролт)"                 : "Annual HDD (climate input)" },
+              { name: "insulation_quality", type: "category", desc: mn ? "Дулаалгын чанар (poor / medium / good)"            : "Insulation quality level" },
+              { name: "heating_type",       type: "category", desc: mn ? "Халаалтын систем (central / local / electric)"      : "Heating system type" },
+              { name: "wall_material",      type: "category", desc: mn ? "Хананы материал (panel / brick / concrete / wood)"  : "Wall construction material" },
+              { name: "window_type",        type: "category", desc: mn ? "Цонхны төрөл (single / double / triple)"           : "Window glazing type" },
+              { name: "annual_kwh",         type: "float kWh",desc: mn ? "Жилийн нийт хэрэглээ — загварын зорилт (target)"  : "Annual energy — model prediction target" },
+            ];
+
+            const ColTable = ({ cols, accent }) => (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      {[mn?"Багана":"Column", mn?"Өгөгдлийн төрөл":"Type", mn?"Тайлбар":"Description"].map(h => (
+                        <th key={h} style={{ padding: "0.4rem 0.6rem", textAlign: "left", color: "var(--text3)", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cols.map((c, i) => (
+                      <tr key={c.name} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                        <td style={{ padding: "0.35rem 0.6rem", fontFamily: "monospace", fontWeight: 700, color: accent, whiteSpace: "nowrap" }}>{c.name}</td>
+                        <td style={{ padding: "0.35rem 0.6rem", color: "var(--text3)", whiteSpace: "nowrap" }}>{c.type}</td>
+                        <td style={{ padding: "0.35rem 0.6rem", color: "var(--text2)" }}>{c.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+
+            return (
+              <div style={{ padding: "0 1.1rem 1rem", borderTop: "1px solid var(--border)" }}>
+
+                {/* Two dataset cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", margin: "0.85rem 0" }}>
+                  {[
+                    {
+                      title: mn ? "⏱ Цагийн цуврал dataset" : "⏱ Time-series dataset",
+                      rows:  "~52,560",
+                      range: "2020-01-01 → 2025-12-31",
+                      freq:  mn ? "Цаг тутам (hourly)" : "Hourly",
+                      src:   mn ? "Баянмонгол-1 байр · Синтетик (82 айл, 12 давхар, 8,420 m²)" : "Bayanmongol-1 · Synthetic (82 apts, 12 fl, 8,420 m²)",
+                      color: "#3a8fd4",
+                      note:  mn ? "Dashboard / DualChart графикт ашигласан" : "Used in Dashboard & DualChart visualizations",
+                    },
+                    {
+                      title: mn ? "🏗 ML сургалтын dataset" : "🏗 ML training dataset",
+                      rows:  "600",
+                      range: mn ? "Он: 1955–2024" : "Year: 1955–2024",
+                      freq:  mn ? "Барилга тус бүрийн жилийн нэгтгэл" : "Annual aggregate per building",
+                      src:   mn ? "Монголын нөхцөлд тохируулсан синтетик өгөгдөл (IEA 2022, БНТУ 23-02-09)" : "Synthetic data calibrated to Mongolian conditions (IEA 2022, БНТУ 23-02-09)",
+                      color: "#9b72cf",
+                      note:  mn ? "XGBoost загвар сургалтад ашигласан (80/20 train/test)" : "Used to train XGBoost model (80/20 train/test split)",
+                    },
+                  ].map(ds => (
+                    <div key={ds.title} style={{ background: "var(--bg2)", borderRadius: 10, padding: "0.85rem", border: `1px solid ${ds.color}33` }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: ds.color, marginBottom: "0.5rem" }}>{ds.title}</div>
+                      {[
+                        [mn ? "Мөрийн тоо" : "Row count",    ds.rows],
+                        [mn ? "Хугацаа" : "Time range",      ds.range],
+                        [mn ? "Давтамж" : "Frequency",        ds.freq],
+                        [mn ? "Эх сурвалж" : "Source",        ds.src],
+                      ].map(([k, v]) => (
+                        <div key={k} style={{ display: "flex", gap: "0.4rem", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                          <span style={{ color: "var(--text3)", minWidth: 80, flexShrink: 0 }}>{k}:</span>
+                          <span style={{ color: "var(--text2)", fontWeight: 600 }}>{v}</span>
+                        </div>
+                      ))}
+                      <div style={{ marginTop: "0.5rem", fontSize: "0.72rem", color: "var(--text3)", fontStyle: "italic" }}>{ds.note}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Time-series columns */}
+                <div style={{ marginBottom: "0.85rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                    <Table2 size={13} style={{ color: "#3a8fd4" }} />
+                    <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "#3a8fd4" }}>
+                      {mn ? "Цагийн цуврал — баганын тайлбар" : "Time-series — column descriptions"}
+                    </span>
+                  </div>
+                  <ColTable cols={TS_COLS} accent="#3a8fd4" />
+                </div>
+
+                {/* ML training columns */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                    <Table2 size={13} style={{ color: "#9b72cf" }} />
+                    <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "#9b72cf" }}>
+                      {mn ? "ML сургалтын dataset — багана (feature) бүрийн тайлбар" : "ML training dataset — feature column descriptions"}
+                    </span>
+                  </div>
+                  <ColTable cols={ML_COLS} accent="#9b72cf" />
+                </div>
+
+                {/* Usage note */}
+                <div style={{ marginTop: "0.75rem", padding: "0.6rem 0.85rem", background: "rgba(42,157,143,0.07)", border: "1px solid rgba(42,157,143,0.2)", borderRadius: 8, fontSize: "0.78rem", color: "var(--text2)", lineHeight: 1.65 }}>
+                  <strong style={{ color: "#2a9d8f" }}>
+                    {mn ? "Загварт ашигласан шинжүүд: " : "Features used in model: "}
+                  </strong>
+                  {mn
+                    ? "DateTime, OutdoorTemp, HDD, Heating_kW, Electric_kW, total_load_kW зэрэг цагийн цуврал шинжүүдийг dashboard болон chart-д; building_type, area, year, floors, hdd, insulation_quality, heating_type, wall_material, window_type зэрэг барилгын шинжүүдийг XGBoost загвар сургалт болон таамаглалд ашигласан."
+                    : "DateTime, OutdoorTemp, HDD, Heating_kW, Electric_kW, total_load_kW for dashboard/chart visualizations; building_type, area, year, floors, hdd, insulation_quality, heating_type, wall_material, window_type used for XGBoost model training and prediction."}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Backend note */}
