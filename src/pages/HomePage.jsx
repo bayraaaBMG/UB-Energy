@@ -234,8 +234,8 @@ export default function HomePage() {
               <div className="meth-content">
                 <div className="meth-title">
                   {mn
-                    ? "Калибрлагдсан регрессийн загвар"
-                    : "Calibrated Regression Model"}
+                    ? "XGBoost + EUI загварын таамаглал"
+                    : "XGBoost + EUI Model Prediction"}
                 </div>
                 <div className="meth-body">
                   <div className="meth-formula">ŷ = XGBoost(area, age, HDD, insulation, …, x₃₀)</div>
@@ -461,7 +461,7 @@ export default function HomePage() {
                 {t.home.intro_text}
               </p>
               <div className="tech-tags">
-                {["XGBoost", "EUI Formula", "Ridge Regression", "Open-Meteo API", "БНТУ норм", "Shoelace Area"].map(tag => (
+                {["XGBoost", "EUI Formula", "Open-Meteo API", "БНТУ норм", "Shoelace Area", "OSM Overpass"].map(tag => (
                   <span key={tag} className="tech-tag">{tag}</span>
                 ))}
               </div>
@@ -570,7 +570,7 @@ export default function HomePage() {
               {
                 label: mn ? "Тайлбарлах боломж" : "Explainability",
                 value: mn ? "Бүрэн" : "Full",
-                sub:   mn ? "β-коэффициент бүр параметрийн нөлөөг харуулна · SHAP-lite дашбордод байна" : "Each β shows parameter impact · SHAP-lite available in dashboard",
+                sub:   mn ? "Feature importance (XGBoost gain) · SHAP-proxy дашбордод байна" : "Feature importance (XGBoost gain) · SHAP-proxy available in dashboard",
                 color: "#57cc99",
               },
             ].map(({ label, value, sub, color }) => (
