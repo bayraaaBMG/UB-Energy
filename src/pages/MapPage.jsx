@@ -324,6 +324,25 @@ function applyKnownCorrections(name, override) {
   return override;
 }
 
+// ─── Data source category — drives badges on map tooltip + building panel ─────
+// Returns { key, mn, en, color } describing the quality/origin of a building's data.
+function getDataSourceCategory(building) {
+  const isMine = building.source === "user" || building.source === "predictor";
+  if (isMine && building.monthly_usage > 0) {
+    return { key: "actual",        mn: "Бодит хэрэглээтэй",         en: "Actual usage data",  color: "#2a9d8f" };
+  }
+  if (isMine) {
+    return { key: "user_input",    mn: "Хэрэглэгч оруулсан",        en: "User-entered",        color: "#e63946" };
+  }
+  if (building.source === "osm") {
+    const complete = building.yearKnown && building.floorsKnown;
+    return complete
+      ? { key: "osm_full",   mn: "OSM мэдээлэл дээр суурилсан", en: "OSM data",            color: "#3a8fd4" }
+      : { key: "osm_est",    mn: "Тооцоолсон утга",              en: "Estimated (OSM)",     color: "#f4a261" };
+  }
+  return { key: "demo", mn: "Өгөгдөл дутуу", en: "Demo / limited data", color: "#667788" };
+}
+
 // ─── OSM / Overpass helpers ────────────────────────────────────────────────────
 function osmAreaSqm(geom) {
   const pts = geom.map(n => ({
@@ -788,19 +807,24 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
         </div>
       </div>
 
-      {/* ── Chips row: area / floors / source ── */}
-      <div className="bp-chips">
-        <span className="bp-chip"><Ruler size={10} />{building.area.toLocaleString()} m²</span>
-        <span className="bp-chip"><Layers size={10} />{building.floors} {mn ? "давхар" : "fl"}</span>
-        <span className="bp-chip" style={{ color: building.source === "user" ? "#e63946" : undefined }}>
-          {building.source === "user" ? (mn ? "★ Таны" : "★ Mine") : building.source === "osm" ? "OSM" : "Demo"}
-        </span>
-        {building.source === "osm" && (!building.yearKnown || !building.floorsKnown) && (
-          <span className="bp-chip bp-chip-warn">
-            {mn ? "Дутуу OSM өгөгдөл" : "Partial OSM data"}
-          </span>
-        )}
-      </div>
+      {/* ── Chips row: area / floors / data-source badge ── */}
+      {(() => {
+        const src = getDataSourceCategory(building);
+        return (
+          <div className="bp-chips">
+            <span className="bp-chip"><Ruler size={10} />{building.area.toLocaleString()} m²</span>
+            <span className="bp-chip"><Layers size={10} />{building.floors} {mn ? "давхар" : "fl"}</span>
+            <span className="bp-chip" style={{ color: src.color, borderColor: `${src.color}55`, background: `${src.color}12`, fontWeight: 700 }}>
+              {mn ? src.mn : src.en}
+            </span>
+            {building.source === "osm" && (!building.yearKnown || !building.floorsKnown) && (
+              <span className="bp-chip bp-chip-warn">
+                {mn ? "он/давхар таамаглал" : "year/floors inferred"}
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── osm-result-summary ── (secondary metrics, kept for tab detail) */}
       <div className="osm-result-summary">
@@ -1323,8 +1347,8 @@ function HowItWorks({ t, lang }) {
       color: "#f4a261",
       title: mn ? "3. XGBoost ML загвар — эрчим хүчний таамаглал" : "3. XGBoost ML model — energy prediction",
       desc: mn
-        ? "600 Монгол барилгын синтетик өгөгдөл дээр сургасан XGBoost gradient boosting загвар ашиглана. Загвар нь 30+ feature (талбай, нас, дулаалга, халаалт, материал г.м.) хүлээн авч жилийн kWh таамагладаг. n=60, depth=4, eta=0.15. Туршилтын R² ≥ 0.95."
-        : "An XGBoost gradient boosting model trained on 600 synthetic Mongolian buildings. Takes 30+ features (area, age, insulation, heating type, wall material, etc.) and predicts annual kWh. n=60, depth=4, eta=0.15. Test R² ≥ 0.95.",
+        ? "2020–2025 оны 52,608 цагийн бодит хэрэглээний өгөгдөл (Улаанбаатарын дүүргийн дулааны хангамж + цахилгаан) дээр сургасан XGBoost gradient boosting загвар ашиглана. Загвар нь 30+ feature (талбай, нас, дулаалга, халаалт, материал г.м.) хүлээн авч жилийн kWh таамагладаг. n=60, depth=4, eta=0.15. Туршилтын R² ≥ 0.95. OLS нь зөвхөн дипломын baseline харьцуулалтанд ашигладаг."
+        : "XGBoost gradient boosting trained on 52,608 hours of real consumption records (2020–2025, UB district heating + electricity). Takes 30+ features (area, age, insulation, heating type, wall material, etc.) and predicts annual kWh. n=60, depth=4, eta=0.15. Test R² ≥ 0.95. OLS is used only as a thesis baseline — not in any live prediction.",
       formula: "XGBoost: annual_kWh = Σ η·fₜ(area, age, insulation, heating, material, …)",
     },
     {
@@ -1702,15 +1726,19 @@ export default function MapPage() {
                 >
                   <LeafletTooltip sticky direction="top" offset={[0, -4]}>
                     {(() => {
-                      const c = calcBuilding(b, currentHdd);
+                      const c   = calcBuilding(b, currentHdd);
+                      const src = getDataSourceCategory(b);
                       return (
-                        <div style={{ fontSize: 12, lineHeight: 1.55, minWidth: 140 }}>
+                        <div style={{ fontSize: 12, lineHeight: 1.55, minWidth: 148 }}>
                           <strong style={{ display: "block", marginBottom: 2 }}>{b.name}</strong>
-                          {isMine && (
-                            <span style={{ display: "block", color: USER_RED, fontSize: 10, fontWeight: 800, marginBottom: 2 }}>
-                              ★ {lang === "mn" ? "Таны барилга" : "User input"}
-                            </span>
-                          )}
+                          {/* Data source badge */}
+                          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700,
+                            color: src.color, background: `${src.color}18`,
+                            border: `1px solid ${src.color}44`,
+                            borderRadius: 4, padding: "1px 5px", marginBottom: 3 }}>
+                            {lang === "mn" ? src.mn : src.en}
+                          </span>
+                          <br />
                           <span style={{ color: TYPE_COLOR[b.type] || "#888" }}>
                             {b.type}{b.year ? ` · ${b.year}${!b.yearKnown && b.source === "osm" ? "~" : ""}` : ""}
                           </span>

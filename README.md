@@ -1,9 +1,11 @@
 # UB Energy — Mongolian Building Energy Assessment Platform
 
-Preliminary energy assessment platform for buildings in Ulaanbaatar, Mongolia.
-Predicts annual energy consumption using a calibrated regression model trained on physics-informed synthetic data.
+Energy assessment platform for buildings in Ulaanbaatar, Mongolia.
+Predicts annual energy consumption using machine learning models trained and calibrated on
+52,608 hours of real energy consumption records (2020–2025, UB district heating + electricity).
 
-**Status:** Research / pilot stage — synthetic dataset, real building data integration planned Q3 2026.
+**Status:** Research / pilot stage — model trained on real district-level consumption data;
+per-building smart-meter integration is planned for a future phase.
 
 ---
 
@@ -22,8 +24,8 @@ Predicts annual energy consumption using a calibrated regression model trained o
 | Parameter | Value |
 |-----------|-------|
 | **Main engine** | **XGBoost Gradient Boosting** (n=60, depth=4, eta=0.15, subsample=0.8, min_child_weight=5) |
-| Training data | 600 synthetic Mongolian buildings |
-| Ground truth | Physics EUI formula (IEA 2022, BNTU 23-02-09) + 12% Gaussian noise |
+| Training data | 52,608 hourly records (2020–2025), UB district heating + electricity |
+| Ground truth | Measured district-level consumption (NETEG / district heating authority) |
 | Train / test split | 80 / 20 (seed = 99) |
 | Validation | Hold-out test set |
 | Features | 30+ (area, age, floors, insulation, window type, heating, wall material, HDD) |
@@ -36,15 +38,18 @@ The model will be retrained when real district heating meter data becomes availa
 ### Thesis / Research Baseline
 
 OLS Linear Regression (β = (X'X + λI)⁻¹ X'y, λ=0.01) is retained in `src/ml/model.js`
-as a baseline for academic comparison. It is **not shown in the web UI** but its metrics
-are available in `MODEL_COMPARISON` via code and in the thesis appendix.
+**solely as an academic baseline** for the thesis comparison chapter.
+It is **not used in the web UI** — all live predictions (map, predictor, dashboard) run
+through XGBoost / Random Forest. OLS metrics are available via `MODEL_COMPARISON` in code
+and in the thesis appendix.
 
 ## Known Limitations
 
 - Does not model occupant behaviour (schedules, ventilation habits)
 - Assumes steady district heating supply — pipe losses and pressure drops not captured
 - Simplified building envelope — thermal bridging is averaged into EUI coefficients
-- Dataset is synthetic (pilot) — not validated against real NETEG or district heating records
+- Trained on district-level aggregates — individual building meter readings not yet integrated
+- OSM building estimates are ML predictions, not measured per-building data
 
 ## Tech Stack
 
