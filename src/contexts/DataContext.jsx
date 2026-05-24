@@ -1,16 +1,16 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { MOCK_BUILDINGS, normalizeBuilding, computeStats } from "../utils/buildingStorage";
 import {
-  getAllBuildings, computeStats,
-  saveUserBuilding, updateUserBuilding, deleteUserBuilding,
-} from "../utils/buildingStorage";
-import {
-  getPredictions, savePrediction, deletePrediction,
-  getScenarios, saveScenario, deleteScenario,
-  getFavorites, toggleFavorite,
-} from "../utils/userDataStorage";
+  saveFirestoreBuilding, updateFirestoreBuilding, deleteFirestoreBuilding,
+  batchSaveFirestoreBuildings, subscribeUserBuildings, subscribeAllBuildings,
+  saveFirestorePrediction, deleteFirestorePrediction, subscribePredictions,
+  saveFirestoreScenario, deleteFirestoreScenario, subscribeScenarios,
+  saveFirestoreFavorite, deleteFirestoreFavorite, subscribeFavorites,
+} from "../utils/firestoreStorage";
 import { storageGetJSON, storageSetJSON } from "../utils/storage";
 import { STORAGE_KEYS } from "../config/constants";
+import { FIREBASE_CONFIGURED } from "../lib/firebase";
 
 // ─── Weather config ────────────────────────────────────────────────────────────
 const LAT = 47.9184;
@@ -143,22 +143,15 @@ export function DataProvider({ children }) {
   const [weatherTs, setWeatherTs]           = useState(null);
 
   const fetchWeather = useCallback(async (force = false) => {
-    // Always serve cache first so the UI isn't blank
     const cached = storageGetJSON(STORAGE_KEYS.weatherCache, null);
     if (!force && cached && Date.now() - cached.ts < CACHE_TTL) {
       setWeatherData(cached.data);
       setWeatherTs(cached.ts);
       return;
     }
-    // Fast-fail when offline — use stale cache if available
     if (!navigator.onLine) {
-      if (cached) {
-        setWeatherData(cached.data);
-        setWeatherTs(cached.ts);
-        setWeatherError("offline");
-      } else {
-        setWeatherError("offline");
-      }
+      if (cached) { setWeatherData(cached.data); setWeatherTs(cached.ts); }
+      setWeatherError("offline");
       return;
     }
     setWeatherLoading(true);
@@ -179,92 +172,164 @@ export function DataProvider({ children }) {
       setWeatherTs(Date.now());
       setWeatherError(null);
     } catch (e) {
-      // Keep showing stale cached data if available
-      if (cached) {
-        setWeatherData(cached.data);
-        setWeatherTs(cached.ts);
-      }
+      const cached2 = storageGetJSON(STORAGE_KEYS.weatherCache, null);
+      if (cached2) { setWeatherData(cached2.data); setWeatherTs(cached2.ts); }
       setWeatherError(e.message);
     } finally {
       setWeatherLoading(false);
     }
   }, []);
 
-  // ── Buildings ─────────────────────────────────────────────────────────────────
-  const [buildings, setBuildings]         = useState([]);
-  const [buildingStats, setBuildingStats] = useState(null);
+  // ── Buildings — Firestore real-time subscription ──────────────────────────────
+  const [buildings, setBuildings]         = useState(MOCK_BUILDINGS);
+  const [buildingStats, setBuildingStats] = useState(() => computeStats(MOCK_BUILDINGS));
+  const unsubBuildingsRef = useRef(null);
 
-  const refreshBuildings = useCallback(() => {
-    // Admin sees all user buildings; others see own + mock
-    const all = getAllBuildings(user?.role === "admin" ? null : user?.id);
-    setBuildings(all);
-    setBuildingStats(computeStats(all));
+  useEffect(() => {
+    // Clean up previous subscription
+    if (unsubBuildingsRef.current) {
+      unsubBuildingsRef.current();
+      unsubBuildingsRef.current = null;
+    }
+
+    if (!user?.id || !FIREBASE_CONFIGURED) {
+      setBuildings(MOCK_BUILDINGS);
+      setBuildingStats(computeStats(MOCK_BUILDINGS));
+      return;
+    }
+
+    const handleUserBuildings = (userBuildings) => {
+      const userIds = new Set(userBuildings.map(b => b.id));
+      const all = [
+        ...MOCK_BUILDINGS.filter(b => !userIds.has(b.id)),
+        ...userBuildings,
+      ];
+      setBuildings(all);
+      setBuildingStats(computeStats(all));
+    };
+
+    const handleAllBuildings = (allUserBuildings) => {
+      const userIds = new Set(allUserBuildings.map(b => b.id));
+      const combined = [
+        ...MOCK_BUILDINGS.filter(b => !userIds.has(b.id)),
+        ...allUserBuildings,
+      ];
+      setBuildings(combined);
+      setBuildingStats(computeStats(combined));
+    };
+
+    if (user.role === "admin") {
+      unsubBuildingsRef.current = subscribeAllBuildings(handleAllBuildings);
+    } else {
+      unsubBuildingsRef.current = subscribeUserBuildings(user.id, handleUserBuildings);
+    }
+
+    return () => {
+      if (unsubBuildingsRef.current) {
+        unsubBuildingsRef.current();
+        unsubBuildingsRef.current = null;
+      }
+    };
   }, [user?.id, user?.role]);
 
-  const addBuilding = useCallback((record) => {
-    saveUserBuilding(record);
-    refreshBuildings();
-  }, [refreshBuildings]);
+  const addBuilding = useCallback(async (record) => {
+    if (!user?.id) return;
+    const normalized = normalizeBuilding({
+      ...record,
+      source: record.source || "user",
+      userId: user.id,
+      submittedAt: new Date().toISOString(),
+    });
+    await saveFirestoreBuilding(user.id, normalized);
+    // onSnapshot updates state automatically
+  }, [user?.id]);
 
-  const batchAddBuildings = useCallback((records) => {
-    records.forEach(r => saveUserBuilding(r));
-    refreshBuildings();
-  }, [refreshBuildings]);
+  const batchAddBuildings = useCallback(async (records) => {
+    if (!user?.id) return;
+    const normalized = records.map(r => normalizeBuilding({
+      ...r,
+      source: "user",
+      userId: user.id,
+      submittedAt: new Date().toISOString(),
+    }));
+    await batchSaveFirestoreBuildings(user.id, normalized);
+  }, [user?.id]);
 
-  const updateBuilding = useCallback((id, updates) => {
-    updateUserBuilding(id, updates);
-    refreshBuildings();
-  }, [refreshBuildings]);
+  const updateBuilding = useCallback(async (id, updates) => {
+    if (!user?.id) return;
+    const current = buildings.find(b => b.id === id);
+    if (!current) return;
+    const normalized = normalizeBuilding({ ...current, ...updates });
+    await updateFirestoreBuilding(user.id, id, normalized);
+  }, [user?.id, buildings]);
 
-  const removeBuilding = useCallback((id) => {
-    deleteUserBuilding(id);
-    refreshBuildings();
-  }, [refreshBuildings]);
+  const removeBuilding = useCallback(async (id) => {
+    if (!user?.id) return;
+    await deleteFirestoreBuilding(user.id, id);
+  }, [user?.id]);
 
-  // ── User data ─────────────────────────────────────────────────────────────────
+  // ── User data — Firestore real-time subscriptions ─────────────────────────────
   const [predictions, setPredictions] = useState([]);
   const [scenarios, setScenarios]     = useState([]);
   const [favorites, setFavorites]     = useState([]);
 
-  const refreshUserData = useCallback(() => {
-    if (!user?.id) {
+  const unsubPredRef  = useRef(null);
+  const unsubScenRef  = useRef(null);
+  const unsubFavRef   = useRef(null);
+
+  useEffect(() => {
+    // Clean up previous subscriptions
+    [unsubPredRef, unsubScenRef, unsubFavRef].forEach(ref => {
+      if (ref.current) { ref.current(); ref.current = null; }
+    });
+
+    if (!user?.id || !FIREBASE_CONFIGURED) {
       setPredictions([]);
       setScenarios([]);
       setFavorites([]);
       return;
     }
-    setPredictions(getPredictions(user.id));
-    setScenarios(getScenarios(user.id));
-    setFavorites(getFavorites(user.id));
+
+    unsubPredRef.current = subscribePredictions(user.id, setPredictions);
+    unsubScenRef.current = subscribeScenarios(user.id, setScenarios);
+    unsubFavRef.current  = subscribeFavorites(user.id, setFavorites);
+
+    return () => {
+      [unsubPredRef, unsubScenRef, unsubFavRef].forEach(ref => {
+        if (ref.current) { ref.current(); ref.current = null; }
+      });
+    };
   }, [user?.id]);
 
-  const addPrediction = useCallback((entry) => {
-    savePrediction(user?.id, entry);
-    setPredictions(getPredictions(user?.id));
-  }, [user?.id]);
-
-  const removePrediction = useCallback((id) => {
+  const addPrediction = useCallback(async (entry) => {
     if (!user?.id) return;
-    deletePrediction(user.id, id);
-    setPredictions(getPredictions(user.id));
+    await saveFirestorePrediction(user.id, { ...entry, id: Date.now() });
   }, [user?.id]);
 
-  const addScenario = useCallback((scenario) => {
-    saveScenario(user?.id, scenario);
-    setScenarios(getScenarios(user?.id));
-  }, [user?.id]);
-
-  const removeScenario = useCallback((id) => {
+  const removePrediction = useCallback(async (id) => {
     if (!user?.id) return;
-    deleteScenario(user.id, id);
-    setScenarios(getScenarios(user.id));
+    await deleteFirestorePrediction(user.id, id);
   }, [user?.id]);
 
-  const toggleFav = useCallback((building) => {
+  const addScenario = useCallback(async (scenario) => {
     if (!user?.id) return;
-    toggleFavorite(user.id, building);
-    setFavorites(getFavorites(user.id));
+    await saveFirestoreScenario(user.id, scenario);
   }, [user?.id]);
+
+  const removeScenario = useCallback(async (id) => {
+    if (!user?.id) return;
+    await deleteFirestoreScenario(user.id, id);
+  }, [user?.id]);
+
+  const toggleFav = useCallback(async (building) => {
+    if (!user?.id) return;
+    const isFaved = favorites.some(f => f.id === building.id);
+    if (isFaved) {
+      await deleteFirestoreFavorite(user.id, building.id);
+    } else {
+      await saveFirestoreFavorite(user.id, building);
+    }
+  }, [user?.id, favorites]);
 
   const isFav = useCallback((buildingId) =>
     favorites.some(f => f.id === buildingId),
@@ -275,16 +340,12 @@ export function DataProvider({ children }) {
 
   // ── Initialization ───────────────────────────────────────────────────────────
   useEffect(() => { fetchWeather(); }, [fetchWeather]);
-  useEffect(() => { refreshBuildings(); }, [refreshBuildings]);
-  useEffect(() => { refreshUserData(); }, [refreshUserData]);
 
-  // ── Auto-refresh weather every 30 min while app is open ──────────────────────
   useEffect(() => {
     const id = setInterval(() => fetchWeather(true), CACHE_TTL);
     return () => clearInterval(id);
   }, [fetchWeather]);
 
-  // ── Re-fetch when coming back online ─────────────────────────────────────────
   useEffect(() => {
     const handleOnline  = () => { setWeatherError(null); fetchWeather(true); };
     const handleOffline = () => setWeatherError("offline");
@@ -298,7 +359,7 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      // Weather — full parsed data for WeatherPage, shortcuts for other pages
+      // Weather
       weatherData,
       weatherLoading,
       weatherError,
@@ -310,10 +371,10 @@ export function DataProvider({ children }) {
       currentTemp: weatherData?.todayData?.temp  ?? null,
       currentAqi:  weatherData?.todayData?.aqi   ?? null,
 
-      // Buildings — shared reactive state
+      // Buildings
       buildings,
       buildingStats,
-      refreshBuildings,
+      refreshBuildings: () => {},  // no-op: onSnapshot handles updates
       addBuilding,
       batchAddBuildings,
       updateBuilding,
@@ -333,7 +394,7 @@ export function DataProvider({ children }) {
       favorites,
       toggleFav,
       isFav,
-      refreshUserData,
+      refreshUserData: () => {},  // no-op: onSnapshot handles updates
 
       // Cross-page predictor result
       lastPrediction,

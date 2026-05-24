@@ -3,259 +3,215 @@ import {
   onAuthStateChanged,
   signInWithPopup, GoogleAuthProvider,
   signOut as fbSignOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "firebase/auth";
 import { auth, FIREBASE_CONFIGURED } from "../lib/firebase";
-import { storageGetJSON, storageSetJSON, storageRemove } from "../utils/storage";
-import { STORAGE_KEYS } from "../config/constants";
+import { createUserProfile, getUserProfile, updateUserProfile } from "../utils/firestoreStorage";
 
 const AuthContext = createContext();
 
-// ─── localStorage keys ────────────────────────────────────────────────────────
-const USERS_KEY   = STORAGE_KEYS.users;
-const SESSION_KEY = STORAGE_KEYS.session;
-
-// ─── PBKDF2 password hashing (Web Crypto API) ─────────────────────────────────
-const PBKDF2_ITER = 150_000;
-
-function genSalt() {
-  const b = new Uint8Array(16);
-  crypto.getRandomValues(b);
-  return Array.from(b).map(x => x.toString(16).padStart(2, "0")).join("");
-}
-
-async function hashPw(password, salt) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt: enc.encode(salt), iterations: PBKDF2_ITER, hash: "SHA-256" },
-    key, 256
-  );
-  return Array.from(new Uint8Array(bits)).map(x => x.toString(16).padStart(2, "0")).join("");
-}
-
-async function verifyPw(plain, storedHash, salt) {
-  return (await hashPw(plain, salt)) === storedHash;
-}
-
-// ─── Pre-seeded demo admin (in-memory only) ───────────────────────────────────
-const ADMIN = {
-  id: "admin_1",
-  name: "Админ",
-  email: "admin@ubenergy.mn",
-  password: "demo_admin_only",
-  type: "official",
-  org: "UBenergy",
-  role: "admin",
-  isDemo: true,
-  createdAt: new Date("2024-01-01").toISOString(),
-};
-
-// Emails that get admin role when logging in via Google
-const GOOGLE_ADMIN_EMAILS = ["admin@ubenergy.mn"];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
-
-function loadUsers() { return storageGetJSON(USERS_KEY, []); }
-function saveUsers(users) { storageSetJSON(USERS_KEY, users); }
-function getAllUsers() {
-  return [ADMIN, ...loadUsers().filter(u => u.email !== ADMIN.email)];
-}
-function loadSession() {
-  try {
-    const raw = storageGetJSON(SESSION_KEY, null);
-    if (!raw) return null;
-    if (raw.expiresAt && raw.expiresAt < Date.now()) { storageRemove(SESSION_KEY); return null; }
-    if (!getAllUsers().find(u => u.id === raw.id)) { storageRemove(SESSION_KEY); return null; }
-    return raw;
-  } catch { return null; }
-}
-
-function buildGoogleUser(fbUser) {
-  return {
-    id:        fbUser.uid,
-    email:     fbUser.email,
-    name:      fbUser.displayName || fbUser.email.split("@")[0],
-    avatar:    fbUser.photoURL || null,
-    role:      GOOGLE_ADMIN_EMAILS.includes(fbUser.email) ? "admin" : "user",
-    type:      "personal",
-    org:       "",
-    createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
-    isGoogle:  true,
-  };
-}
+// Emails that receive admin role automatically
+const ADMIN_EMAILS = ["admin@ubenergy.mn"];
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }) {
-  // localUser: email+password localStorage session
-  const [localUser, setLocalUser] = useState(() => loadSession());
-  // googleUser: Firebase Google OAuth session
-  const [googleUser, setGoogleUser] = useState(null);
+  // undefined = still checking, null = logged out, object = logged in
+  const [user, setUser] = useState(undefined);
 
-  // Persist local session changes
   useEffect(() => {
-    if (localUser) storageSetJSON(SESSION_KEY, { ...localUser, expiresAt: Date.now() + SESSION_TTL });
-    else storageRemove(SESSION_KEY);
-  }, [localUser]);
+    if (!FIREBASE_CONFIGURED || !auth) {
+      setUser(null);
+      return;
+    }
 
-  // Listen for Firebase Google auth state
-  useEffect(() => {
-    if (!FIREBASE_CONFIGURED || !auth) return;
-    return onAuthStateChanged(auth, (fbUser) => {
-      setGoogleUser(fbUser ? buildGoogleUser(fbUser) : null);
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        setUser(null);
+        return;
+      }
+
+      try {
+        let profile = await getUserProfile(fbUser.uid);
+
+        // First-time Google login: create Firestore profile
+        if (!profile) {
+          const isGoogle = fbUser.providerData?.[0]?.providerId === "google.com";
+          profile = {
+            name: fbUser.displayName || fbUser.email.split("@")[0],
+            email: fbUser.email,
+            createdAt: new Date().toISOString(),
+            role: ADMIN_EMAILS.includes(fbUser.email) ? "admin" : "user",
+            type: "personal",
+            org: "",
+            avatar: fbUser.photoURL || null,
+            verified: isGoogle || fbUser.emailVerified,
+          };
+          await createUserProfile(fbUser.uid, profile);
+        }
+
+        setUser({
+          uid:           fbUser.uid,
+          id:            fbUser.uid,                         // backward-compat alias
+          name:          profile.name  || fbUser.displayName || fbUser.email.split("@")[0],
+          email:         fbUser.email,
+          avatar:        profile.avatar || fbUser.photoURL || null,
+          role:          profile.role   || "user",
+          type:          profile.type   || "personal",
+          org:           profile.org    || "",
+          createdAt:     profile.createdAt,
+          emailVerified: fbUser.emailVerified,
+          isGoogle:      fbUser.providerData?.[0]?.providerId === "google.com",
+        });
+      } catch (err) {
+        console.error("[AuthContext] Failed to load profile:", err);
+        setUser(null);
+      }
     });
+
+    return unsub;
   }, []);
 
-  // Exposed user: Google takes precedence over local
-  const user = googleUser || localUser;
+  // ── Register with email/password ──
+  const register = async ({ name, email, password, type, org }) => {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(cred.user, { displayName: name.trim() });
+      await sendEmailVerification(cred.user);
 
-  // ── Email/password login (localStorage) ──
-  const login = async (email, password) => {
-    const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!found) return false;
+      await createUserProfile(cred.user.uid, {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        createdAt: new Date().toISOString(),
+        role: ADMIN_EMAILS.includes(email.trim().toLowerCase()) ? "admin" : "user",
+        type: type || "personal",
+        org: org || "",
+        avatar: null,
+        verified: false,
+      });
 
-    let ok = false;
-    if (found.isDemo) {
-      ok = found.password === password;
-    } else if (found.pwHash && found.pwSalt) {
-      ok = await verifyPw(password, found.pwHash, found.pwSalt);
-    } else if (found.password) {
-      ok = found.password === password;
-      if (ok) {
-        const pwSalt = genSalt();
-        const pwHash = await hashPw(password, pwSalt);
-        saveUsers(loadUsers().map(u => u.id === found.id ? { ...u, pwHash, pwSalt, password: undefined } : u));
-      }
+      return { ok: true, needsVerification: true };
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") return { ok: false, error: "email_taken" };
+      if (err.code === "auth/weak-password")        return { ok: false, error: "too_short" };
+      return { ok: false, error: err.message };
     }
-    if (!ok) return false;
-    const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = found;
-    setLocalUser(session);
-    return true;
   };
 
-  // ── Google OAuth login ──
+  // ── Login with email/password ──
+  const login = async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      return { ok: true };
+    } catch (err) {
+      if (
+        err.code === "auth/user-not-found"  ||
+        err.code === "auth/wrong-password"  ||
+        err.code === "auth/invalid-credential"
+      ) return { ok: false, error: "invalid" };
+      if (err.code === "auth/too-many-requests") return { ok: false, error: "too_many" };
+      return { ok: false, error: err.message };
+    }
+  };
+
+  // ── Google login ──
   const loginWithGoogle = async () => {
-    if (!FIREBASE_CONFIGURED || !auth) return false;
+    if (!FIREBASE_CONFIGURED || !auth) return { ok: false, error: "not_configured" };
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      return true;
-    } catch { return false; }
-  };
-
-  // ── Register (localStorage) ──
-  const register = async ({ name, email, password, type, org }) => {
-    if (getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
-      return { ok: false, error: "email_taken" };
+      return { ok: true };
+    } catch (err) {
+      if (err.code === "auth/popup-closed-by-user") return { ok: false, error: "cancelled" };
+      return { ok: false, error: err.message };
     }
-    if (password.length < 8) return { ok: false, error: "too_short" };
-    const pwSalt = genSalt();
-    const pwHash = await hashPw(password, pwSalt);
-    const newUser = {
-      id: `user_${Date.now()}`,
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      pwHash, pwSalt,
-      type, org: org || "",
-      role: "user",
-      createdAt: new Date().toISOString(),
-    };
-    saveUsers([...loadUsers(), newUser]);
-    const { pwHash: _h, pwSalt: _s, ...session } = newUser;
-    setLocalUser(session);
-    return { ok: true };
   };
 
   // ── Logout ──
   const logout = async () => {
-    if (googleUser && auth) {
-      await fbSignOut(auth);
-    }
-    setLocalUser(null);
-    setGoogleUser(null);
+    if (auth) await fbSignOut(auth);
   };
 
-  // ── checkEmailForReset ──
-  const checkEmailForReset = (email) => {
-    const found = getAllUsers().find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!found) return { ok: false, error: "email_not_found" };
-    if (found.id === ADMIN.id) return { ok: false, error: "admin_reset" };
-    return { ok: true };
-  };
-
-  // ── resetPassword ──
-  const resetPassword = async (email, newPassword) => {
-    if (newPassword.length < 8) return { ok: false, error: "too_short" };
-    const stored = loadUsers();
-    const exists = stored.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
-    if (!exists) return { ok: false, error: "email_not_found" };
-    const pwSalt = genSalt();
-    const pwHash = await hashPw(newPassword, pwSalt);
-    saveUsers(stored.map(u =>
-      u.email.toLowerCase() === email.trim().toLowerCase()
-        ? { ...u, pwHash, pwSalt, password: undefined } : u
-    ));
-    return { ok: true };
-  };
-
-  // ── updateUser ──
-  const updateUser = async ({ name, currentPassword, newPassword, avatar }) => {
-    if (googleUser) {
-      // Google users: only update name/avatar locally
-      setGoogleUser(prev => ({
-        ...prev,
-        ...(name !== undefined ? { name } : {}),
-        ...(avatar !== undefined ? { avatar } : {}),
-      }));
+  // ── Send password reset email ──
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
       return { ok: true };
+    } catch (err) {
+      if (err.code === "auth/user-not-found") return { ok: false, error: "email_not_found" };
+      return { ok: false, error: err.message };
     }
-
-    // localStorage user
-    const allUsers = getAllUsers();
-    const full = allUsers.find(u => u.id === localUser?.id);
-    if (!full) return { ok: false, error: "not_found" };
-
-    if (newPassword !== undefined) {
-      let currentOk = false;
-      if (full.isDemo) {
-        currentOk = full.password === currentPassword;
-      } else if (full.pwHash && full.pwSalt) {
-        currentOk = await verifyPw(currentPassword, full.pwHash, full.pwSalt);
-      } else {
-        currentOk = full.password === currentPassword;
-      }
-      if (!currentOk) return { ok: false, error: "wrong_password" };
-      if (newPassword.length < 8) return { ok: false, error: "too_short" };
-    }
-
-    let updatedPwFields = {};
-    if (newPassword !== undefined && !full.isDemo) {
-      const pwSalt = genSalt();
-      const pwHash = await hashPw(newPassword, pwSalt);
-      updatedPwFields = { pwHash, pwSalt, password: undefined };
-    }
-
-    const updated = {
-      ...full,
-      name: name ?? full.name,
-      avatar: avatar !== undefined ? avatar : full.avatar,
-      ...updatedPwFields,
-    };
-
-    if (!full.isDemo) {
-      saveUsers(loadUsers().map(u => u.id === localUser.id ? updated : u));
-    }
-    const { password: _pw, pwHash: _h, pwSalt: _s, ...session } = updated;
-    setLocalUser(session);
-    return { ok: true };
   };
+
+  // ── Resend email verification ──
+  const resendVerification = async () => {
+    if (!auth?.currentUser) return { ok: false };
+    try {
+      await sendEmailVerification(auth.currentUser);
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  };
+
+  // ── Update profile (name, avatar, password) ──
+  const updateUser = async ({ name, currentPassword, newPassword, avatar }) => {
+    if (!auth?.currentUser) return { ok: false, error: "not_found" };
+
+    try {
+      // Name update
+      if (name !== undefined) {
+        await updateProfile(auth.currentUser, { displayName: name });
+        await updateUserProfile(auth.currentUser.uid, { name });
+        setUser(prev => prev ? { ...prev, name } : prev);
+      }
+
+      // Avatar: store in Firestore (keep under ~700KB; ProfilePage enforces 2MB file limit)
+      if (avatar !== undefined) {
+        await updateUserProfile(auth.currentUser.uid, { avatar });
+        setUser(prev => prev ? { ...prev, avatar } : prev);
+      }
+
+      // Password change — requires reauthentication
+      if (newPassword !== undefined) {
+        if (!currentPassword) return { ok: false, error: "wrong_password" };
+        const credential = EmailAuthProvider.credential(
+          auth.currentUser.email,
+          currentPassword
+        );
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await updatePassword(auth.currentUser, newPassword);
+      }
+
+      return { ok: true };
+    } catch (err) {
+      if (
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/invalid-credential"
+      ) return { ok: false, error: "wrong_password" };
+      if (err.code === "auth/weak-password") return { ok: false, error: "too_short" };
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const authLoading = user === undefined;
 
   return (
     <AuthContext.Provider value={{
-      user, authLoading: false,
-      login, loginWithGoogle, logout, register,
-      updateUser, checkEmailForReset, resetPassword,
+      user:        authLoading ? null : user,
+      authLoading,
+      login,
+      loginWithGoogle,
+      logout,
+      register,
+      updateUser,
+      resetPassword,
+      resendVerification,
     }}>
       {children}
     </AuthContext.Provider>

@@ -65,33 +65,26 @@ function SecurityNotice({ lang }) {
           <div className="sec-row ok">
             <CheckCircle size={12} />
             {lang === "mn"
-              ? "Нууц үг PBKDF2-SHA256 (150,000 давталт) аргаар localStorage-д хадгалагддаг."
-              : "Passwords are hashed with PBKDF2-SHA256 (150,000 iterations) before storage."}
+              ? "Firebase Authentication ашигладаг — нууц үг хэзээ ч plain text хэлбэрээр хадгалагдахгүй."
+              : "Powered by Firebase Authentication — passwords are never stored in plain text."}
           </div>
           <div className="sec-row ok">
             <CheckCircle size={12} />
             {lang === "mn"
-              ? "Session 7 хоногийн дараа автоматаар дуусна."
-              : "Sessions expire automatically after 7 days."}
+              ? "Хэрэглэгчийн өгөгдөл Cloud Firestore-д хадгалагдана — өөр төхөөрөмжөөс нэвтэрсэн ч хэвээр байна."
+              : "User data stored in Cloud Firestore — accessible from any device."}
           </div>
-          <div className="sec-row warn">
-            <AlertTriangle size={12} />
+          <div className="sec-row ok">
+            <CheckCircle size={12} />
             {lang === "mn"
-              ? "Өгөгдөл зөвхөн таны хөтөчид хадгалагдана — backend сервер байхгүй."
-              : "Data is stored in your browser only — no backend server exists."}
+              ? "И-мэйл баталгаажуулалт болон нууц үг сэргээлт Firebase-ээр хийгддэг."
+              : "Email verification and password reset handled securely by Firebase."}
           </div>
-          <div className="sec-row warn">
-            <AlertTriangle size={12} />
+          <div className="sec-row ok">
+            <CheckCircle size={12} />
             {lang === "mn"
-              ? "Судалгааны тавцан — мэдээлэл зөвхөн таны төхөөрөмжид хадгалагдана."
-              : "Research platform — your data is stored only in your browser."}
-          </div>
-          <div className="sec-row warn">
-            <AlertTriangle size={12} />
-            {lang === "mn"
-              ? "Администратор эрх нь судалгааны зориулалттай — backend интеграц хийснээр бүрэн эрхийн удирдлага нэмэгдэнэ."
-              : "Admin access is for research purposes — full auth management requires backend integration."}
-
+              ? "Firestore Security Rules — хэрэглэгч зөвхөн өөрийн өгөгдлийг уншиж/засах боломжтой."
+              : "Firestore Security Rules enforce per-user data isolation."}
           </div>
         </div>
       )}
@@ -103,7 +96,7 @@ function SecurityNotice({ lang }) {
 export default function LoginPage() {
   const { t, lang } = useLang();
   usePageTitle(t.nav.login);
-  const { login, loginWithGoogle, register, checkEmailForReset, resetPassword, user } = useAuth();
+  const { login, loginWithGoogle, register, resetPassword, resendVerification, user } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -115,8 +108,8 @@ export default function LoginPage() {
   const [form, setForm]           = useState({ name: "", email: "", password: "", confirm: "", org: "" });
   const [error, setError]         = useState("");
   const [loading, setLoading]     = useState(false);
-  const [resetEmail, setResetEmail]   = useState("");
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [verifyNeeded, setVerifyNeeded] = useState(false);
 
   // Rate limiting
   const [attempts, setAttempts]   = useState(0);
@@ -139,11 +132,11 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError("");
-    const ok = await loginWithGoogle();
+    const result = await loginWithGoogle();
     setGoogleLoading(false);
-    if (ok) {
+    if (result.ok) {
       navigate(location.state?.from || "/dashboard", { replace: true });
-    } else {
+    } else if (result.error !== "cancelled") {
       setError(lang === "mn"
         ? "Google нэвтрэлт амжилтгүй болсон. Дахин оролдоно уу."
         : "Google sign-in failed. Please try again.");
@@ -153,7 +146,7 @@ export default function LoginPage() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const switchMode = (next) => {
-    setMode(next); setError(""); setResetSuccess(false);
+    setMode(next); setError(""); setResetSuccess(false); setVerifyNeeded(false);
     setShowPw(false); setShowNewPw(false);
     setForm({ name: "", email: "", password: "", confirm: "", org: "" });
   };
@@ -167,11 +160,18 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (mode === "login") {
-        const ok = await login(form.email, form.password);
-        if (ok) {
+        const result = await login(form.email, form.password);
+        if (result.ok) {
           setAttempts(0);
           navigate(location.state?.from || "/dashboard", { replace: true });
         } else {
+          if (result.error === "too_many") {
+            setLockout(LOCKOUT_SECS);
+            setError(lang === "mn"
+              ? `Хэт олон оролдлого. ${LOCKOUT_SECS}с хүлээнэ үү.`
+              : `Too many attempts. Wait ${LOCKOUT_SECS}s.`);
+            return;
+          }
           const next = attempts + 1;
           setAttempts(next);
           if (next >= MAX_ATTEMPTS) {
@@ -191,34 +191,30 @@ export default function LoginPage() {
           return;
         }
         if (form.password !== form.confirm) { setError(t.login.error_password_mismatch); return; }
-        const result = await register({ name: form.name, email: form.email, password: form.password, type: userType, org: form.org });
+        const result = await register({
+          name: form.name, email: form.email,
+          password: form.password, type: userType, org: form.org,
+        });
         if (!result.ok) {
           setError(result.error === "email_taken" ? t.login.error_email_taken
                  : result.error === "too_short"   ? (lang === "mn" ? "Нууц үг 8+ тэмдэгт байх ёстой" : "Password must be at least 8 characters")
                  : t.login.error_invalid);
           return;
         }
+        // Show email verification notice before going to dashboard
+        if (result.needsVerification) {
+          setVerifyNeeded(true);
+          return;
+        }
         navigate(location.state?.from || "/dashboard", { replace: true });
 
       } else if (mode === "forgot") {
-        const check = checkEmailForReset(form.email);
-        if (check.error === "email_not_found") { setError(t.login.error_email_not_found); return; }
-        if (check.error === "admin_reset")     { setError(t.login.error_admin_reset);     return; }
-        setResetEmail(form.email.trim().toLowerCase());
-        setForm(f => ({ ...f, password: "", confirm: "" }));
-        setMode("reset");
-
-      } else if (mode === "reset") {
-        if (form.password.length < 8) {
-          setError(lang === "mn" ? "Нууц үг 8+ тэмдэгт байх ёстой" : "Password must be at least 8 characters");
-          return;
-        }
-        if (form.password !== form.confirm) { setError(t.login.error_password_mismatch); return; }
-        const result = await resetPassword(resetEmail, form.password);
+        // Firebase sends password reset email directly
+        const result = await resetPassword(form.email);
         if (!result.ok) {
-          setError(result.error === "too_short"
-            ? (lang === "mn" ? "Нууц үг 8+ тэмдэгт байх ёстой" : "Password must be at least 8 characters")
-            : t.login.error_invalid);
+          setError(result.error === "email_not_found"
+            ? (lang === "mn" ? "Бүртгэлгүй и-мэйл хаяг байна." : "No account with that email.")
+            : (lang === "mn" ? "Алдаа гарлаа. Дахин оролдоно уу." : "An error occurred. Please try again."));
           return;
         }
         setResetSuccess(true);
@@ -297,60 +293,74 @@ export default function LoginPage() {
           <span>{APP_NAME}</span>
         </div>
 
-        {/* ── Forgot / Reset ── */}
-        {(mode === "forgot" || mode === "reset") && (
+        {/* ── Email verification notice (after registration) ── */}
+        {verifyNeeded && (
+          <>
+            <div className="forgot-icon">
+              <CheckCircle size={24} style={{ color: "#2a9d8f" }} />
+            </div>
+            <h1 className="login-title">
+              {lang === "mn" ? "И-мэйлээ баталгаажуулна уу" : "Verify your email"}
+            </h1>
+            <p className="forgot-subtitle">
+              {lang === "mn"
+                ? "Бүртгэлийн и-мэйл рүү баталгаажуулах холбоос илгээлээ. И-мэйлээ шалгаж, холбоос дээр дарна уу."
+                : "A verification link was sent to your email. Please check your inbox and click the link."}
+            </p>
+            <div className="reset-success">
+              <CheckCircle size={20} style={{ color: "#2a9d8f" }} />
+              <span>
+                {lang === "mn"
+                  ? "Баталгаажуулсны дараа нэвтэрч болно."
+                  : "You can sign in after verifying your email."}
+              </span>
+            </div>
+            <button
+              className="btn btn-primary login-btn"
+              onClick={async () => {
+                await resendVerification?.();
+                alert(lang === "mn" ? "Дахин илгээлээ!" : "Resent!");
+              }}
+              style={{ marginTop: "0.75rem" }}
+            >
+              {lang === "mn" ? "Дахин илгээх" : "Resend email"}
+            </button>
+            <button className="forgot-back-btn" onClick={() => switchMode("login")}>
+              <ArrowLeft size={14} />{lang === "mn" ? "Нэвтрэх хуудас руу буцах" : "Back to sign in"}
+            </button>
+          </>
+        )}
+
+        {/* ── Forgot password ── */}
+        {mode === "forgot" && !verifyNeeded && (
           <>
             <div className="forgot-icon">
               <KeyRound size={24} style={{ color: "#3a8fd4" }} />
             </div>
-            <h1 className="login-title">
-              {mode === "forgot" ? t.login.forgot_title : t.login.reset_title}
-            </h1>
-            {mode === "forgot" && <p className="forgot-subtitle">{t.login.forgot_subtitle}</p>}
-            {mode === "reset" && <p className="forgot-subtitle" style={{ color: "#2a9d8f" }}>{resetEmail}</p>}
+            <h1 className="login-title">{t.login.forgot_title}</h1>
+            <p className="forgot-subtitle">{t.login.forgot_subtitle}</p>
 
             {resetSuccess ? (
               <div className="reset-success">
                 <CheckCircle size={20} style={{ color: "#2a9d8f" }} />
-                <span>{t.login.reset_success}</span>
+                <span>
+                  {lang === "mn"
+                    ? "Нууц үг сэргээх холбоос и-мэйлд илгээгдлээ. И-мэйлээ шалгана уу."
+                    : "Password reset link sent! Check your email inbox."}
+                </span>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="login-form">
-                {mode === "forgot" && (
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="forgot-email">{t.login.email}</label>
-                    <input id="forgot-email" name="email" type="email" value={form.email}
-                      onChange={handleChange} className="form-input" required
-                      placeholder="example@email.com" autoFocus />
-                  </div>
-                )}
-                {mode === "reset" && (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="reset-pw">{t.login.reset_new}</label>
-                      <div className="pw-row">
-                        <input id="reset-pw" name="password" type={showNewPw ? "text" : "password"}
-                          value={form.password} onChange={handleChange}
-                          className="form-input" required minLength={8} placeholder="••••••••" autoFocus />
-                        <button type="button" className="pw-toggle" onClick={() => setShowNewPw(!showNewPw)}
-                          aria-label={showNewPw ? "Нууц үгийг нуух" : "Нууц үгийг харуулах"}
-                          aria-pressed={showNewPw}>
-                          {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                      <StrengthMeter pw={form.password} lang={lang} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="reset-confirm">{t.login.reset_confirm}</label>
-                      <input id="reset-confirm" name="confirm" type="password" value={form.confirm}
-                        onChange={handleChange} className="form-input" required placeholder="••••••••" />
-                    </div>
-                  </>
-                )}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="forgot-email">{t.login.email}</label>
+                  <input id="forgot-email" name="email" type="email" value={form.email}
+                    onChange={handleChange} className="form-input" required
+                    placeholder="example@email.com" autoFocus />
+                </div>
                 {error && <div className="login-error" role="alert">{error}</div>}
                 <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
                   {loading ? <span className="login-spinner" /> : <KeyRound size={17} />}
-                  {mode === "forgot" ? t.login.forgot_btn : t.login.reset_btn}
+                  {t.login.forgot_btn}
                 </button>
               </form>
             )}
@@ -361,7 +371,7 @@ export default function LoginPage() {
         )}
 
         {/* ── Login / Register ── */}
-        {(mode === "login" || mode === "register") && (
+        {(mode === "login" || mode === "register") && !verifyNeeded && (
           <>
             <h1 className="login-title">
               {mode === "login" ? t.login.title : t.login.register_title}

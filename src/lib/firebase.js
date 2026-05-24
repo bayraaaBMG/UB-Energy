@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,8 +14,9 @@ const firebaseConfig = {
 export const FIREBASE_CONFIGURED = Boolean(import.meta.env.VITE_FIREBASE_API_KEY);
 
 if (!FIREBASE_CONFIGURED) {
-  console.info("[UBenergy] Firebase env vars not set — Google login disabled.");
+  console.warn("[UBenergy] Firebase env vars not set — auth disabled.");
 }
 
-const app  = FIREBASE_CONFIGURED ? initializeApp(firebaseConfig) : null;
+const app = FIREBASE_CONFIGURED ? initializeApp(firebaseConfig) : null;
 export const auth = FIREBASE_CONFIGURED ? getAuth(app) : null;
+export const db   = FIREBASE_CONFIGURED ? getFirestore(app) : null;

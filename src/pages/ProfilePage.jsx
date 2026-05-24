@@ -595,27 +595,29 @@ ${bList.length > 0 ? `
             </form>
           </div>
 
-          {/* ── Change password ── */}
-          <div className="card">
-            <h3 className="section-title"><Lock size={16} style={{ marginRight: 6 }} />{t.profile.change_pw_title}</h3>
-            <form onSubmit={handleSavePw} className="profile-form">
-              <div className="form-group">
-                <label className="form-label">{t.profile.current_pw}</label>
-                <input type="password" className="form-input" value={pw.current} onChange={e => setPw({ ...pw, current: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{t.profile.new_pw}</label>
-                <input type="password" className="form-input" value={pw.next} onChange={e => setPw({ ...pw, next: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">{t.profile.confirm_pw}</label>
-                <input type="password" className="form-input" value={pw.confirm} onChange={e => setPw({ ...pw, confirm: e.target.value })} required />
-              </div>
-              {pwErr  && <p className="profile-error"><AlertCircle size={14} /> {pwErr}</p>}
-              {pwSaved && <p className="profile-success"><CheckCircle size={14} /> {t.profile.pw_saved_msg}</p>}
-              <button type="submit" className="btn btn-primary">{t.profile.pw_save_btn}</button>
-            </form>
-          </div>
+          {/* ── Change password — hidden for Google users ── */}
+          {!user.isGoogle && (
+            <div className="card">
+              <h3 className="section-title"><Lock size={16} style={{ marginRight: 6 }} />{t.profile.change_pw_title}</h3>
+              <form onSubmit={handleSavePw} className="profile-form">
+                <div className="form-group">
+                  <label className="form-label">{t.profile.current_pw}</label>
+                  <input type="password" className="form-input" value={pw.current} onChange={e => setPw({ ...pw, current: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t.profile.new_pw}</label>
+                  <input type="password" className="form-input" value={pw.next} onChange={e => setPw({ ...pw, next: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t.profile.confirm_pw}</label>
+                  <input type="password" className="form-input" value={pw.confirm} onChange={e => setPw({ ...pw, confirm: e.target.value })} required />
+                </div>
+                {pwErr  && <p className="profile-error"><AlertCircle size={14} /> {pwErr}</p>}
+                {pwSaved && <p className="profile-success"><CheckCircle size={14} /> {t.profile.pw_saved_msg}</p>}
+                <button type="submit" className="btn btn-primary">{t.profile.pw_save_btn}</button>
+              </form>
+            </div>
+          )}
 
           {/* ── Settings (full width, collapsible) ── */}
           <div className="card prof-collapsible">
