@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-Dw2cE7zH.js";import{l as t}from"./vendor-leaflet-BUIjFeha.js";import{i as n}from"./createLucideIcon-C4lfbe8f.js";var r=e(t(),1);function i(e){(0,r.useEffect)(()=>(document.title=e?`${e} — ${n}`:n,()=>{document.title=n}),[e])}export{i as t};

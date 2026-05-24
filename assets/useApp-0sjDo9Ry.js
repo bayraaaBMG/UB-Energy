@@ -1,0 +1,1 @@
+import{r as e}from"./createLucideIcon-C4lfbe8f.js";import{n as t}from"./AuthContext-D8RLaMen.js";function n(){let{t:n,lang:r}=e(),{user:i,authLoading:a}=t();return{t:n,lang:r,user:i,authLoading:a}}export{n as t};
