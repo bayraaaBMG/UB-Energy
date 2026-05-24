@@ -165,6 +165,12 @@ export default function LoginPage() {
           setAttempts(0);
           navigate(location.state?.from || "/dashboard", { replace: true });
         } else {
+          if (result.error === "not_configured") {
+            setError(lang === "mn"
+              ? "Firebase тохируулагдаагүй байна. Vercel дээр ENV vars нэм."
+              : "Firebase not configured. Add ENV vars on Vercel.");
+            return;
+          }
           if (result.error === "too_many") {
             setLockout(LOCKOUT_SECS);
             setError(lang === "mn"
@@ -196,9 +202,12 @@ export default function LoginPage() {
           password: form.password, type: userType, org: form.org,
         });
         if (!result.ok) {
-          setError(result.error === "email_taken" ? t.login.error_email_taken
-                 : result.error === "too_short"   ? (lang === "mn" ? "Нууц үг 8+ тэмдэгт байх ёстой" : "Password must be at least 8 characters")
-                 : t.login.error_invalid);
+          setError(
+            result.error === "email_taken"    ? t.login.error_email_taken
+          : result.error === "too_short"      ? (lang === "mn" ? "Нууц үг 8+ тэмдэгт байх ёстой" : "Password must be at least 8 characters")
+          : result.error === "not_configured" ? (lang === "mn" ? "Firebase тохируулагдаагүй байна. Vercel дээр ENV vars нэм." : "Firebase not configured. Add ENV vars on Vercel.")
+          : (lang === "mn" ? `Бүртгэл амжилтгүй: ${result.error}` : `Registration failed: ${result.error}`)
+          );
           return;
         }
         // Show email verification notice before going to dashboard

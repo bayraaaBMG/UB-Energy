@@ -80,6 +80,7 @@ export function AuthProvider({ children }) {
 
   // ── Register with email/password ──
   const register = async ({ name, email, password, type, org }) => {
+    if (!FIREBASE_CONFIGURED || !auth) return { ok: false, error: "not_configured" };
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(cred.user, { displayName: name.trim() });
@@ -106,6 +107,7 @@ export function AuthProvider({ children }) {
 
   // ── Login with email/password ──
   const login = async (email, password) => {
+    if (!FIREBASE_CONFIGURED || !auth) return { ok: false, error: "not_configured" };
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       return { ok: true };
