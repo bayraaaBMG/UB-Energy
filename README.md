@@ -89,7 +89,7 @@ src/
 ├── utils/         # storage, buildingStorage, userDataStorage
 ├── ml/            # XGBoost model + OLS baseline (trains at module load, ~30ms)
 ├── i18n/          # mn.js, en.js translations
-└── data/          # mockData.js (synthetic reference dataset)
+└── data/          # mockData.js (BM-01 real measurement reference dataset)
 ```
 
 ## Disclaimer

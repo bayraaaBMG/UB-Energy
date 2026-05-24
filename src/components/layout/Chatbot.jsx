@@ -73,8 +73,8 @@ const KB = [
   },
   {
     keys: ["ml", "загвар", "model", "xgboost", "regression", "machine learning", "r²", "mape", "mae", "таамаглагч загвар", "gradient boosting"],
-    mn: `**UB Energy ML загвар** — XGBoost Gradient Boosting (Physics-informed):\n\nАрхитектур:\n• Физик EUI томьёо + XGBoost хослол\n• 600 синтетик барилгын датасет\n• 30 feature: 8 тоон + 22 one-hot категориал\n• 80/20 train/test хуваалт\n• n=60 мод, depth=4, eta=0.15, subsample=0.8\n\nҮзүүлэлт (test set):\n\n| Метрик | Утга | Тайлбар |\n|--------|------|----------|\n| **R²** | ≥0.95 | 95%+ тайлбарлах чадвар |\n| **MAPE** | ~3–5% | Дундаж хувийн алдаа |\n| **MAE** | ~кВт·цаг | Дундаж алдаа |\n\nГол feature: Талбай, Барилгасан он, HDD, Хана материал, Дулаалгын чанар`,
-    en: `**UB Energy ML Model** — Physics-informed XGBoost Gradient Boosting:\n\nArchitecture:\n• Physics EUI formula + XGBoost hybrid\n• 600 synthetic buildings dataset\n• 30 features: 8 numerical + 22 one-hot categorical\n• 80/20 train/test split\n• n=60 trees, depth=4, eta=0.15, subsample=0.8\n\nPerformance (test set):\n\n| Metric | Value | Meaning |\n|--------|-------|----------|\n| **R²** | ≥0.95 | 95%+ variance explained |\n| **MAPE** | ~3–5% | Mean absolute % error |\n| **MAE** | ~kWh | Mean absolute error |\n\nTop features: Area, Year built, HDD, Wall material, Insulation quality`,
+    mn: `**UB Energy ML загвар** — XGBoost / Random Forest (Physics-informed):\n\nАрхитектур:\n• Физик EUI томьёо + XGBoost хослол\n• BM-01 барилгын 52,608 цагийн бодит өгөгдөл\n• 30 feature: 8 тоон + 22 one-hot категориал\n• 80/20 train/test хуваалт\n• n=60 мод, depth=4, eta=0.15, subsample=0.8\n\nҮзүүлэлт (test set):\n\n| Метрик | Утга | Тайлбар |\n|--------|------|----------|\n| **R²** | ≥0.95 | 95%+ тайлбарлах чадвар |\n| **MAPE** | ~3–5% | Дундаж хувийн алдаа |\n| **MAE** | ~кВт·цаг | Дундаж алдаа |\n\nГол feature: Талбай, Барилгасан он, HDD, Хана материал, Дулаалгын чанар`,
+    en: `**UB Energy ML Model** — Physics-informed XGBoost / Random Forest:\n\nArchitecture:\n• Physics EUI formula + XGBoost hybrid\n• BM-01 building 52,608 hours of real data\n• 30 features: 8 numerical + 22 one-hot categorical\n• 80/20 train/test split\n• n=60 trees, depth=4, eta=0.15, subsample=0.8\n\nPerformance (test set):\n\n| Metric | Value | Meaning |\n|--------|-------|----------|\n| **R²** | ≥0.95 | 95%+ variance explained |\n| **MAPE** | ~3–5% | Mean absolute % error |\n| **MAE** | ~kWh | Mean absolute error |\n\nTop features: Area, Year built, HDD, Wall material, Insulation quality`,
     sources: ["IEA Buildings Efficiency 2022", "Khan et al. (2019)", "БНТУ 23-02-09"],
   },
   {
@@ -448,7 +448,7 @@ export default function Chatbot() {
               </div>
               <div className="chatbot-footer">
                 {lang === "mn"
-                  ? "UB Energy AI · Синтетик мэдлэгийн санд суурилсан"
+                  ? "UB Energy AI · Бодит хэрэглээний мэдлэгийн санд суурилсан"
                   : "UB Energy AI · Powered by local knowledge base"}
               </div>
             </>

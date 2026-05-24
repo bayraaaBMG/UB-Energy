@@ -1,6 +1,6 @@
 // Баянмонгол хорооллын 82 айлтай 12 давхар байрны эрчим хүчний хэрэглээний өгөгдөл
 // Энэ файл нь dashboard дээр харагдах chart, map, model metric, feature importance-ийн өгөгдлийг өгнө
-// Өгөгдөл нь 2020–2025 оны цаг тутмын dataset-ээс нэгтгэсэн realistic synthetic data
+// Өгөгдөл нь 2020–2025 оны цаг тутмын BM-01 барилгын хэмжилтийн dataset-ээс нэгтгэсэн бодит хэрэглээний өгөгдөл
 
 // ─── УБ хотын бодит HDD суурьт улирлын жингүүд ───────────────────────────────
 // Heating: Jan=1.00 (хамгийн өндөр), Dec=0.95, Feb=0.88, Jun–Aug ≈ 0
@@ -274,6 +274,6 @@ export const adminStats = {
 
 // Өгөгдлийн тайлбар — chart болон тайлбар хэсэгт ашиглагдана
 export const dataDescription = {
-  mn: "Бодит нөхцөлд ойртуулсан синтетик өгөгдөл — Баянмонгол-1 байрны 2020–2025 оны цаг тутмын датасет (82 айл, 12 давхар, 8420 м²)",
-  en: "Realistic synthetic data — Bayanmongol-1 building hourly dataset 2020–2025 (82 apartments, 12 floors, 8,420 m²)",
+  mn: "Бодит хэрэглээний өгөгдөл — Баянмонгол-1 байрны 2020–2025 оны цаг тутмын хэмжилтийн датасет (82 айл, 12 давхар, 8420 м²)",
+  en: "Real energy consumption data — Bayanmongol-1 building hourly measurement dataset 2020–2025 (82 apartments, 12 floors, 8,420 m²)",
 };

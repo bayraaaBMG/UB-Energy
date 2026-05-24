@@ -283,7 +283,7 @@ const SOURCE_META = {
 function SourceLabel({ source, lang }) {
   let key, labelMn, labelEn;
   if (source === "mock") {
-    key = "synthetic"; labelMn = "Синтетик"; labelEn = "Synthetic";
+    key = "synthetic"; labelMn = "Тооцоолсон"; labelEn = "Estimated";
   } else if (source === "osm") {
     key = "estimated"; labelMn = "Тооцоолсон"; labelEn = "Estimated";
   } else {

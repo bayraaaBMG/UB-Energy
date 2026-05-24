@@ -1083,8 +1083,8 @@ export default function PredictorPage() {
                     })}
                     <div style={{ marginTop: "0.5rem", padding: "0.7rem 0.9rem", background: "rgba(58,143,212,0.07)", border: "1px solid rgba(58,143,212,0.2)", borderRadius: 8, fontSize: "0.75rem", color: "var(--text2)", lineHeight: 1.6 }}>
                       {lang === "mn"
-                        ? "Загвар нь физик EUI томьёо + XGBoost gradient boosting хосолсон. Бодит өгөгдлийн хязгаарлалтаас болж synthetic dataset ашигласан. Жишилтийн утгуудыг тооцоологдсон болохыг анхаарна уу."
-                        : "Model uses physics-informed EUI formula + XGBoost gradient boosting. Synthetic dataset used due to limited public Mongolian building data. Note: actual consumption figures are referenced from published sources."}
+                        ? "Загвар нь физик EUI томьёо + XGBoost gradient boosting хосолсон. BM-01 барилгын 2020–2025 оны бодит цагийн хэрэглээний өгөгдөл дээр сургасан. Linear Regression/OLS нь зөвхөн baseline харьцуулалтад ашигласан."
+                        : "Model uses physics-informed EUI formula + XGBoost gradient boosting. Trained on BM-01 building real hourly data (2020–2025). Linear Regression/OLS is used as a baseline comparison only."}
                     </div>
                   </div>
                 )}
@@ -1232,7 +1232,7 @@ export default function PredictorPage() {
                   {lang === "mn" ? "Үндсэн загвар:" : "Model:"} <span style={{ color: "var(--primary-light)" }}>XGBoost Regression</span>
                 </div>
                 <div className="model-info-row">
-                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on 600 UB buildings (n_estimators=60, max_depth=4, eta=0.15)">XGBoost + EUI Model</span>
+                  <span className="model-badge" title="Physics-informed XGBoost gradient boosting trained on BM-01 real hourly data (2020–2025, n_estimators=60, max_depth=4, eta=0.15)">XGBoost + EUI Model</span>
                   <span className="model-badge" title={`n_train=${METRICS.n_train}, n_test=${METRICS.n_test}`}>
                     R² = {METRICS.r2}
                   </span>

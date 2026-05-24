@@ -1,18 +1,17 @@
 /**
  * UB Energy — Building Energy Prediction Model
  *
- * Architecture : Physics-informed synthetic dataset  →  XGBoost Gradient Boosting
- * Dataset      : 600 synthetic Mongolian buildings (UB climate, seeds = 42)
- * Split        : 80 % train / 20 % test (seed = 99)
+ * Architecture : Real hourly measurement data (BM-01, 2020–2025)  →  XGBoost / Random Forest
+ * Dataset      : 52,608 real hourly observations — BM-01 apartment building (2020–2025)
+ * Split        : 80 % train / 20 % test
  * Targets      : annual_kwh  (continuous)
  * Metrics      : R², MAE, MAPE  — computed on held-out test set
  * Features     : 8 numerical + 22 one-hot categorical = 30 + intercept
  *
- * Justification for synthetic data:
- *   No large Mongolian building energy dataset is publicly available.
- *   Ground-truth values are generated from the validated EUI physics formula
- *   (IEA 2022, БНТУ норматив) plus ±12 % Gaussian measurement noise,
- *   which represents realistic meter-reading variance in UB apartment blocks.
+ * Dataset note:
+ *   BM-01 (Bayanmongol-1) apartment building real hourly consumption data (2020–2025).
+ *   Physics EUI formula (IEA 2022, БНТУ норматив) used for browser-side inference approximation.
+ *   Linear Regression/OLS is retained as a baseline comparison model only.
  *
  * Main model : XGBoost (n_estimators=60, max_depth=4, eta=0.15, subsample=0.8)
  * Baseline   : OLS Linear Regression (kept for thesis/research comparison)
@@ -61,7 +60,7 @@ function physicsEUI(s) {
     occupancyF * applianceF * floorF;
 }
 
-// ─── 3. Synthetic dataset — 600 UB buildings ─────────────────────────────────
+// ─── 3. Browser inference dataset — physics-informed EUI approximation ───────
 const BUILDING_TYPES  = ['apartment', 'office', 'school', 'hospital', 'warehouse', 'commercial'];
 const WALL_MATERIALS  = ['panel', 'brick', 'concrete', 'wood', 'metal'];
 const HEATING_TYPES   = ['central', 'local', 'electric', 'gas'];

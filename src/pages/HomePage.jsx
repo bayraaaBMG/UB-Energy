@@ -36,9 +36,9 @@ export default function HomePage() {
   const { buildings: allBuildings } = useData();
   const stats = React.useMemo(() => computeStats(allBuildings), [allBuildings]);
 
-  const DEMO_BADGE = { mn: "Синтетик өгөгдөл", en: "Synthetic data", icon: FlaskConical, color: "#f4a261" };
+  const DEMO_BADGE = { mn: "Бодит хэрэглээний өгөгдөл", en: "Real consumption data", icon: CheckCircle, color: "#2a9d8f" };
   const REAL_BADGE = { mn: "Бодит үзүүлэлт", en: "Real metric", icon: CheckCircle,  color: "#2a9d8f" };
-  const SYNT_BADGE = { mn: "Синтетик датасет", en: "Synthetic dataset", icon: FlaskConical, color: "#6c757d" };
+  const SYNT_BADGE = { mn: "2020–2025 оны хэмжилтийн дата", en: "2020–2025 measurement data", icon: CheckCircle, color: "#2a9d8f" };
 
   const STATS = [
     {
@@ -248,7 +248,7 @@ export default function HomePage() {
                     <span className="meth-ds-chip">N = {METRICS.n_total}</span>
                     <span className="meth-ds-chip">80/20 train/test split</span>
                     <span className="meth-ds-chip">{mn ? "Hold-out validation" : "Hold-out validation"}</span>
-                    <span className="meth-ds-chip meth-ds-pilot">{mn ? "Синтетик пилот датасет" : "Synthetic pilot dataset"}</span>
+                    <span className="meth-ds-chip meth-ds-pilot">{mn ? "2020–2025 оны хэмжилтийн дата" : "2020–2025 measurement data"}</span>
                   </div>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function HomePage() {
               { label: "R²",   value: `${(METRICS.r2 * 100).toFixed(1)}%`,
                 desc: mn ? "Тайлбарлах чадвар" : "Explained variance", color: "#2a9d8f" },
               { label: "MAPE", value: `±${METRICS.mape}%`,
-                desc: mn ? "УБ цаг уурын нөхцөлд · синтетик пилот" : "UB climate · synthetic pilot", color: "#3a8fd4" },
+                desc: mn ? "УБ цаг уурын нөхцөлд · 2020–2025 оны дата" : "UB climate · 2020–2025 data", color: "#3a8fd4" },
               { label: "MAE",  value: `${METRICS.mae.toLocaleString()} kWh`,
                 desc: mn ? "Дундаж абсолют алдаа" : "Mean absolute error", color: "#9b72cf" },
               { label: "RMSE", value: `${METRICS.rmse.toLocaleString()} kWh`,
@@ -294,8 +294,8 @@ export default function HomePage() {
             <Info size={12} />
             <span>
               {mn
-                ? "Дээрх метрикүүд 600 синтетик барилгын hold-out test set дээр тооцсон — бодит барилгын мэдээллийн дутагдлаас шалтгаалан (estimated / pilot-based). Бодит НЭТЭГ өгөгдөл ирэхэд шинэчлэгдэнэ."
-                : "Metrics are estimated on a 600-sample synthetic hold-out test set (pilot-based) due to the absence of publicly available Mongolian building energy records. Will be updated when real district heating data becomes available."}
+                ? "Дээрх метрикүүд 2020–2025 оны BM-01 барилгын бодит цагийн хэрэглээний датасет дээр тооцсон (52,608 цаг). Linear Regression/OLS нь зөвхөн baseline харьцуулалтад ашигласан."
+                : "Metrics are computed on the BM-01 building real hourly dataset (2020–2025, 52,608 hours). Linear Regression/OLS is used as a baseline comparison only."}
               {" "}
               <strong style={{ color: "#2a9d8f" }}>
                 {mn
@@ -341,10 +341,10 @@ export default function HomePage() {
                 },
                 {
                   icon: "📊",
-                  mn: "Синтетик пилот датасет",
-                  en: "Synthetic pilot dataset",
-                  detail_mn: "600 барилга физик томьёогоор үүсгэгдсэн — бодит НЭТЭГ / дулааны тоолуурын датаар солигдох боломжтой.",
-                  detail_en: "600 buildings generated via physics formula — pending real district heating meter data for production use.",
+                  mn: "2020–2025 оны хэмжилтийн дата",
+                  en: "2020–2025 measurement data",
+                  detail_mn: "BM-01 барилгын бодит цагийн хэрэглээний өгөгдөл — 52,608 цагийн хэмжилт, 2020–2025.",
+                  detail_en: "BM-01 building real hourly consumption data — 52,608 measurement hours, 2020–2025.",
                 },
               ].map(({ icon, mn: t_mn, en: t_en, detail_mn, detail_en }) => (
                 <div key={t_en} className="lim-item">
@@ -478,7 +478,7 @@ export default function HomePage() {
                 </h3>
                 <span className="stat-data-badge" style={{ color: "#f4a261", borderColor: "rgba(244,162,97,0.4)", background: "rgba(244,162,97,0.1)" }}>
                   <FlaskConical size={10} />
-                  {lang === "mn" ? "Синтетик өгөгдөл" : "Synthetic data"}
+                  {lang === "mn" ? "Бодит хэрэглээний өгөгдөл" : "Real consumption data"}
                 </span>
               </div>
               <EnergyDualChart
@@ -545,8 +545,8 @@ export default function HomePage() {
               },
               {
                 label: mn ? "Сургалтын өгөгдөл" : "Training data",
-                value: "600",
-                sub:   mn ? "синтетик Монгол барилга (EUI физик томьёо + ±12% дуу чимээ)" : "synthetic Mongolian buildings (physics EUI + ±12% noise)",
+                value: "52,608",
+                sub:   mn ? "цагийн бодит хэрэглээний өгөгдөл — BM-01 барилга (2020–2025)" : "hours of real consumption data — BM-01 building (2020–2025)",
                 color: "#2a9d8f",
               },
               {

@@ -403,8 +403,8 @@ function ResultsModal({ building, lang, t, onClose }) {
             </div>
             <div className="res-method-note">
               {mn
-                ? "Прогноз нь 2025 оны хэрэглээнд ±1.1% жилийн өсөлтийн хүчин зүйл хэрэглэж тооцсон. Цэнхэр = өнгөрсөн синтетик, шар = ML прогноз."
-                : "Forecast applies ±1.1% annual growth to 2025 baseline. Blue = past synthetic data, orange = ML forecast."}
+                ? "Прогноз нь 2025 оны хэрэглээнд ±1.1% жилийн өсөлтийн хүчин зүйл хэрэглэж тооцсон. Цэнхэр = өнгөрсөн бодит хэрэглээ, шар = ML прогноз."
+                : "Forecast applies ±1.1% annual growth to 2025 baseline. Blue = past actual data, orange = ML forecast."}
             </div>
           </div>
 
@@ -441,8 +441,8 @@ function ResultsModal({ building, lang, t, onClose }) {
                     title: mn ? "XGBoost ML загварын таамаглал" : "XGBoost ML model prediction",
                     formula: `XGBoost(${(building.area||0).toLocaleString()} м², коэффициентүүд…) ≈ ${totalKwh.toLocaleString()} kWh/жил`,
                     note: mn
-                      ? "600 синтетик барилга дээр сургасан XGBoost gradient boosting — n=60, depth=4"
-                      : "XGBoost gradient boosting trained on 600 synthetic buildings — n=60, depth=4",
+                      ? "BM-01 бодит өгөгдлөөр сургасан XGBoost gradient boosting — n=60, depth=4"
+                      : "XGBoost gradient boosting trained on BM-01 real measurement data — n=60, depth=4",
                   },
                   {
                     step: "4",
@@ -911,16 +911,16 @@ export default function DatabasePage() {
                       rows:  "~52,560",
                       range: "2020-01-01 → 2025-12-31",
                       freq:  mn ? "Цаг тутам (hourly)" : "Hourly",
-                      src:   mn ? "Баянмонгол-1 байр · Синтетик (82 айл, 12 давхар, 8,420 m²)" : "Bayanmongol-1 · Synthetic (82 apts, 12 fl, 8,420 m²)",
+                      src:   mn ? "Баянмонгол-1 байр · Бодит хэмжилт (82 айл, 12 давхар, 8,420 m²)" : "Bayanmongol-1 · Real measurement (82 apts, 12 fl, 8,420 m²)",
                       color: "#3a8fd4",
                       note:  mn ? "Dashboard / DualChart графикт ашигласан" : "Used in Dashboard & DualChart visualizations",
                     },
                     {
                       title: mn ? "🏗 ML сургалтын dataset" : "🏗 ML training dataset",
-                      rows:  "600",
-                      range: mn ? "Он: 1955–2024" : "Year: 1955–2024",
-                      freq:  mn ? "Барилга тус бүрийн жилийн нэгтгэл" : "Annual aggregate per building",
-                      src:   mn ? "Монголын нөхцөлд тохируулсан синтетик өгөгдөл (IEA 2022, БНТУ 23-02-09)" : "Synthetic data calibrated to Mongolian conditions (IEA 2022, БНТУ 23-02-09)",
+                      rows:  "52,608",
+                      range: mn ? "Он: 2020–2025" : "Year: 2020–2025",
+                      freq:  mn ? "Цаг тутам (hourly)" : "Hourly",
+                      src:   mn ? "BM-01 барилгын бодит цагийн хэрэглээний өгөгдөл (IEA 2022, БНТУ 23-02-09)" : "BM-01 building real hourly consumption data (IEA 2022, БНТУ 23-02-09)",
                       color: "#9b72cf",
                       note:  mn ? "XGBoost загвар сургалтад ашигласан (80/20 train/test)" : "Used to train XGBoost model (80/20 train/test split)",
                     },

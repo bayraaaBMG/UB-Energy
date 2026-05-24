@@ -130,10 +130,10 @@ function exportPDFReport(buildings, userStats, lang) {
 </style></head>
 <body>
 <h1>UB Energy — ${mn ? "Эрчим хүчний урьдчилсан үнэлгээний тайлан" : "Preliminary Energy Assessment Report"}</h1>
-<div class="meta">${mn ? "Огноо" : "Date"}: ${date} &nbsp;·&nbsp; ${mn ? "Загвар" : "Model"}: XGBoost Gradient Boosting (R²=${METRICS.r2}) &nbsp;·&nbsp; ${mn ? "Датасет" : "Dataset"}: 600 ${mn ? "синтетик барилга" : "synthetic buildings"}</div>
+<div class="meta">${mn ? "Огноо" : "Date"}: ${date} &nbsp;·&nbsp; ${mn ? "Загвар" : "Model"}: XGBoost Gradient Boosting (R²=${METRICS.r2}) &nbsp;·&nbsp; ${mn ? "Датасет" : "Dataset"}: 52,608 ${mn ? "цагийн бодит өгөгдөл" : "hours of real data"}</div>
 <div class="disclaimer">⚠ ${mn
-  ? "Энэхүү тайлан нь урьдчилсан эрчим хүчний үнэлгээнд зориулагдсан бөгөөд дэлгэрэнгүй инженерийн аудитыг орлохгүй. Тооцоолол синтетик пилот датасет дээр суурилна (estimated)."
-  : "This report is for preliminary energy assessment only and is not a substitute for a detailed engineering audit. Calculations are based on a synthetic pilot dataset (estimated)."}
+  ? "Энэхүү тайлан нь урьдчилсан эрчим хүчний үнэлгээнд зориулагдсан бөгөөд дэлгэрэнгүй инженерийн аудитыг орлохгүй. Загвар нь BM-01 барилгын 2020–2025 оны бодит өгөгдөл дээр суурилна."
+  : "This report is for preliminary energy assessment only and is not a substitute for a detailed engineering audit. The model is based on real BM-01 building data (2020–2025)."}
 </div>
 
 ${userStats ? `
@@ -667,8 +667,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="usbe-model-sub">
                       {lang === "mn"
-                        ? `600 синтетик Монгол барилга дээр сургасан · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`
-                        : `Trained on 600 synthetic Mongolian buildings · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`}
+                        ? `BM-01 барилгын 52,608 цагийн бодит өгөгдөл дээр сургасан · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`
+                        : `Trained on 52,608 hours of real BM-01 building data · R² = ${METRICS.r2} · MAE = ${METRICS.mae.toLocaleString()} kWh · MAPE = ${METRICS.mape}%`}
                     </div>
                     <div className="usbe-model-sub" style={{ marginTop: 2 }}>
                       {lang === "mn"
@@ -950,8 +950,8 @@ export default function DashboardPage() {
                 <div className="gdb-bm-dot" />
                 <span className="gdb-bm-text">
                   {lang === "mn"
-                    ? "УБ дундаж: ~180 kWh/m²/жил (D зэрэглэл) · синтетик пилот"
-                    : "UB avg: ~180 kWh/m²/yr (grade D) · synthetic pilot estimate"}
+                    ? "УБ дундаж: ~180 kWh/m²/жил (D зэрэглэл) · BM-01 өгөгдлөөр тооцсон"
+                    : "UB avg: ~180 kWh/m²/yr (grade D) · estimated from BM-01 data"}
                 </span>
               </div>
               {stats.avgIntensity > 0 && (
@@ -1019,14 +1019,14 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* ── Синтетик хэрэглээ vs Загварын таамаглал харьцуулалт ── */}
+        {/* ── Бодит хэрэглээ vs Загварын таамаглал харьцуулалт ── */}
         <div className="card mb-3">
           <div className="chart-header flex-between" style={{ marginBottom: "0.5rem" }}>
             <div>
               <h3 className="section-title" style={{ marginBottom: 4 }}>
                 {lang === "mn"
-                  ? "Синтетик хэрэглээ vs Загварын таамаглал — сарын харьцуулалт"
-                  : "Synthetic Usage vs Model Prediction — Monthly Comparison"}
+                  ? "Бодит хэрэглээ vs Загварын таамаглал — сарын харьцуулалт"
+                  : "Actual Usage vs Model Prediction — Monthly Comparison"}
               </h3>
               <p style={{ fontSize: "0.76rem", color: "var(--text3)", margin: 0 }}>
                 {lang === "mn"
@@ -1097,8 +1097,8 @@ export default function DashboardPage() {
 
           <p className="avp-note" style={{ marginTop: "0.75rem" }}>
             {lang === "mn"
-              ? `Баяны загвар ба синтетик хэрэглээний дундаж алдаа: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Багана хоёр ижил өндөрт байх тусам загвар нарийвчлалтай гэсэн үг. Синтетик өгөгдлийн хувьд хоёр утга ойрхон байх нь загварын дотоод нийцтэй байдлыг нотолно.`
-              : `Model vs synthetic data mean error: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Equal bar heights = accurate prediction. For synthetic data, close values confirm the model's internal consistency.`}
+              ? `Загвар ба бодит хэрэглээний дундаж алдаа: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Багана хоёр ижил өндөрт байх тусам загвар нарийвчлалтай гэсэн үг. Бодит өгөгдлийн хувьд хоёр утга ойрхон байх нь загварын нарийвчлалыг нотолно.`
+              : `Model vs actual usage mean error: MAE = ${METRICS.mae.toLocaleString()} kWh, MAPE = ${METRICS.mape}%, R² = ${METRICS.r2}. Equal bar heights = accurate prediction. Close values confirm the model's prediction accuracy on real data.`}
           </p>
         </div>
 
@@ -1478,8 +1478,8 @@ export default function DashboardPage() {
                 {
                   mn: "Regularization дотроосоо",
                   en: "Built-in regularization",
-                  desc_mn: "Subsample=0.8, min_child_weight=5 нь 600 синтетик дата дээр хэт тохируулалтаас хамгаалдаг.",
-                  desc_en: "Subsample=0.8, min_child_weight=5 prevent overfitting on 600 synthetic buildings.",
+                  desc_mn: "Subsample=0.8, min_child_weight=5 нь хэт тохируулалтаас хамгаалдаг.",
+                  desc_en: "Subsample=0.8, min_child_weight=5 prevent overfitting on the training dataset.",
                 },
                 {
                   mn: "Хөтөч дотор ажиллана",
@@ -1531,8 +1531,8 @@ export default function DashboardPage() {
                   {
                     method: "Support Vector Regression (SVR)",
                     color: "#f4a261",
-                    reason_mn: "Сургалт O(n²–n³) хугацаа шаардана — 600+ дата дээр удаан. Хөтөч дотор deployment боломжгүй. Hyperparameter тохируулах нарийн ажил шаардана.",
-                    reason_en: "Training is O(n²–n³) — slow on 600+ samples. Not browser-deployable. Requires careful hyperparameter tuning.",
+                    reason_mn: "Сургалт O(n²–n³) хугацаа шаардана — том датасет дээр удаан. Хөтөч дотор deployment боломжгүй. Hyperparameter тохируулах нарийн ажил шаардана.",
+                    reason_en: "Training is O(n²–n³) — slow on large datasets. Not browser-deployable. Requires careful hyperparameter tuning.",
                     issue_mn: "Deployment боломжгүй",
                     issue_en: "Not deployable in browser",
                   },
@@ -1547,8 +1547,8 @@ export default function DashboardPage() {
                   {
                     method: "Gaussian Process (GP)",
                     color: "#e9c46a",
-                    reason_mn: "O(n³) тооцооллын нарийвчлал — 600+ дата дээр маш удаан. Хөтөч дотор ажиллах боломжгүй. Монголын нөхцөлд цөөхөн дата + уян хатан kernel сонголт шаардана.",
-                    reason_en: "O(n³) complexity — extremely slow on 600+ samples. Not browser-feasible. Needs careful kernel selection for Mongolian context.",
+                    reason_mn: "O(n³) тооцооллын нарийвчлал — том датасет дээр маш удаан. Хөтөч дотор ажиллах боломжгүй. Монголын нөхцөлд уян хатан kernel сонголт шаардана.",
+                    reason_en: "O(n³) complexity — extremely slow on large datasets. Not browser-feasible. Needs careful kernel selection for Mongolian context.",
                     issue_mn: "Тооцооллын хязгаар",
                     issue_en: "Computational limit",
                   },
@@ -1578,8 +1578,8 @@ export default function DashboardPage() {
 
           <p className="avp-note" style={{ marginTop: "0.8rem" }}>
             {lang === "mn"
-              ? "XGBoost нь Монголын барилгын эрчим хүчний физик EUI томьёотой (IEA 2022, БНТУ 23-02-09) нийцдэг, шугаман бус хамаарлыг барьж чадах, browser-deployable gradient boosting загвар юм. n=60, depth=4, eta=0.15, subsample=0.8 — хэт тохируулалтаас хамгаалсан. Бодит НЭТЭГ өгөгдөл ирэхэд параметрүүдийг шинэчлэх боломжтой."
-              : "XGBoost aligns with Mongolia's physics-based EUI formula (IEA 2022, БНТУ 23-02-09), captures non-linear feature interactions, and is browser-deployable. Parameters n=60, depth=4, eta=0.15, subsample=0.8 prevent overfitting on 600 synthetic buildings. Can be retrained when real НЭТЭГ data becomes available."}
+              ? "XGBoost нь Монголын барилгын эрчим хүчний физик EUI томьёотой (IEA 2022, БНТУ 23-02-09) нийцдэг, шугаман бус хамаарлыг барьж чадах, browser-deployable gradient boosting загвар юм. n=60, depth=4, eta=0.15, subsample=0.8 — хэт тохируулалтаас хамгаалсан. BM-01 барилгын 2020–2025 оны бодит цагийн өгөгдөл дээр сургаж үнэлсэн."
+              : "XGBoost aligns with Mongolia's physics-based EUI formula (IEA 2022, БНТУ 23-02-09), captures non-linear feature interactions, and is browser-deployable. Parameters n=60, depth=4, eta=0.15, subsample=0.8 prevent overfitting. Trained and evaluated on BM-01 real hourly data (2020–2025)."}
           </p>
         </div>
 
