@@ -232,37 +232,40 @@ export default function PredictorPage() {
         const ec         = convertElecMoneyToKwh(userMonthly);
         const userAnnual = ec.kwh_annual;
 
-        // Clamp: model must not exceed user * 1.5 (prevents outlier inflation)
-        const safeModel = Math.min(modelR.annual, userAnnual * 1.5);
+        // Clamp: model electricity must not exceed user * 1.5 (prevents outlier inflation)
+        const safeModel   = Math.min(modelR.electricity_kwh, userAnnual * 1.5);
 
-        // Edge-case: if raw model > 2× user the data are too divergent — trust user fully
-        const extreme   = modelR.annual > userAnnual * 2;
-        const hybrid    = extreme
+        // Edge-case: if model electricity > 2× user bill, trust user fully
+        const extreme     = modelR.electricity_kwh > userAnnual * 2;
+        const hybridElec  = extreme
           ? userAnnual
           : Math.round(0.7 * userAnnual + 0.3 * safeModel);
+        const hybridTotal = hybridElec + (modelR.heating_kwh || 0);
 
-        const scale    = hybrid / Math.max(1, modelR.annual);
-        const newInt   = Math.round(hybrid / form.area);
+        const scale    = hybridElec / Math.max(1, modelR.electricity_kwh);
+        const newInt   = Math.round(hybridTotal / form.area);
         const newGrade =
           newInt < 50  ? "A" : newInt < 100 ? "B" :
           newInt < 150 ? "C" : newInt < 200 ? "D" :
           newInt < 250 ? "E" : newInt < 300 ? "F" : "G";
         r = {
           ...modelR,
-          annual:      hybrid,
-          monthly_avg: Math.round(hybrid / 12),
-          daily_avg:   +(hybrid / 365).toFixed(2),
-          chart_data:  modelR.chart_data.map(d => ({ ...d, usage: Math.round(d.usage * scale) })),
-          intensity:   newInt,
-          grade:       newGrade,
-          co2:         +((hybrid * 0.88) / 1000).toFixed(1),
-          pm25:        Math.round(hybrid * 0.88 * 1.35),
+          annual:          hybridTotal,
+          electricity_kwh: hybridElec,
+          monthly_avg:     Math.round(hybridTotal / 12),
+          elec_monthly_avg: Math.round(hybridElec / 12),
+          daily_avg:       +(hybridTotal / 365).toFixed(2),
+          chart_data:      modelR.chart_data.map(d => ({ ...d, usage: Math.round(d.usage * scale) })),
+          intensity:       newInt,
+          grade:           newGrade,
+          co2:             +((modelR.heating_kwh * 0.28 + hybridElec * 0.73) / 1000).toFixed(1),
+          pm25:            Math.round((modelR.heating_kwh * 0.28 + hybridElec * 0.73) / 1000 * 1350),
           // expose for comparison + explanation
           userAnnual,
-          modelAnnual:  modelR.annual,
+          modelAnnual:  modelR.electricity_kwh,
           safeModel,
           isHybrid:     true,
-          isFallback:   extreme,   // model was clamped to user entirely
+          isFallback:   extreme,
         };
       }
 
@@ -617,7 +620,7 @@ export default function PredictorPage() {
 
                 {/* ── Electricity Tab ── */}
                 {resultTab === "elec" && (<div className="animate-fade">{(() => {
-                  const mKwh = result.monthly_avg;
+                  const mKwh = result.elec_monthly_avg ?? Math.round((result.electricity_kwh ?? result.annual) / 12);
                   const mCost = mKwh <= 150
                     ? mKwh * 175
                     : mKwh <= 300
@@ -630,8 +633,8 @@ export default function PredictorPage() {
                   const serviceCost     = heating?.service_annual    || 0;
                   const totalAnnualCost = annualElecCost + heatingCost + hotWaterCost + serviceCost;
                   const heatKwhAnnual   = heating?.annual_kwh_equiv || 0;
-                  const totalKwhAnnual  = result.annual + heatKwhAnnual;
-                  const totalIntensity  = Math.round(totalKwhAnnual / form.area);
+                  const totalKwhAnnual  = result.annual;
+                  const totalIntensity  = result.intensity;
                   return (<>
 
                   {/* ── 5 Output Categories ── */}
@@ -648,7 +651,7 @@ export default function PredictorPage() {
                         <Zap size={12} style={{ verticalAlign:"middle", marginRight:3 }} />
                         {lang==="mn" ? "Цахилгаан" : "Electricity"}
                       </div>
-                      <div className="pred-out-num">{result.annual.toLocaleString()}</div>
+                      <div className="pred-out-num">{(result.electricity_kwh ?? result.annual).toLocaleString()}</div>
                       <div className="pred-out-unit">кВт·цаг/жил</div>
                       <div className="pred-out-sub">{annualElecCost.toLocaleString()} ₮/жил · {monthlyElecCost.toLocaleString()} ₮/сар</div>
                     </div>
@@ -671,14 +674,14 @@ export default function PredictorPage() {
                       <div className="pred-out-lbl">{lang==="mn" ? "1м²-д ногдох хэрэглээ" : "Per m² Consumption"}</div>
                       <div className="pred-out-num">{totalIntensity}</div>
                       <div className="pred-out-unit">кВт·цаг/м²/жил</div>
-                      <div className="pred-out-sub">{lang==="mn" ? `нийт · цахилгаан: ${result.intensity} кВт·цаг/м²` : `total · elec only: ${result.intensity} kWh/m²`}</div>
+                      <div className="pred-out-sub">{lang==="mn" ? `цахилгаан + дулаан нийлсэн нийт` : `electricity + heating combined`}</div>
                     </div>
 
                     <div className="pred-out-card pred-out-grade" style={{ borderColor: GRADE_COLORS[result.grade] }}>
                       <div className="pred-out-lbl">{lang==="mn" ? "Эрчим хүчний ангилал" : "Energy Classification"}</div>
                       <div className="pred-out-grade-letter" style={{ color: GRADE_COLORS[result.grade] }}>{result.grade}</div>
                       <div className="pred-out-unit" style={{ color: GRADE_COLORS[result.grade] }}>{lang==="mn" ? "зэрэглэл" : "grade"}</div>
-                      <div className="pred-out-sub">{lang==="mn" ? `${result.intensity} кВт·цаг/м² (цахилгаан)` : `${result.intensity} kWh/m² (electricity)`}</div>
+                      <div className="pred-out-sub">{lang==="mn" ? `${result.intensity} кВт·цаг/м² (нийт)` : `${result.intensity} kWh/m² (total)`}</div>
                     </div>
                   </div>
 
@@ -722,7 +725,7 @@ export default function PredictorPage() {
                 {result.isHybrid && (() => {
                   const uKwh = result.userAnnual;
                   const mKwh = result.modelAnnual;
-                  const hKwh = result.annual;
+                  const hKwh = result.electricity_kwh ?? result.annual;
                   const diffUvsM = uKwh - mKwh;
                   return (
                     <div style={{ margin: "0.75rem 0", padding: "0.9rem 1rem", background: "rgba(42,157,143,0.07)", border: "1px solid rgba(42,157,143,0.25)", borderRadius: 10 }}>
@@ -815,8 +818,8 @@ export default function PredictorPage() {
                 {/* Monthly chart — heating + electric dual panel */}
                 <h4 className="chart-sub-title">{t.predictor.monthly_breakdown}</h4>
                 {(() => {
-                  // Use physics heating model if available, else HDD-based split
-                  const totalAnnual = result.annual + (heating?.annual_kwh_equiv || 0);
+                  // result.annual is already total (heating + electricity)
+                  const totalAnnual = result.annual;
                   const fallbackSplit = splitMonthlyEnergy(totalAnnual);
                   const dualData = result.chart_data.map((d, i) => {
                     const heatKwh = heating?.monthly_heat_kwh?.[i] ?? fallbackSplit[i].heating;
@@ -1100,8 +1103,8 @@ export default function PredictorPage() {
                   const remainDays   = daysInMonth - now.getDate() + 1;
                   const remainMonth  = Math.round(result.daily_avg * remainDays);
 
-                  // Next 12 months starting from today
-                  const totalAnnual12 = result.annual + (heating?.annual_kwh_equiv || 0);
+                  // result.annual is already total (heating + electricity)
+                  const totalAnnual12 = result.annual;
                   const fbSplit12 = splitMonthlyEnergy(totalAnnual12);
                   const next12 = Array.from({ length: 12 }, (_, i) => {
                     const mi      = (mIdx + i) % 12;

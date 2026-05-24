@@ -36,28 +36,27 @@ function randn(rng) {
 }
 
 // ─── 2. Physics EUI formula (ground-truth generator) ─────────────────────────
-//   Based on: IEA (2022), БНТУ 23-02-09, Khan et al. (2019)
+//   Calibrated to UB district data: IEA (2022), БНТУ 23-02-09, BM-01 measurements
+//   Returns TOTAL EUI (heating + electricity) in kWh/m²/year
 function physicsEUI(s) {
-  const base = {
-    apartment: 175, office: 230, school: 155,
-    hospital: 360, warehouse: 95, commercial: 275,
-  }[s.building_type] || 175;
+  // Heating component (Gcal/m²/yr → kWh) — base values calibrated to UB district data
+  const heatBase  = { good: 0.065, medium: 0.100, poor: 0.130 }[s.insulation_quality] || 0.100;
+  const heatYearF = s.year >= 2010 ? 0.90 : s.year >= 2000 ? 0.96 : 1 + Math.max(0, (1995 - s.year)) * 0.004;
+  const heatMatF  = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[s.wall_material] || 1.0;
+  const hddFactor = s.hdd / 4500;
+  const floorF    = s.floors >= 5 ? 0.94 : 1.0;
+  const heatTypeF = { central: 1.0, local: 1.10, electric: 0.95, gas: 0.88 }[s.heating_type] || 1.0;
+  const heatingEUI = heatBase * heatYearF * heatMatF * hddFactor * floorF * heatTypeF * 1163;
 
-  const yearFactor      = 1 + Math.max(0, (2000 - s.year)) * 0.004;
-  const hddFactor       = s.hdd / 4200;
-  const windowRatioF    = 1 + (s.window_ratio - 20) * 0.008;
-  const materialF       = { panel: 1.18, brick: 1.0, concrete: 0.93, wood: 1.22, metal: 1.12 }[s.wall_material] || 1;
-  const heatingF        = { central: 1.0, local: 1.25, electric: 1.08, gas: 0.88 }[s.heating_type] || 1;
-  const insulationF     = { good: 0.82, medium: 1.0, poor: 1.25 }[s.insulation_quality] || 1;
-  const windowTypeF     = { vacuum: 0.88, double: 1.0, single: 1.18 }[s.window_type] || 1;
-  const density         = (s.residents / s.area) * 100;
-  const occupancyF      = 1 + Math.max(0, density - 3) * 0.015;
-  const applianceF      = 1 + s.appliances * 0.025;
-  const floorF          = 1 - Math.min(0.08, (s.floors - 1) * 0.008);
+  // Electricity component (kWh/m²/yr) by building type + occupant/appliance load
+  const elecBase  = { apartment: 30, office: 60, school: 28, hospital: 85, warehouse: 18, commercial: 70 }[s.building_type] || 30;
+  const density    = (s.residents / s.area) * 100;
+  const occupancyF = 1 + Math.max(0, density - 3) * 0.015;
+  const applianceF = 1 + s.appliances * 0.025;
+  const windowRatF = 1 + (s.window_ratio - 20) * 0.003;
+  const elecEUI   = elecBase * occupancyF * applianceF * windowRatF;
 
-  return base * yearFactor * hddFactor * windowRatioF *
-    materialF * heatingF * insulationF * windowTypeF *
-    occupancyF * applianceF * floorF;
+  return heatingEUI + elecEUI;
 }
 
 // ─── 3. Browser inference dataset — physics-informed EUI approximation ───────
@@ -534,28 +533,27 @@ export const FEATURE_IMPORTANCE = FEATURE_NAMES.slice(1)
   .sort((a, b) => b.importance - a.importance);
 
 // ─── 12. Predict function ─────────────────────────────────────────────────────
-const SEASONAL_WEIGHTS = [1.85, 1.72, 1.38, 0.82, 0.45, 0.32, 0.28, 0.31, 0.55, 1.02, 1.52, 1.78];
-const MONTH_LABELS     = ['1-р','2-р','3-р','4-р','5-р','6-р','7-р','8-р','9-р','10-р','11-р','12-р'];
+const SEASONAL_WEIGHTS      = [1.85, 1.72, 1.38, 0.82, 0.45, 0.32, 0.28, 0.31, 0.55, 1.02, 1.52, 1.78];
+const ELEC_SEASONAL_WEIGHTS = [1.30, 1.25, 1.10, 0.95, 0.85, 0.80, 0.80, 0.82, 0.90, 1.05, 1.15, 1.25];
+const MONTH_LABELS          = ['1-р','2-р','3-р','4-р','5-р','6-р','7-р','8-р','9-р','10-р','11-р','12-р'];
 const GRADE_STEPS      = [[50,'A'],[100,'B'],[150,'C'],[200,'D'],[250,'E'],[300,'F']];
 const GRADE_COLORS     = { A:'#2a9d8f',B:'#57cc99',C:'#a8c686',D:'#f4a261',E:'#e76f51',F:'#e63946',G:'#9b1d20' };
 
 export function predict(form) {
-  // Defensive coercion — any undefined/NaN field makes BETA.reduce return NaN → 0
   const resPer100 = { apartment: 5, office: 3, school: 4, hospital: 6, commercial: 2, warehouse: 1 };
   const appPer100 = { apartment: 8, office: 5, school: 4, hospital: 10, commercial: 6, warehouse: 3 };
-  const type = form.building_type || form.type || 'apartment';
-  const area    = Math.max(10, Number(form.area)         || 100);
-  const year    = Math.max(1940, Math.min(2026, Number(form.year)   || 1990));
-  const floors  = Math.max(1,  Number(form.floors)       || 3);
-  const rooms   = Math.max(1,  Number(form.rooms)        || Math.round(area / 50));
-  const hdd     = Math.max(3000, Number(form.hdd)        || 4500);
-  const wr      = Math.max(5,  Number(form.window_ratio) || 25);
-  const res     = Math.max(1,  Number(form.residents)    || Math.round(area / 100 * (resPer100[type] || 4)));
-  const appl    = Math.min(15, Math.max(2, Number(form.appliances)  || Math.min(15, Math.round(area / 100 * (appPer100[type] || 6)))));
+  const type    = form.building_type || form.type || 'apartment';
+  const area    = Math.max(10,   Number(form.area)          || 100);
+  const year    = Math.max(1940, Math.min(2026, Number(form.year) || 1990));
+  const floors  = Math.max(1,    Number(form.floors)         || 3);
+  const rooms   = Math.max(1,    Number(form.rooms)          || Math.round(area / 50));
+  const hdd     = Math.max(3000, Number(form.hdd)            || 4500);
+  const wr      = Math.max(5,    Number(form.window_ratio)   || 25);
+  const res     = Math.max(1,    Number(form.residents)      || Math.round(area / 100 * (resPer100[type] || 4)));
+  const appl    = Math.min(15, Math.max(2, Number(form.appliances) || Math.min(15, Math.round(area / 100 * (appPer100[type] || 6)))));
 
   const safeForm = {
-    building_type:      type,
-    area, year, floors, rooms, hdd,
+    building_type: type, area, year, floors, rooms, hdd,
     window_ratio:       wr,
     residents:          res,
     appliances:         appl,
@@ -565,42 +563,67 @@ export function predict(form) {
     window_type:        form.window_type        || 'double',
   };
 
+  // Physics-based heating component (Gcal/m²/yr → kWh) — same calibration as predictHeating()
+  const heatBase  = { good: 0.065, medium: 0.100, poor: 0.130 }[safeForm.insulation_quality] || 0.100;
+  const heatYearF = year >= 2010 ? 0.90 : year >= 2000 ? 0.96 : 1 + Math.max(0, (1995 - year)) * 0.004;
+  const heatMatF  = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[safeForm.wall_material] || 1.0;
+  const heatHddF  = hdd / 4500;
+  const heatFlrF  = floors >= 5 ? 0.94 : 1.0;
+  const heatTypF  = { central: 1.0, local: 1.10, electric: 0.95, gas: 0.88 }[safeForm.heating_type] || 1.0;
+  const physHeat  = Math.round(area * heatBase * heatYearF * heatMatF * heatHddF * heatFlrF * heatTypF * 1163);
+
+  // Physics-based electricity component (kWh/m²/yr) by building type
+  const elecBase   = { apartment: 30, office: 60, school: 28, hospital: 85, warehouse: 18, commercial: 70 }[type] || 30;
+  const occupancyF = 1 + Math.max(0, (res / area) * 100 - 3) * 0.015;
+  const applianceF = 1 + appl * 0.025;
+  const winRatF    = 1 + (wr - 20) * 0.003;
+  const physElec   = Math.round(area * elecBase * occupancyF * applianceF * winRatF);
+  const physTotal  = physHeat + physElec;
+
+  // XGBoost inference — use only when area is within training distribution
   const rawVec    = featurize(safeForm);
   const scaledVec = applyScaler([rawVec], SCALER)[0];
   const xgbRaw    = xgbPredictOne(XGB_MODEL, scaledVec);
-  // Fallback to physics formula if XGBoost returns 0 or NaN (out-of-distribution input)
-  const annual    = (Number.isFinite(xgbRaw) && xgbRaw > 0)
+  const MIN_AREA  = { apartment: 250, office: 400, school: 800, hospital: 1500, warehouse: 400, commercial: 250 };
+  const inDist    = area >= (MIN_AREA[type] || 250);
+  const annual    = (Number.isFinite(xgbRaw) && xgbRaw > 0 && inDist)
     ? Math.round(xgbRaw)
-    : Math.max(100, Math.round(safeForm.area * physicsEUI(safeForm)));
+    : Math.max(100, physTotal);
 
-  const monthly_avg = Math.round(annual / 12);
-  const daily_avg   = Math.round(annual / 365);
-  const intensity   = annual > 0 ? Math.round(annual / safeForm.area) : 0;
+  // Split total into heating / electricity via physics ratio
+  const heatRatio    = physTotal > 0 ? physHeat / physTotal : 0.75;
+  const heating_kwh  = Math.min(Math.round(annual * heatRatio), Math.round(annual * 0.92));
+  const electricity_kwh = annual - heating_kwh;
 
-  // Seasonal distribution
-  const wSum     = SEASONAL_WEIGHTS.reduce((a, b) => a + b, 0);
+  const monthly_avg      = Math.round(annual / 12);
+  const elec_monthly_avg = Math.round(electricity_kwh / 12);
+  const daily_avg        = Math.round(annual / 365);
+  const intensity        = annual > 0 ? Math.round(annual / area) : 0;
+
+  // Monthly electricity distribution (flatter than heating; electricity is less seasonal)
+  const eWSum      = ELEC_SEASONAL_WEIGHTS.reduce((a, b) => a + b, 0);
   const chart_data = MONTH_LABELS.map((m, i) => ({
     month: m,
-    usage: Math.round(annual * SEASONAL_WEIGHTS[i] / wSum),
+    usage: Math.round(electricity_kwh * ELEC_SEASONAL_WEIGHTS[i] / eWSum),
   }));
 
   // Attribution proxy: β_i × x_i from OLS (interpretable surrogate for XGBoost contributions)
-  const contribs = FEATURE_NAMES.slice(1).map((name, i) => ({
+  const contribs   = FEATURE_NAMES.slice(1).map((name, i) => ({
     key: name,
     abs: Math.abs(BETA[i + 1] * scaledVec[i + 1]),
   }));
   const contribSum = contribs.reduce((s, c) => s + c.abs, 0) || 1;
-  const features = contribs
+  const features   = contribs
     .map(c => ({ key: c.key, pct: Math.round(c.abs / contribSum * 100) }))
     .sort((a, b) => b.pct - a.pct);
 
-  // CO₂ (heating 60 % × 0.28 + electric 40 % × 0.73 kg/kWh)
-  const co2  = +((annual * 0.6 * 0.28 + annual * 0.4 * 0.73) / 1000).toFixed(1);
+  // CO₂: district heat factor 0.28 kg/kWh + electricity grid 0.73 kg/kWh
+  const co2  = +((heating_kwh * 0.28 + electricity_kwh * 0.73) / 1000).toFixed(1);
   const pm25 = Math.round(co2 * 1350);
 
   const grade = GRADE_STEPS.find(([thr]) => intensity < thr)?.[1] ?? 'G';
 
-  return { annual, monthly_avg, daily_avg, intensity, chart_data, features, co2, pm25, grade };
+  return { annual, electricity_kwh, heating_kwh, monthly_avg, elec_monthly_avg, daily_avg, intensity, chart_data, features, co2, pm25, grade };
 }
 
 // Export GRADE_COLORS so PredictorPage doesn't need to redefine
@@ -683,13 +706,15 @@ export function predictHeating(form) {
   const floors    = Math.max(1, Number(form.floors) || 3);
   const residents = Math.max(1, Number(form.residents) || Math.max(1, Math.round(area / 20)));
 
-  // Specific heat load (Gcal/m²/year) by insulation quality
-  const base     = { good: 0.043, medium: 0.062, poor: 0.090 }[form.insulation_quality] || 0.062;
-  const matMod   = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[form.wall_material] || 1.0;
-  const hddRatio = hdd / 4500;
-  const floorMod = floors >= 5 ? 0.94 : 1.0;
+  // Specific heat load (Gcal/m²/year) by insulation quality — calibrated to UB district data
+  const base       = { good: 0.065, medium: 0.100, poor: 0.130 }[form.insulation_quality] || 0.100;
+  const yr         = Math.max(1940, Math.min(2026, Number(form.year) || 1990));
+  const yearFactor = yr >= 2010 ? 0.90 : yr >= 2000 ? 0.96 : 1 + Math.max(0, (1995 - yr)) * 0.004;
+  const matMod     = { panel: 1.14, brick: 1.0, concrete: 0.94, wood: 1.20, metal: 1.10 }[form.wall_material] || 1.0;
+  const hddRatio   = hdd / 4500;
+  const floorMod   = floors >= 5 ? 0.94 : 1.0;
 
-  const gcal_per_m2  = base * matMod * hddRatio * floorMod;
+  const gcal_per_m2  = base * yearFactor * matMod * hddRatio * floorMod;
   const annual_gcal  = +(area * gcal_per_m2).toFixed(1);
   const monthly_peak = +(annual_gcal * 1.85 / 9).toFixed(2);
   const monthly_avg  = +(annual_gcal / 9).toFixed(2);
