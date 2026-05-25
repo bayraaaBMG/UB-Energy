@@ -7,56 +7,54 @@
   margin-top: -1rem;
 }
 
-/* ── All sizes: map fills screen, panel slides up from bottom ─────────────── */
+/* ── Vertical flex layout: map on top, panel below — no overlay ───────────── */
 .map-page {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - 60px);
   overflow: hidden;
 }
 
-/* ─── Map canvas — always full-screen beneath the panel ───────────────────── */
+/* ─── Map canvas — fills remaining height above panel ─────────────────────── */
 .map-canvas {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
 }
 
-/* ─── Bottom drawer panel — all screen sizes ──────────────────────────────── */
+/* ─── Bottom panel — starts collapsed, animates height when open ──────────── */
 .map-panel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 52vh;
+  flex: 0 0 auto;
+  height: 0;
+  overflow: hidden;
   background: var(--bg);
   border-radius: 16px 16px 0 0;
   border-top: 1px solid var(--border);
-  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5);
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 800;
-  pointer-events: none;
-  overflow: hidden;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
 }
 
 .map-panel.open {
-  transform: translateY(0);
-  pointer-events: auto;
+  height: 52vh;
 }
 
-/* Desktop: shorter panel so more map is visible above */
+/* Desktop: slightly shorter panel — more map visible */
 @media (min-width: 960px) {
-  .map-panel {
+  .map-panel.open {
     height: 45vh;
   }
 }
 
-/* ── Sheet snap: panel expands to full viewport height ────────────────────── */
+/* ── Sheet snap: panel expands to fill full height, map collapses ─────────── */
 .map-page.sheet-full .map-panel.open {
   height: calc(100vh - 60px) !important;
   border-radius: 0;
-  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.map-page.sheet-full .map-canvas {
+  flex: 0 0 0px !important;
+  min-height: 0 !important;
 }
 
 /* ─── Drag handle (mobile) ────────────────────────────────────────────────── */
