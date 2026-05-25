@@ -7,124 +7,56 @@
   margin-top: -1rem;
 }
 
-/* ── Base: flex row (desktop default) ──────────────────────────────────────── */
+/* ── All sizes: map fills screen, panel slides up from bottom ─────────────── */
 .map-page {
-  display: flex;
-  flex-direction: row;
+  position: relative;
   height: calc(100vh - 60px);
   overflow: hidden;
-  position: relative;   /* anchors absolute-positioned overlay panel (tablet/mobile) */
 }
 
-/* ─── Map canvas ──────────────────────────────────────────────────────────── */
+/* ─── Map canvas — always full-screen beneath the panel ───────────────────── */
 .map-canvas {
-  flex: 1 1 100%;
-  position: relative;
-  min-width: 0;
-  transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  inset: 0;
 }
 
-/* ─── Desktop 60/40 split-screen workspace ────────────────────────────────── */
+/* ─── Bottom drawer panel — all screen sizes ──────────────────────────────── */
+.map-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 52vh;
+  background: var(--bg);
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 800;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-panel.open {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Desktop: shorter panel so more map is visible above */
 @media (min-width: 960px) {
-  /* Canvas shrinks to 60% when panel opens */
-  .map-page.panel-open .map-canvas {
-    flex-basis: 60%;
-    flex-shrink: 0;
-    flex-grow: 0;
-  }
-
-  /* Panel: zero-width when closed, 40% when open — no fixed px, no max-width */
   .map-panel {
-    position: relative;
-    flex: 0 0 0%;
-    overflow: hidden;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .map-panel.open {
-    flex-basis: 40%;
-    flex-shrink: 0;
-    flex-grow: 0;
-    min-width: 0;
-    max-width: none;
-    overflow-y: auto;
-    border-left: 1px solid var(--border);
-    box-shadow: -2px 0 24px rgba(0, 0, 0, 0.22);
-    pointer-events: auto;
+    height: 45vh;
   }
 }
 
-/* Tablet (600–959px): overlay from right, map stays full-width */
-@media (min-width: 600px) and (max-width: 959px) {
-  .map-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: min(88vw, 380px);
-    max-width: min(88vw, 380px);
-    flex: none;
-    overflow-y: auto;
-    background: var(--bg);
-    border-left: 1px solid var(--border);
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.45);
-    transform: translateX(110%);
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 800;
-    pointer-events: none;
-  }
-  .map-panel.open {
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-}
-
-/* Mobile (<600px): bottom sheet — slides up from below */
-@media (max-width: 599px) {
-  .map-page {
-    flex-direction: column;
-    height: calc(100vh - 60px);
-  }
-  .map-canvas {
-    flex: 1 1 auto;
-    min-height: 38vh;
-    max-height: calc(100vh - 60px);
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-  }
-  .map-page.panel-open .map-canvas {
-    max-height: 38vh;
-  }
-  .map-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-width: 100%;
-    height: 62vh;
-    flex: none;
-    overflow-y: auto;
-    background: var(--bg);
-    border-radius: 16px 16px 0 0;
-    border-top: 1px solid var(--border);
-    border-left: none;
-    box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.5);
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 900;
-    pointer-events: none;
-  }
-  .map-panel.open {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
+/* ── Sheet snap: panel expands to full viewport height ────────────────────── */
+.map-page.sheet-full .map-panel.open {
+  height: calc(100vh - 60px) !important;
+  border-radius: 0;
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ─── Drag handle (mobile) ────────────────────────────────────────────────── */
@@ -149,9 +81,6 @@
 .panel-drag-handle:hover::after,
 .panel-drag-handle:active::after { background: rgba(255, 255, 255, 0.45); }
 
-@media (min-width: 600px) {
-  .panel-drag-handle { display: none; }
-}
 
 /* ─── Empty state (no building selected, desktop panel) ──────────────────── */
 .panel-empty-state {
@@ -360,7 +289,7 @@
 
 
 /* ─── Building panel ────────────────────────────────────────────────────── */
-.bp { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.bp { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 
 /* Top bar */
 .bp-topbar {
@@ -1636,7 +1565,7 @@
 @media (max-width: 960px) {
   .how-section      { padding: 2.5rem 1rem 3rem; }
   .how-title        { font-size: 1.3rem; }
-  .weather-widget   { top: auto; bottom: 44px; right: 8px; }
+  .weather-widget   { top: 12px; right: 8px; bottom: auto; }
 }
 
 /* ─── Tablet refinements (600–959px) ─────────────────────────────────────── */
@@ -1666,20 +1595,6 @@
   .map-legend       { display: none; bottom: 80px; }
   .map-legend.legend-open { display: flex; }
   .legend-toggle-btn { display: flex; }
-
-  /* ── Sheet snap-to-top: map nearly hidden, panel fills screen ── */
-  .map-page.sheet-full .map-canvas {
-    max-height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden;
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .map-page.sheet-full .map-panel.open {
-    height: calc(100vh - 60px) !important;
-    border-radius: 0;
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
 
   /* ── Stats cards: horizontal scroll carousel ── */
   .osm-metrics-grid {
