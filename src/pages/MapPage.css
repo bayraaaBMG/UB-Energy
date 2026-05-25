@@ -37,13 +37,13 @@
 }
 
 .map-panel.open {
-  height: 52vh;
+  height: 38vh;
 }
 
 /* Desktop: slightly shorter panel — more map visible */
 @media (min-width: 960px) {
   .map-panel.open {
-    height: 45vh;
+    height: 35vh;
   }
 }
 
