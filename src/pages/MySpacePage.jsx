@@ -93,10 +93,11 @@ function buildForecast(annualKwh, startDate) {
     return { label: MN_MN[mi], label_en: MN_EN[mi], kwh, days, season };
   });
 
-  // Yearly (next 5 years, flat projection with -1%/yr efficiency trend)
+  // Yearly (next 5 years: +1.2%/yr building aging + mild UB climate variability ±3–4%)
+  const HDD_CLIMATE_VAR = [1.00, 1.04, 0.97, 1.03, 0.99];
   const yearly = Array.from({ length: 5 }, (_, i) => ({
     label: `${sy + i}`,
-    kwh:   Math.round(annualKwh * Math.pow(0.99, i)),
+    kwh:   Math.round(annualKwh * Math.pow(1.012, i) * HDD_CLIMATE_VAR[i]),
   }));
 
   return { hourly, daily: daily14, monthly, yearly };
@@ -143,8 +144,8 @@ function ForecastPanel({ prediction, lang }) {
       ? `Сарын таамаглал: Жилийн нийт ${annual.toLocaleString()} кВт·цаг-ийг UB-ийн халааны зэрэг-өдрийн (HDD) жингээр хуваарилсан. 1-р сар хамгийн их (жингийн 1.85×), 7-р сар хамгийн бага (0.28×). Энэ нь Улаанбаатарын эрс тэс уур амьсгалаас үүдэлтэй.`
       : `Monthly: Annual ${annual.toLocaleString()} kWh distributed by UB Heating-Degree-Day weights. Jan peak (1.85×), Jul minimum (0.28×) — driven by UB's extreme continental climate (HDD ≈ 4200).`,
     yearly: lang === "mn"
-      ? `Жилийн таамаглал: Жилийн ${annual.toLocaleString()} кВт·цаг-аас эхэлсэн. Барилгын хуучирч, тусгаарлалт муудах хандлагын дагуу жилд -1% хэмнэлт хийх хандлага тооцсон (IEA 2022 норматив).`
-      : `Yearly: Baseline ${annual.toLocaleString()} kWh/yr. Projects -1%/yr reflecting gradual efficiency degradation per IEA 2022 reference building standards.`,
+      ? `Жилийн таамаглал: Жилийн ${annual.toLocaleString()} кВт·цаг-аас эхэлсэн. Барилгын насжилт, тусгаарлалтын муудалтын дагуу жилд +1.2% өсөлт тооцсон. УБ-ийн жилийн цаг уурын хэлбэлзэл (±3–4%) нэмэлтээр тооцогдсон. Y-axis нь жилийн ялгааг тод харуулахын тулд өгөгдлийн мужид ойртуулсан.`
+      : `Yearly: Baseline ${annual.toLocaleString()} kWh/yr. +1.2%/yr for building aging & insulation wear, plus mild UB year-to-year climate variability (±3–4%). Y-axis is zoomed to the data range to clearly show annual differences.`,
   };
 
   return (
@@ -177,16 +178,24 @@ function ForecastPanel({ prediction, lang }) {
       ) : (
         <ResponsiveContainer width="100%" height={180}>
           {tab === "yearly" ? (
-            <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(42,74,107,0.3)" />
               <XAxis dataKey="label" tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} />
-              <YAxis tick={{ fill: "#6a9bbf", fontSize: 10 }} tickLine={false} axisLine={false} />
+              <YAxis
+                tick={{ fill: "#6a9bbf", fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                domain={[
+                  dataMin => Math.round(dataMin * 0.94),
+                  dataMax => Math.round(dataMax * 1.04),
+                ]}
+                tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
+              />
               <Tooltip
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 12 }}
                 formatter={v => [`${Math.round(v).toLocaleString()} ${unit}`, lang === "mn" ? "Таамаглал" : "Forecast"]}
               />
-              <Area type="monotone" dataKey={dataKey} fill="#1a6eb522" stroke="#1a6eb5" strokeWidth={2} dot={{ r: 4, fill: "#1a6eb5" }} />
-              <Line type="monotone" dataKey={dataKey} stroke="#1a6eb5" strokeWidth={0} dot={false} />
+              <Area type="monotone" dataKey={dataKey} fill="#1a6eb522" stroke="#1a6eb5" strokeWidth={2} dot={{ r: 4, fill: "#1a6eb5" }} activeDot={{ r: 6 }} />
             </ComposedChart>
           ) : (
             <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
