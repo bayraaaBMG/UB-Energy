@@ -123,7 +123,7 @@ const en = {
     error_admin_reset: "Admin account password cannot be reset here.",
   },
   predictor: {
-    title: "AI Energy Predictor",
+    title: "Energy Predictor",
     subtitle: "Enter your building information to predict energy consumption",
     area: "Area (m²)",
     building_type: "Building Type",
@@ -558,11 +558,11 @@ const en = {
     note_text: "Given Ulaanbaatar's harsh climate (annual avg HDD 4,500+), insulation and heating upgrades yield the highest returns. During the coldest winter periods (down to -30°C) heat loss increases dramatically — prioritize building envelope insulation.",
   },
   chatbot: {
-    title: "AI Assistant",
+    title: "System Assistant",
     placeholder: "Ask a question...",
     online: "Online",
     clear: "Clear",
-    greeting:  "Hello{name}! I'm the UB Energy AI assistant. Ask me anything about energy, weather, buildings, or Smart Home.",
+    greeting:  "Hello{name}! I'm the UB Energy assistant. Ask me anything about energy, weather, buildings, or Smart Home.",
     new_chat:  "New conversation started{name}! What would you like to know?",
     chip1: "What is HDD?",
     chip2: "Energy saving tips",

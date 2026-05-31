@@ -13,14 +13,14 @@ import "./Chatbot.css";
 const KB = [
   {
     keys: ["сайн байна уу", "сайн уу", "hello", "hi", "сайхан", "хэлнэ үү", "танилцуулна уу"],
-    mn: `Сайн байна уу! Би **UB Energy AI** туслагч. Дараах сэдвүүдээр дэлгэрэнгүй, эх сурвалжтай хариулт өгнө:\n\n• Цахилгаан, дулаан, усны тариф\n• Барилгын эрчим хүчний норматив (БНТУ)\n• HDD, EUI, CO₂ тооцоолол\n• ML загвар, XGBoost gradient boosting\n• Smart Home, нарны эрчим хүч\n• Монголын цаг уур, агаарын чанар\n\nЮу асуухыг хүсэж байна вэ?`,
-    en: `Hello! I'm the **UB Energy AI** assistant. I can answer questions with sources on:\n\n• Electricity, heating & water tariffs\n• Building energy standards (БНТУ)\n• HDD, EUI, CO₂ calculations\n• ML model & XGBoost gradient boosting\n• Smart Home, solar energy\n• Mongolian climate & air quality\n\nWhat would you like to know?`,
+    mn: `Сайн байна уу! Би **UB Energy** мэдээллийн туслах. Дараах сэдвүүдээр дэлгэрэнгүй, эх сурвалжтай хариулт өгнө:\n\n• Цахилгаан, дулаан, усны тариф\n• Барилгын эрчим хүчний норматив (БНТУ)\n• HDD, EUI, CO₂ тооцоолол\n• ML загвар, XGBoost gradient boosting\n• Smart Home, нарны эрчим хүч\n• Монголын цаг уур, агаарын чанар\n\nЮу асуухыг хүсэж байна вэ?`,
+    en: `Hello! I'm the **UB Energy** system assistant. I can answer questions with sources on:\n\n• Electricity, heating & water tariffs\n• Building energy standards (БНТУ)\n• HDD, EUI, CO₂ calculations\n• ML model & XGBoost gradient boosting\n• Smart Home, solar energy\n• Mongolian climate & air quality\n\nWhat would you like to know?`,
     sources: [],
   },
   {
     keys: ["чи хэн", "who are you", "юу хийдэг вэ", "хэн бэ"],
-    mn: `Би **UB Energy AI** — Улаанбаатар хотын барилгын эрчим хүчний платформын туслагч систем. Монгол болон олон улсын стандарт, тариф, норматив дээр суурилсан эх сурвалжтай хариулт өгдөг.`,
-    en: `I'm **UB Energy AI** — the assistant for Ulaanbaatar's building energy platform. I provide source-backed answers based on Mongolian and international energy standards, tariffs, and norms.`,
+    mn: `Би **UB Energy туслах** — Улаанбаатар хотын барилгын эрчим хүчний платформын мэдээллийн систем. Монгол болон олон улсын стандарт, тариф, норматив дээр суурилсан эх сурвалжтай хариулт өгдөг.`,
+    en: `I'm the **UB Energy assistant** — the information system for Ulaanbaatar's building energy platform. I provide source-backed answers based on Mongolian and international energy standards, tariffs, and norms.`,
     sources: [],
   },
   {
@@ -163,8 +163,8 @@ const KB = [
   },
   {
     keys: ["систем юу хийдэг", "систем тухай", "системийн тухай", "about", "about the system", "юу хийдэг систем"],
-    mn: `**UB Energy AI** — Монгол Улсын барилгын эрчим хүчний хэрэглээг ML-аар тооцоолох судалгааны тавцан.\n\nГол боломжууд:\n\n| Хуудас | Зориулалт |\n|--------|----------|\n| Таамаглагч | Барилгын ML тооцоолол |\n| Газрын зураг | OSM дээр барилга дарж харах |\n| Хяналтын самбар | Нийт дүн шинжилгээ |\n| Дата сан | Барилгуудын удирдлага |\n| Цаг уур | HDD, температур |\n\nAгшин зуурын тооцоолол, нэвтрэлгүй ч ашиглагдана.\n\nДэлгэрэнгүй: **/about** хуудсанд орно уу.`,
-    en: `**UB Energy AI** — Research platform for ML-based building energy prediction in Mongolia.\n\nKey features:\n\n| Page | Purpose |\n|------|--------|\n| Predictor | ML energy calculation |\n| Map | Click OSM buildings |\n| Dashboard | Analytics & trends |\n| Database | Manage buildings |\n| Weather | HDD & temperature |\n\nInstant calculation, no login needed for core features.\n\nSee the full guide at **/about**.`,
+    mn: `**UB Energy** — Монгол Улсын барилгын эрчим хүчний хэрэглээг ML-аар тооцоолох судалгааны тавцан.\n\nГол боломжууд:\n\n| Хуудас | Зориулалт |\n|--------|----------|\n| Таамаглагч | Барилгын ML тооцоолол |\n| Газрын зураг | OSM дээр барилга дарж харах |\n| Хяналтын самбар | Нийт дүн шинжилгээ |\n| Дата сан | Барилгуудын удирдлага |\n| Цаг уур | HDD, температур |\n\nАгшин зуурын тооцоолол, нэвтрэлгүй ч ашиглагдана.\n\nДэлгэрэнгүй: **/about** хуудсанд орно уу.`,
+    en: `**UB Energy** — Research platform for ML-based building energy prediction in Mongolia.\n\nKey features:\n\n| Page | Purpose |\n|------|--------|\n| Predictor | ML energy calculation |\n| Map | Click OSM buildings |\n| Dashboard | Analytics & trends |\n| Database | Manage buildings |\n| Weather | HDD & temperature |\n\nInstant calculation, no login needed for core features.\n\nSee the full guide at **/about**.`,
     sources: [],
   },
   {
@@ -346,7 +346,7 @@ export default function Chatbot() {
             <div className="chatbot-header-left">
               <div className="chatbot-bot-avatar"><Bot size={17} /></div>
               <div>
-                <span className="chatbot-header-name">{APP_NAME} AI</span>
+                <span className="chatbot-header-name">{APP_NAME} туслах</span>
                 <span className="chatbot-status">
                   <span className="chatbot-status-dot" />
                   {t.chatbot.online}
@@ -448,8 +448,8 @@ export default function Chatbot() {
               </div>
               <div className="chatbot-footer">
                 {lang === "mn"
-                  ? "UB Energy AI · Бодит хэрэглээний мэдлэгийн санд суурилсан"
-                  : "UB Energy AI · Powered by local knowledge base"}
+                  ? "UB Energy · Бодит хэрэглээний мэдлэгийн санд суурилсан"
+                  : "UB Energy · Powered by local knowledge base"}
               </div>
             </>
           )}
