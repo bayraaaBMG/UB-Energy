@@ -515,6 +515,10 @@ const MOCK_FALLBACK = buildingsData.map(b => ({
   source:   "mock",
 }));
 
+// Minimum display area for user buildings without GPS coords (150m × 150m = 22,500m²)
+// Makes them clearly visible at zoom 15 regardless of actual building size
+const USER_DISPLAY_MIN_AREA = 22500;
+
 function loadUserMapBuildings(ctxBuildings, userId = null) {
   try {
     const stored = ctxBuildings.filter(b =>
@@ -531,13 +535,15 @@ function loadUserMapBuildings(ctxBuildings, userId = null) {
       district: b.district || "Улаанбаатар",
       osmGeom:  (() => {
         if (b.latitude && b.longitude)
-          return mockGeom(b.latitude, b.longitude, b.area || 100);
-        // Fallback: use district centroid with a small deterministic offset per building
-        const dc = DISTRICT_COORDS[b.district];
+          return mockGeom(b.latitude, b.longitude, Math.max(b.area || 100, USER_DISPLAY_MIN_AREA));
+        // Fallback: district centroid + deterministic spread based on full ID hash
+        const dc   = DISTRICT_COORDS[b.district];
         const base = dc || UB_CENTER;
-        const seed = String(b.id || "").charCodeAt(0) || 0;
-        const offset = (seed % 20) / 10000;
-        return mockGeom(base[0] + offset, base[1] + offset, b.area || 100);
+        const idStr = String(b.id || "");
+        const hash  = idStr.split("").reduce((s, c, i) => s + c.charCodeAt(0) * (i + 1), 0);
+        const latOff = ((hash * 7 + 3) % 40 - 20) / 10000;  // ±0.002° ≈ ±220m
+        const lngOff = ((hash * 11 + 7) % 40 - 20) / 10000;
+        return mockGeom(base[0] + latOff, base[1] + lngOff, USER_DISPLAY_MIN_AREA);
       })(),
       tags:     {},
       source:   b.source || "user",
@@ -651,6 +657,15 @@ function MapResizer({ panelOpen }) {
     const id = setTimeout(() => map.invalidateSize({ animate: false }), 340);
     return () => clearTimeout(id);
   }, [panelOpen, map]);
+  return null;
+}
+
+// ─── FlyController — flies to a target center+zoom when `target` changes ────────
+function FlyController({ target }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target) map.flyTo(target.center, target.zoom, { duration: 1.2 });
+  }, [target, map]);
   return null;
 }
 
@@ -1526,12 +1541,24 @@ export default function MapPage() {
   const [showSmog,       setShowSmog]       = useState(true);
   const [mapZoom,        setMapZoom]        = useState(15);
   const [legendOpen,     setLegendOpen]     = useState(false);
+  const [flyTarget,      setFlyTarget]      = useState(null);
   const [sheetSnap,      setSheetSnap]      = useState("mid");
   const dragStartY = useRef(null);
   const DEMO_PM25 = 89;
 
   // Reset sheet snap when building panel closes
   useEffect(() => { if (!selected) setSheetSnap("mid"); }, [selected]);
+
+  // Fly to centroid of all user buildings
+  const flyToMyBuildings = useCallback(() => {
+    const mine = buildings.filter(b => b.source === "user" || b.source === "predictor");
+    if (mine.length === 0) return;
+    const pts = mine.flatMap(b => b.osmGeom || []);
+    if (pts.length === 0) return;
+    const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+    const lng = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
+    setFlyTarget({ center: [lat, lng], zoom: 16 });
+  }, [buildings]);
 
   // Merge function: mock + user (from context) + OSM (from cache) — user buildings always win
   const mergeBuildings = useCallback(() => {
@@ -1656,6 +1683,7 @@ export default function MapPage() {
 
             {/* Leaflet tile invalidation when panel opens/closes */}
             <MapResizer panelOpen={!!selected} />
+            <FlyController target={flyTarget} />
 
             {filtered.filter(b => b.osmGeom).map(b => {
               const active    = selected?.id === b.id;
@@ -1791,9 +1819,24 @@ export default function MapPage() {
                 <span className="bldg-mock-note"> · demo</span>
               )}
               {userCount > 0 && (
-                <span className="bldg-mock-note" style={{ color: "#f4c842" }}>
-                  {" "}· {userCount} {lang === "mn" ? "өөрийн барилга" : "my buildings"}
-                </span>
+                <>
+                  <span className="bldg-mock-note" style={{ color: "#f4c842" }}>
+                    {" "}· {userCount} {lang === "mn" ? "өөрийн барилга" : "my buildings"}
+                  </span>
+                  <button
+                    onClick={flyToMyBuildings}
+                    title={lang === "mn" ? "Миний барилгууд руу очих" : "Fly to my buildings"}
+                    style={{
+                      marginLeft: 6, padding: "1px 7px", borderRadius: 10,
+                      border: "1px solid #e6394666", background: "#e6394618",
+                      color: "#e63946", fontSize: "0.68rem", fontWeight: 700,
+                      cursor: "pointer", lineHeight: 1.4,
+                    }}
+                  >
+                    <MapPin size={10} style={{ verticalAlign: "middle", marginRight: 2 }} />
+                    {lang === "mn" ? "Харах" : "Go"}
+                  </button>
+                </>
               )}
               {lastFetched && (
                 <span className="bldg-mock-note" style={{ color: "#6a9bbf", marginLeft: 6 }}>
