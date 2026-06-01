@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine, Line, ComposedChart, Area,
+  ResponsiveContainer, Cell, ReferenceLine, ComposedChart, Area,
 } from "recharts";
 import { clearPredictions, deletePrediction, deleteScenario, removeFavorite } from "../utils/userDataStorage";
 import { deleteUserBuilding, updateUserBuilding } from "../utils/buildingStorage";

@@ -1549,17 +1549,6 @@ export default function MapPage() {
   // Reset sheet snap when building panel closes
   useEffect(() => { if (!selected) setSheetSnap("mid"); }, [selected]);
 
-  // Fly to centroid of all user buildings
-  const flyToMyBuildings = useCallback(() => {
-    const mine = buildings.filter(b => b.source === "user" || b.source === "predictor");
-    if (mine.length === 0) return;
-    const pts = mine.flatMap(b => b.osmGeom || []);
-    if (pts.length === 0) return;
-    const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
-    const lng = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
-    setFlyTarget({ center: [lat, lng], zoom: 16 });
-  }, [buildings]);
-
   // Merge function: mock + user (from context) + OSM (from cache) — user buildings always win
   const mergeBuildings = useCallback(() => {
     const userBuildings = loadUserMapBuildings(ctxBuildings, user?.id);
@@ -1572,6 +1561,17 @@ export default function MapPage() {
   }, [ctxBuildings, user?.id]);
 
   const [buildings, setBuildings] = useState(() => mergeBuildings());
+
+  // Fly to centroid of all user buildings — declared after `buildings` to avoid TDZ
+  const flyToMyBuildings = useCallback(() => {
+    const mine = buildings.filter(b => b.source === "user" || b.source === "predictor");
+    if (mine.length === 0) return;
+    const pts = mine.flatMap(b => b.osmGeom || []);
+    if (pts.length === 0) return;
+    const lat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+    const lng = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
+    setFlyTarget({ center: [lat, lng], zoom: 16 });
+  }, [buildings]);
 
   // Re-merge whenever user buildings change (context update)
   useEffect(() => {
