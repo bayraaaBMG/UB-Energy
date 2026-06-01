@@ -323,12 +323,28 @@ export default function WeatherPage() {
                 <span><Sunset size={14} style={{ verticalAlign: "middle", marginRight: 4 }} />{data.sunset}</span>
               </div>
 
-              {data.snow_chance >= 40 && (
-                <div className="snow-alert">
-                  <Snowflake size={14} />
-                  {t.weather.snow_chance}: <strong>{data.snow_chance}%</strong>
-                </div>
-              )}
+              {data.snow_chance >= 40 && (() => {
+                const isSnowCode = data.code === "snow";
+                const isWarm     = data.temp_max > 2;
+                const isCold     = data.temp_max <= 1;
+                let label, PrecipIcon;
+                if (isWarm) {
+                  label      = lang === "mn" ? "Борооны магадлал" : "Rain probability";
+                  PrecipIcon = Droplets;
+                } else if (isCold && isSnowCode) {
+                  label      = lang === "mn" ? "Цасны магадлал" : "Snow probability";
+                  PrecipIcon = Snowflake;
+                } else {
+                  label      = lang === "mn" ? "Хур тунадасны магадлал" : "Precipitation probability";
+                  PrecipIcon = Cloud;
+                }
+                return (
+                  <div className="snow-alert">
+                    <PrecipIcon size={14} />
+                    {label}: <strong>{data.snow_chance}%</strong>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
