@@ -1543,12 +1543,26 @@
 }
 
 /* Mini chart */
-.osm-mini-chart { padding: 0 0.5rem 0.2rem; }
+.osm-mini-chart { padding: 0 0.5rem 0.4rem; }
+.osm-mini-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+  margin-bottom: 0.25rem;
+}
 .osm-mini-chart-title {
   font-size: 0.62rem;
+  font-weight: 600;
   color: var(--text3);
-  padding: 0 0.25rem;
-  margin-bottom: 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.osm-mini-chart-legend {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.58rem;
+  color: var(--text3);
 }
 
 /* Shoelace note */

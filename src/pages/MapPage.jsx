@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { MapContainer, TileLayer, Polygon, Tooltip as LeafletTooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  Cell, ComposedChart, Line, ReferenceLine,
 } from "recharts";
 import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
@@ -770,13 +771,17 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
     });
   }, [building, wi]);
 
-  // Mini chart still uses MONTH_FRACS for a quick distribution preview
-  const monthly = MONTH_FRACS.map((frac, i) => ({
-    m:   mn ? monthlyEnergyData[i].month.split("-")[0] : monthlyEnergyData[i].month_en,
-    kwh: Math.round(calc.total * frac),
-  }));
-  // Full HDD-based split for EnergyDualChart
+  // Full HDD-based split for EnergyDualChart + mini chart
   const monthlySplit = splitMonthlyEnergy(calc.total);
+  const curMonth = new Date().getMonth(); // 0-based
+  const monthly = monthlySplit.map((s, i) => ({
+    m:       mn ? monthlyEnergyData[i].month.split("-")[0] : monthlyEnergyData[i].month_en,
+    full:    mn ? monthlyEnergyData[i].month : monthlyEnergyData[i].month_en,
+    heating: s.heating,
+    elec:    s.electric,
+    temp:    monthlyEnergyData[i].temperature,
+    isCur:   i === curMonth,
+  }));
 
   const TABS = [
     { id: "energy", label: t.map.sec_energy },
@@ -881,20 +886,89 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
 
         {/* Mini monthly chart */}
         <div className="osm-mini-chart">
-          <div className="osm-mini-chart-title">
-            {mn ? "Сарын хуваарилалт (kWh)" : "Monthly distribution (kWh)"}
+          <div className="osm-mini-chart-header">
+            <span className="osm-mini-chart-title">
+              {mn ? "Сарын хуваарилалт" : "Monthly distribution"}
+            </span>
+            <span className="osm-mini-chart-legend">
+              <span style={{ color: "#e05252" }}>▪ {mn ? "Дулаалга" : "Heat"}</span>
+              <span style={{ color: "#3a8fd4" }}>▪ {mn ? "Цахилгаан" : "Elec"}</span>
+              <span style={{ color: "#e9c46a" }}>◉ {mn ? "Одоо" : "Now"}</span>
+            </span>
           </div>
-          <ResponsiveContainer width="100%" height={72}>
-            <BarChart data={monthly} margin={{ top: 2, right: 4, left: -28, bottom: 0 }}>
-              <XAxis dataKey="m" tick={{ fill: "#667788", fontSize: 8 }}
-                axisLine={false} tickLine={false} />
+          <ResponsiveContainer width="100%" height={96}>
+            <ComposedChart data={monthly} margin={{ top: 4, right: 6, left: -26, bottom: 0 }} barCategoryGap="18%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(58,143,212,0.10)" vertical={false} />
+              <XAxis
+                dataKey="m"
+                tick={e => {
+                  const { x, y, payload, index } = e;
+                  const isCur = monthly[index]?.isCur;
+                  return (
+                    <text x={x} y={y + 9} textAnchor="middle"
+                      fill={isCur ? "#e9c46a" : "#556677"} fontSize={isCur ? 9 : 8}
+                      fontWeight={isCur ? 700 : 400}>
+                      {payload.value}
+                    </text>
+                  );
+                }}
+                axisLine={false} tickLine={false}
+              />
               <YAxis hide />
               <Tooltip
-                contentStyle={{ background: "#0e1825", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, fontSize: 10 }}
-                formatter={v => [`${v.toLocaleString()} kWh`]}
+                cursor={{ fill: "rgba(58,143,212,0.07)" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  const total = (d?.heating ?? 0) + (d?.elec ?? 0);
+                  return (
+                    <div style={{
+                      background: "rgba(10,18,28,0.96)", backdropFilter: "blur(10px)",
+                      border: "1px solid rgba(58,143,212,0.3)", borderRadius: 8,
+                      padding: "8px 12px", fontSize: 11, lineHeight: 1.7, minWidth: 140,
+                    }}>
+                      <div style={{ fontWeight: 700, color: d?.isCur ? "#e9c46a" : "#a8c5e0", marginBottom: 4 }}>
+                        {d?.full}{d?.isCur ? (mn ? " · Одоогийн сар" : " · Current") : ""}
+                      </div>
+                      <div style={{ color: "#ddd" }}>
+                        <span style={{ color: "#e05252" }}>▪</span>
+                        {" "}{mn ? "Дулаалга" : "Heating"}: <b>{(d?.heating ?? 0).toLocaleString()}</b> kWh
+                      </div>
+                      <div style={{ color: "#ddd" }}>
+                        <span style={{ color: "#3a8fd4" }}>▪</span>
+                        {" "}{mn ? "Цахилгаан" : "Electric"}: <b>{(d?.elec ?? 0).toLocaleString()}</b> kWh
+                      </div>
+                      <div style={{ color: "#7fc4e0", borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 4, paddingTop: 4 }}>
+                        {mn ? "Нийт" : "Total"}: <b style={{ color: "#e8f4fd" }}>{total.toLocaleString()}</b> kWh
+                        {d?.temp != null && (
+                          <span style={{ color: "#8899aa", marginLeft: 8 }}>· {d.temp > 0 ? "+" : ""}{d.temp}°C</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }}
               />
-              <Bar dataKey="kwh" fill="#3a8fd4" radius={[2,2,0,0]} maxBarSize={16} />
-            </BarChart>
+              {/* Heating — seasonal warm color, brightened on current month */}
+              <Bar dataKey="heating" stackId="s" maxBarSize={18} name={mn ? "Дулаалга" : "Heat"}>
+                {monthly.map((d, i) => (
+                  <Cell key={i}
+                    fill={d.isCur ? "#f07070" : "#e05252"}
+                    stroke={d.isCur ? "#e9c46a" : "none"}
+                    strokeWidth={d.isCur ? 1.5 : 0}
+                  />
+                ))}
+              </Bar>
+              {/* Electric — always blue, brightened on current month */}
+              <Bar dataKey="elec" stackId="s" maxBarSize={18} radius={[3, 3, 0, 0]} name={mn ? "Цахилгаан" : "Elec"}>
+                {monthly.map((d, i) => (
+                  <Cell key={i}
+                    fill={d.isCur ? "#5aaae0" : "#3a8fd4"}
+                    stroke={d.isCur ? "#e9c46a" : "none"}
+                    strokeWidth={d.isCur ? 1.5 : 0}
+                  />
+                ))}
+              </Bar>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
