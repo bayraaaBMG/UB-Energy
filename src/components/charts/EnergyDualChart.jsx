@@ -104,20 +104,34 @@ function XTick({ x, y, payload, data }) {
 }
 
 /* ─── Legend pills ──────────────────────────────────────────────── */
-function ChartLegend({ mn }) {
+function ChartLegend({ mn, hasActual }) {
   const items = [
-    { color: C_HEAT,  label: mn ? "Дулаалга"  : "Heating"  },
-    { color: C_ELEC,  label: mn ? "Цахилгаан" : "Electric" },
-    { color: C_TOTAL, label: mn ? "Нийт"      : "Total"    },
+    { color: C_HEAT,    shape: "square", label: mn ? "Дулаалга"  : "Heating"  },
+    { color: C_ELEC,    shape: "square", label: mn ? "Цахилгаан" : "Electric" },
+    { color: C_TOTAL,   shape: "line",   label: mn ? "Нийт"      : "Total"    },
+    ...(hasActual ? [{ color: "#2a9d8f", shape: "dash", label: mn ? "Бодит дундаж" : "Actual avg" }] : []),
   ];
   return (
     <div style={{ display: "flex", gap: "1rem", justifyContent: "center",
       paddingTop: 6, flexWrap: "wrap" }}>
       {items.map(it => (
         <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: it.color,
-            flexShrink: 0, display: "inline-block" }} />
-          <span style={{ fontSize: 10, color: "#6a8faa" }}>{it.label}</span>
+          {it.shape === "square" && (
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: it.color,
+              flexShrink: 0, display: "inline-block" }} />
+          )}
+          {it.shape === "line" && (
+            <span style={{ width: 14, height: 2.5, borderRadius: 2, background: it.color,
+              flexShrink: 0, display: "inline-block" }} />
+          )}
+          {it.shape === "dash" && (
+            <span style={{ width: 14, height: 0, borderTop: `2px dashed ${it.color}`,
+              flexShrink: 0, display: "inline-block" }} />
+          )}
+          <span style={{ fontSize: 10, color: it.shape === "dash" ? "#2a9d8f" : "#6a8faa",
+            fontWeight: it.shape === "dash" ? 600 : 400 }}>
+            {it.label}
+          </span>
         </div>
       ))}
     </div>
@@ -132,7 +146,8 @@ const SEASON_ZONES = [
 ];
 
 /* ─── Main component ─────────────────────────────────────────────── */
-export default function EnergyDualChart({ data = [], lang, height = 210 }) {
+// actualMonthly: actual average monthly kWh (from real bill) — shows as horizontal line if provided
+export default function EnergyDualChart({ data = [], lang, height = 210, actualMonthly }) {
   const mn = lang === "mn";
 
   const enriched = data.map(d => ({
@@ -141,7 +156,10 @@ export default function EnergyDualChart({ data = [], lang, height = 210 }) {
     total:   d.total ?? (d.heating + d.electric),
   }));
 
-  const maxVal = Math.max(...enriched.map(d => d.total ?? 0));
+  const maxVal = Math.max(
+    ...enriched.map(d => d.total ?? 0),
+    actualMonthly ?? 0,
+  );
   const yTop   = Math.ceil(maxVal / 20000) * 20000;
 
   function kFmt(v) {
@@ -170,6 +188,21 @@ export default function EnergyDualChart({ data = [], lang, height = 210 }) {
                   fontWeight: 700, letterSpacing: "0.08em" } }}
             />
           ))}
+
+          {/* Actual monthly usage — horizontal reference line */}
+          {actualMonthly != null && (
+            <ReferenceLine
+              y={actualMonthly}
+              stroke="#2a9d8f"
+              strokeWidth={1.8}
+              strokeDasharray="6 3"
+              label={{
+                value: mn ? `Бодит ~${Math.round(actualMonthly / 1000)}k kWh` : `Actual ~${Math.round(actualMonthly / 1000)}k kWh`,
+                position: "insideTopRight",
+                style: { fill: "#2a9d8f", fontSize: 9, fontWeight: 700 },
+              }}
+            />
+          )}
 
           {/* Current month vertical marker */}
           {enriched.find(d => d.isCur) && (
@@ -244,7 +277,7 @@ export default function EnergyDualChart({ data = [], lang, height = 210 }) {
         </ComposedChart>
       </ResponsiveContainer>
 
-      <ChartLegend mn={mn} />
+      <ChartLegend mn={mn} hasActual={actualMonthly != null} />
     </div>
   );
 }

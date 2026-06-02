@@ -1209,6 +1209,7 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
             <EnergyDualChart
               lang={mn ? "mn" : "en"}
               height={200}
+              actualMonthly={calc.hasActualData ? building.monthly_usage : null}
               data={monthlySplit.map((s, i) => ({
                 month:     monthly[i].m,
                 fullMonth: monthly[i].full,

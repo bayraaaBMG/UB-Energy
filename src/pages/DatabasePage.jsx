@@ -292,13 +292,13 @@ function ResultsModal({ building, lang, t, onClose }) {
               <EnergyDualChart
                 lang={mn ? "mn" : "en"}
                 height={185}
-                leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
-                rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
+                actualMonthly={actualMonthly}
                 data={monthlySplit.map((s, i) => ({
                   month:    months[i],
                   heating:  s.heating,
                   electric: s.electric,
-                  total:    s.total,
+                  total:    s.heating + s.electric,
+                  temp:     monthlyEnergyData[i]?.temperature,
                 }))}
               />
             </div>
