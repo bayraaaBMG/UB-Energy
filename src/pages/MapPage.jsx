@@ -502,6 +502,8 @@ function mockGeom(lat, lng, areaSqm) {
   ];
 }
 
+// Minimum display size for mock buildings so they're clearly visible at zoom 14-15
+const MOCK_DISPLAY_MIN_AREA = 12000;
 const MOCK_FALLBACK = buildingsData.map(b => ({
   id:       b.id,
   name:     b.name,
@@ -510,7 +512,7 @@ const MOCK_FALLBACK = buildingsData.map(b => ({
   floors:   b.floors,
   year:     b.year,
   district: b.district,
-  osmGeom:  mockGeom(b.lat, b.lng, b.area),
+  osmGeom:  mockGeom(b.lat, b.lng, Math.max(b.area, MOCK_DISPLAY_MIN_AREA)),
   tags:     {},
   source:   "mock",
 }));
@@ -606,7 +608,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
     // Grid-cell dedup: floor coords to FETCH_STEP grid
     const ck = `${Math.floor(s2 / FETCH_STEP)},${Math.floor(w2 / FETCH_STEP)}`;
     if (fetchedCells.current.has(ck)) return;
-    fetchedCells.current.add(ck);
+    // Mark AFTER success only — a failed fetch leaves cell unmarked so panning retries it
 
     inFlight.current = true;
     setLoading(true);
@@ -626,7 +628,12 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
             .slice(0, 6000)
             .map(osmToBuilding)
             .filter(Boolean);
-          if (els.length > 0) { onNewBuildings(els); onFetched?.(new Date()); break; }
+          if (els.length > 0) {
+            fetchedCells.current.add(ck); // mark only on success
+            onNewBuildings(els);
+            onFetched?.(new Date());
+            break;
+          }
         } catch (err) {
           console.warn(`Overpass mirror (${mirror}):`, err.message);
         }
@@ -1553,7 +1560,7 @@ export default function MapPage() {
   const [layer,          setLayer]          = useState("dark");
   const [colorMode,      setColorMode]      = useState("type");
   const [showSmog,       setShowSmog]       = useState(heatingSeasonDefault);
-  const [mapZoom,        setMapZoom]        = useState(15);
+  const [mapZoom,        setMapZoom]        = useState(14);
   const [legendOpen,     setLegendOpen]     = useState(false);
   const [flyTarget,      setFlyTarget]      = useState(null);
   const [sheetSnap,      setSheetSnap]      = useState("mid");
@@ -1699,7 +1706,7 @@ export default function MapPage() {
         <div className="map-canvas">
           <MapContainer
             center={UB_CENTER}
-            zoom={15}
+            zoom={14}
             style={{ position: "absolute", inset: 0 }}
             zoomControl={false}
           >
