@@ -1208,14 +1208,15 @@ function BuildingPanel({ building, lang, t, onClose, hdd = 4500 }) {
             </div>
             <EnergyDualChart
               lang={mn ? "mn" : "en"}
-              height={175}
-              leftTitle={mn ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
-              rightTitle={mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total (MWh)"}
+              height={200}
               data={monthlySplit.map((s, i) => ({
-                month:    monthly[i].m,
-                heating:  s.heating,
-                electric: s.electric,
-                total:    s.total,
+                month:     monthly[i].m,
+                fullMonth: monthly[i].full,
+                heating:   s.heating,
+                electric:  s.electric,
+                total:     s.heating + s.electric,
+                temp:      monthlyEnergyData[i].temperature,
+                isCur:     i === curMonth,
               }))}
             />
             <div className="chart-note">{t.map.chart_note_climate}</div>

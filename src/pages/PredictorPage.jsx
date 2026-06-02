@@ -21,7 +21,7 @@ import {
   TARIFF_TIERS,
 } from "../ml/model";
 import { useData } from "../contexts/DataContext";
-import { splitMonthlyEnergy } from "../data/mockData";
+import { splitMonthlyEnergy, monthlyEnergyData } from "../data/mockData";
 import "./PredictorPage.css";
 
 const BUILDING_COLORS = {
@@ -821,21 +821,23 @@ export default function PredictorPage() {
                   // result.annual is already total (heating + electricity)
                   const totalAnnual = result.annual;
                   const fallbackSplit = splitMonthlyEnergy(totalAnnual);
+                  const curM = new Date().getMonth();
                   const dualData = result.chart_data.map((d, i) => {
                     const heatKwh = heating?.monthly_heat_kwh?.[i] ?? fallbackSplit[i].heating;
                     return {
-                      month:    d.month,
-                      heating:  heatKwh,
-                      electric: d.usage,
-                      total:    d.usage + heatKwh,
+                      month:     d.month,
+                      fullMonth: monthlyEnergyData[i]?.[lang === "mn" ? "month" : "month_en"] ?? d.month,
+                      heating:   heatKwh,
+                      electric:  d.usage,
+                      total:     d.usage + heatKwh,
+                      temp:      monthlyEnergyData[i]?.temperature,
+                      isCur:     i === curM,
                     };
                   });
                   return (
                     <EnergyDualChart
                       lang={lang}
                       height={210}
-                      leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
-                      rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
                       data={dualData}
                     />
                   );
@@ -1182,13 +1184,12 @@ export default function PredictorPage() {
                       <EnergyDualChart
                         lang={lang}
                         height={185}
-                        leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
-                        rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
-                        data={next12.map(d => ({
+                        data={next12.map((d, i) => ({
                           month:    d.month,
                           heating:  d.heat,
                           electric: d.elec,
                           total:    d.total,
+                          temp:     monthlyEnergyData[i % 12]?.temperature,
                         }))}
                       />
                       <div style={{ fontSize: "0.68rem", color: "var(--text3)", marginTop: "0.35rem", textAlign: "center" }}>
