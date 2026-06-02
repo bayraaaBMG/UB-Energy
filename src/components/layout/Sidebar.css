@@ -49,7 +49,7 @@
 
   /* Navbar already shows the logo — hide redundant header inside sidebar */
   .sidebar-header {
-    display: none;
+    display: none !important;
   }
 
   .sidebar-overlay {
