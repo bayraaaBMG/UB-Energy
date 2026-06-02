@@ -1,12 +1,6 @@
 /**
- * EnergyDualChart — single-panel monthly energy breakdown
- * Stacked bars (heating + electric) + smooth total curve
- * Season background zones + current-month highlight
- *
- * Props:
- *   data       [{month, heating, electric, total?, temp?, isCur?}, ...]
- *   lang       "mn" | "en"
- *   height     number  (default 210)
+ * EnergyDualChart — monthly energy breakdown
+ * Stacked bars (heating + electric) + smooth total line
  */
 
 import {
@@ -18,57 +12,46 @@ import {
 const C_HEAT  = "#e05252";
 const C_ELEC  = "#4a9fe0";
 const C_TOTAL = "#2db8a8";
+const C_ACT   = "#2a9d8f";
 const C_CUR   = "#e9c46a";
 
-const TICK = { fill: "#6a8faa", fontSize: 10, fontFamily: "Inter, sans-serif" };
-
-/* ─── Temperature → heating bar shade ──────────────────────────── */
-function heatShade(temp) {
-  if (temp == null) return C_HEAT;
-  if (temp <= -15) return "#c23030";
-  if (temp <= -5)  return "#d94444";
-  if (temp <= 3)   return "#e05252";
-  if (temp <= 10)  return "#e07848";
-  return "#d98a3a";
+function kFmt(v) {
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
 }
 
-/* ─── Custom tooltip ─────────────────────────────────────────────── */
-function Tip({ active, payload, label }) {
+/* ─── Tooltip ───────────────────────────────────────────────────── */
+function Tip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d     = payload[0]?.payload ?? {};
   const heat  = d.heating  ?? 0;
   const elec  = d.electric ?? 0;
-  const total = heat + elec;
   const mn    = d._mn;
   return (
     <div style={{
-      background: "rgba(8,16,26,0.96)",
-      backdropFilter: "blur(14px)",
-      border: "1px solid rgba(58,143,212,0.28)",
-      borderRadius: 10,
-      padding: "10px 14px",
-      fontSize: 11,
-      lineHeight: 1.75,
-      minWidth: 160,
-      boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+      background: "rgba(8,16,26,0.95)",
+      border: "1px solid rgba(58,143,212,0.25)",
+      borderRadius: 8, padding: "9px 13px",
+      fontSize: 11, lineHeight: 1.7, minWidth: 152,
+      boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
     }}>
-      <div style={{ fontWeight: 700, color: d.isCur ? C_CUR : "#a8c5e0", marginBottom: 5, fontSize: 12 }}>
-        {d.fullMonth || label}
-        {d.isCur && (
-          <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 600, color: C_CUR,
-            background: "rgba(233,196,106,0.15)", padding: "1px 5px", borderRadius: 4,
-            border: "1px solid rgba(233,196,106,0.35)" }}>
-            {mn ? "ОДОО" : "NOW"}
-          </span>
-        )}
+      <div style={{ fontWeight: 700, marginBottom: 4,
+        color: d.isCur ? C_CUR : "#a8c5e0", fontSize: 12 }}>
+        {d.fullMonth || d.month}
+        {d.isCur && <span style={{
+          marginLeft: 6, fontSize: 9, color: C_CUR,
+          background: "rgba(233,196,106,0.12)",
+          border: "1px solid rgba(233,196,106,0.3)",
+          borderRadius: 3, padding: "1px 5px",
+        }}>{mn ? "ОДОО" : "NOW"}</span>}
       </div>
-      <Row color={C_HEAT}  label={mn ? "Дулаалга"  : "Heating"}  val={heat}  />
-      <Row color={C_ELEC}  label={mn ? "Цахилгаан" : "Electric"} val={elec}  />
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.09)", marginTop: 5, paddingTop: 5 }}>
-        <Row color={C_TOTAL} label={mn ? "Нийт" : "Total"} val={total} bold />
+      <TipRow color={C_HEAT} label={mn ? "Дулаалга"  : "Heating"}  val={heat} />
+      <TipRow color={C_ELEC} label={mn ? "Цахилгаан" : "Electric"} val={elec} />
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)",
+        marginTop: 4, paddingTop: 4 }}>
+        <TipRow color={C_TOTAL} label={mn ? "Нийт" : "Total"} val={heat + elec} bold />
         {d.temp != null && (
-          <div style={{ color: "#667788", fontSize: 10, marginTop: 2 }}>
-            🌡 {d.temp > 0 ? "+" : ""}{d.temp}°C
+          <div style={{ color: "#556677", fontSize: 10, marginTop: 1 }}>
+            {d.temp > 0 ? "+" : ""}{d.temp}°C
           </div>
         )}
       </div>
@@ -76,26 +59,27 @@ function Tip({ active, payload, label }) {
   );
 }
 
-function Row({ color, label, val, bold }) {
+function TipRow({ color, label, val, bold }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-      <span style={{ color: "#8899aa", flex: 1 }}>{label}</span>
-      <span style={{ fontWeight: bold ? 700 : 500, color: bold ? "#e8f4fd" : "#c5dcef",
-        fontFamily: "monospace", fontSize: 11 }}>
+      <span style={{ width: 7, height: 7, borderRadius: 2,
+        background: color, flexShrink: 0 }} />
+      <span style={{ color: "#7a99b4", flex: 1 }}>{label}</span>
+      <span style={{ fontFamily: "monospace", fontSize: 11,
+        fontWeight: bold ? 700 : 400,
+        color: bold ? "#ddeeff" : "#aac5de" }}>
         {val.toLocaleString()} kWh
       </span>
     </div>
   );
 }
 
-/* ─── Custom X-axis tick ─────────────────────────────────────────── */
+/* ─── X-axis tick (current month = gold) ───────────────────────── */
 function XTick({ x, y, payload, data }) {
-  const d = data?.[payload?.index];
-  const isCur = d?.isCur;
+  const isCur = data?.[payload?.index]?.isCur;
   return (
     <text x={x} y={y + 10} textAnchor="middle"
-      fill={isCur ? C_CUR : "#5a7a94"}
+      fill={isCur ? C_CUR : "#4a6880"}
       fontSize={isCur ? 10 : 9}
       fontWeight={isCur ? 700 : 400}>
       {payload.value}
@@ -103,33 +87,24 @@ function XTick({ x, y, payload, data }) {
   );
 }
 
-/* ─── Legend pills ──────────────────────────────────────────────── */
-function ChartLegend({ mn, hasActual }) {
+/* ─── Bottom legend ─────────────────────────────────────────────── */
+function Legend({ mn, hasActual }) {
   const items = [
-    { color: C_HEAT,    shape: "square", label: mn ? "Дулаалга"  : "Heating"  },
-    { color: C_ELEC,    shape: "square", label: mn ? "Цахилгаан" : "Electric" },
-    { color: C_TOTAL,   shape: "line",   label: mn ? "Нийт"      : "Total"    },
-    ...(hasActual ? [{ color: "#2a9d8f", shape: "dash", label: mn ? "Бодит дундаж" : "Actual avg" }] : []),
+    { color: C_HEAT,  type: "box",  label: mn ? "Дулаалга"    : "Heating"     },
+    { color: C_ELEC,  type: "box",  label: mn ? "Цахилгаан"   : "Electric"    },
+    { color: C_TOTAL, type: "line", label: mn ? "Нийт"        : "Total"       },
+    ...(hasActual ? [{ color: C_ACT, type: "dash", label: mn ? "Бодит дундаж" : "Actual avg" }] : []),
   ];
   return (
-    <div style={{ display: "flex", gap: "1rem", justifyContent: "center",
-      paddingTop: 6, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: 14, justifyContent: "center",
+      flexWrap: "wrap", paddingTop: 5 }}>
       {items.map(it => (
         <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          {it.shape === "square" && (
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: it.color,
-              flexShrink: 0, display: "inline-block" }} />
-          )}
-          {it.shape === "line" && (
-            <span style={{ width: 14, height: 2.5, borderRadius: 2, background: it.color,
-              flexShrink: 0, display: "inline-block" }} />
-          )}
-          {it.shape === "dash" && (
-            <span style={{ width: 14, height: 0, borderTop: `2px dashed ${it.color}`,
-              flexShrink: 0, display: "inline-block" }} />
-          )}
-          <span style={{ fontSize: 10, color: it.shape === "dash" ? "#2a9d8f" : "#6a8faa",
-            fontWeight: it.shape === "dash" ? 600 : 400 }}>
+          {it.type === "box"  && <span style={{ width: 9, height: 9, borderRadius: 2, background: it.color, display: "inline-block" }} />}
+          {it.type === "line" && <span style={{ width: 13, height: 2.5, borderRadius: 2, background: it.color, display: "inline-block" }} />}
+          {it.type === "dash" && <span style={{ width: 13, borderTop: `2px dashed ${it.color}`, display: "inline-block" }} />}
+          <span style={{ fontSize: 10, color: it.type === "dash" ? C_ACT : "#5a7e9a",
+            fontWeight: it.type === "dash" ? 600 : 400 }}>
             {it.label}
           </span>
         </div>
@@ -138,146 +113,92 @@ function ChartLegend({ mn, hasActual }) {
   );
 }
 
-/* ─── Season zone labels (rendered as foreignObject via tick hack) ─ */
-const SEASON_ZONES = [
-  { x1: "1",  x2: "3",  fill: "rgba(224,82,82,0.05)",  labelMn: "ӨВӨЛ", labelEn: "WINTER" },
-  { x1: "5",  x2: "9",  fill: "rgba(58,143,212,0.05)", labelMn: "ЗУН",  labelEn: "SUMMER" },
-  { x1: "10", x2: "12", fill: "rgba(224,82,82,0.05)",  labelMn: "ӨВӨЛ", labelEn: "WINTER" },
-];
-
-/* ─── Main component ─────────────────────────────────────────────── */
-// actualMonthly: actual average monthly kWh (from real bill) — shows as horizontal line if provided
+/* ─── Main ──────────────────────────────────────────────────────── */
 export default function EnergyDualChart({ data = [], lang, height = 210, actualMonthly }) {
   const mn = lang === "mn";
 
   const enriched = data.map(d => ({
     ...d,
-    _mn:     mn,
-    total:   d.total ?? (d.heating + d.electric),
+    _mn:   mn,
+    total: d.total ?? (d.heating + d.electric),
   }));
 
-  const maxVal = Math.max(
-    ...enriched.map(d => d.total ?? 0),
-    actualMonthly ?? 0,
-  );
-  const yTop   = Math.ceil(maxVal / 20000) * 20000;
-
-  function kFmt(v) {
-    return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
-  }
+  const maxVal = Math.max(...enriched.map(d => d.total ?? 0), actualMonthly ?? 0);
+  const yTop   = Math.ceil(maxVal / 20000) * 20000 || 20000;
 
   return (
     <div>
       <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart data={enriched} margin={{ top: 18, right: 10, left: -8, bottom: 0 }}
-          barCategoryGap="22%" barGap={0}>
+        <ComposedChart data={enriched}
+          margin={{ top: 8, right: 8, left: -10, bottom: 0 }}
+          barCategoryGap="20%">
 
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="rgba(58,143,212,0.10)"
-            vertical={false}
-          />
+          {/* Subtle season backgrounds — no labels inside the chart */}
+          <ReferenceArea x1={enriched[0]?.month} x2={enriched[2]?.month}
+            fill="rgba(224,82,82,0.04)" strokeOpacity={0} />
+          <ReferenceArea x1={enriched[4]?.month} x2={enriched[8]?.month}
+            fill="rgba(58,143,212,0.04)" strokeOpacity={0} />
+          <ReferenceArea x1={enriched[9]?.month} x2={enriched[11]?.month}
+            fill="rgba(224,82,82,0.04)" strokeOpacity={0} />
 
-          {/* Season background zones */}
-          {SEASON_ZONES.map((z, i) => (
-            <ReferenceArea key={i} x1={z.x1} x2={z.x2}
-              fill={z.fill} strokeOpacity={0}
-              label={{ value: mn ? z.labelMn : z.labelEn,
-                position: "insideTop",
-                style: { fill: "rgba(255,255,255,0.18)", fontSize: 8,
-                  fontWeight: 700, letterSpacing: "0.08em" } }}
-            />
-          ))}
+          <CartesianGrid strokeDasharray="3 3"
+            stroke="rgba(58,143,212,0.09)" vertical={false} />
 
-          {/* Actual monthly usage — horizontal reference line */}
+          {/* Actual monthly avg — dashed line, no inline label */}
           {actualMonthly != null && (
-            <ReferenceLine
-              y={actualMonthly}
-              stroke="#2a9d8f"
-              strokeWidth={1.8}
-              strokeDasharray="6 3"
-              label={{
-                value: mn ? `Бодит ~${Math.round(actualMonthly / 1000)}k kWh` : `Actual ~${Math.round(actualMonthly / 1000)}k kWh`,
-                position: "insideTopRight",
-                style: { fill: "#2a9d8f", fontSize: 9, fontWeight: 700 },
-              }}
-            />
+            <ReferenceLine y={actualMonthly}
+              stroke={C_ACT} strokeWidth={1.6} strokeDasharray="6 3" />
           )}
 
-          {/* Current month vertical marker */}
+          {/* Current month — thin vertical gold guide */}
           {enriched.find(d => d.isCur) && (
-            <ReferenceLine
-              x={enriched.find(d => d.isCur)?.month}
-              stroke={C_CUR}
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-              strokeOpacity={0.6}
-            />
+            <ReferenceLine x={enriched.find(d => d.isCur)?.month}
+              stroke={C_CUR} strokeWidth={1.2}
+              strokeDasharray="4 3" strokeOpacity={0.5} />
           )}
 
-          <XAxis dataKey="month"
-            axisLine={false} tickLine={false}
-            tick={props => <XTick {...props} data={enriched} />}
-          />
-          <YAxis
-            tick={{ ...TICK, fontSize: 9 }}
+          <XAxis dataKey="month" axisLine={false} tickLine={false}
+            tick={props => <XTick {...props} data={enriched} />} />
+          <YAxis tick={{ fill: "#4a6880", fontSize: 9 }}
             tickLine={false} axisLine={false}
-            tickFormatter={kFmt}
-            domain={[0, yTop]}
-            width={38}
-          />
+            tickFormatter={kFmt} domain={[0, yTop]} width={34} />
 
-          <Tooltip content={<Tip />} cursor={{ fill: "rgba(58,143,212,0.06)" }} />
+          <Tooltip content={<Tip />}
+            cursor={{ fill: "rgba(58,143,212,0.06)" }} />
 
-          {/* Heating — temperature-tinted color per month */}
-          <Bar dataKey="heating" stackId="e" maxBarSize={20} name={mn ? "Дулаалга" : "Heating"}>
+          {/* Heating bars */}
+          <Bar dataKey="heating" stackId="s" maxBarSize={18}
+            name={mn ? "Дулаалга" : "Heating"}>
             {enriched.map((d, i) => (
-              <Cell key={i}
-                fill={heatShade(d.temp)}
-                opacity={d.isCur ? 1 : 0.82}
+              <Cell key={i} fill={C_HEAT}
+                opacity={d.isCur ? 1 : 0.78}
                 stroke={d.isCur ? C_CUR : "none"}
-                strokeWidth={d.isCur ? 1.5 : 0}
-              />
+                strokeWidth={d.isCur ? 1.5 : 0} />
             ))}
           </Bar>
 
-          {/* Electric — cool blue */}
-          <Bar dataKey="electric" stackId="e" maxBarSize={20}
+          {/* Electric bars */}
+          <Bar dataKey="electric" stackId="s" maxBarSize={18}
             radius={[3, 3, 0, 0]} name={mn ? "Цахилгаан" : "Electric"}>
             {enriched.map((d, i) => (
-              <Cell key={i}
-                fill={C_ELEC}
-                opacity={d.isCur ? 1 : 0.82}
+              <Cell key={i} fill={C_ELEC}
+                opacity={d.isCur ? 1 : 0.78}
                 stroke={d.isCur ? C_CUR : "none"}
-                strokeWidth={d.isCur ? 1.5 : 0}
-              />
+                strokeWidth={d.isCur ? 1.5 : 0} />
             ))}
           </Bar>
 
-          {/* Total line — smooth teal curve */}
-          <Line
-            type="natural"
-            dataKey="total"
-            stroke={C_TOTAL}
-            strokeWidth={2}
-            dot={({ cx, cy, index }) => {
-              const d = enriched[index];
-              if (d?.isCur) return (
-                <circle key={index} cx={cx} cy={cy} r={5}
-                  fill={C_TOTAL} stroke={C_CUR} strokeWidth={2} />
-              );
-              return <circle key={index} cx={cx} cy={cy} r={2.5} fill={C_TOTAL} stroke="none" />;
-            }}
-            activeDot={{ r: 5, fill: C_TOTAL, stroke: "rgba(45,184,168,0.4)", strokeWidth: 2 }}
+          {/* Total line */}
+          <Line type="monotone" dataKey="total" stroke={C_TOTAL}
+            strokeWidth={2} dot={false}
+            activeDot={{ r: 4, fill: C_TOTAL, strokeWidth: 0 }}
             name={mn ? "Нийт" : "Total"}
-            isAnimationActive
-            animationDuration={900}
-            animationEasing="ease-out"
-          />
+            isAnimationActive animationDuration={700} animationEasing="ease-out" />
+
         </ComposedChart>
       </ResponsiveContainer>
 
-      <ChartLegend mn={mn} hasActual={actualMonthly != null} />
+      <Legend mn={mn} hasActual={actualMonthly != null} />
     </div>
   );
 }
