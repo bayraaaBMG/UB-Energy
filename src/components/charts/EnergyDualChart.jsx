@@ -1,85 +1,105 @@
 /**
- * EnergyDualChart — monthly heating + electric grouped bar chart
- * Style: professional, reference-matched — red=heating, blue=electric
+ * EnergyDualChart — two-panel monthly energy chart
+ *
+ * Left : stacked bars (heating + electric) + smooth total line   [kWh]
+ * Right: grouped bars (heating / electric / total)               [MWh]
+ *
+ * Props
+ *   data          [{month, heating, electric, total?, fullMonth?, temp?, isCur?}]
+ *   lang          "mn" | "en"
+ *   height        number (default 220)
+ *   actualMonthly number | null  — real bill average → dashed line on left
  */
 
 import {
-  ComposedChart, BarChart, Bar, Line,
+  ComposedChart, BarChart,
+  Bar, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
 
+/* ── palette ──────────────────────────────────────────────────────── */
 const C_HEAT  = "#e05252";
 const C_ELEC  = "#4a9fe0";
-const C_TOTAL = "#2db8a8";
+const C_TOTAL = "#2ca87f";
 const C_ACT   = "#2a9d8f";
 const C_CUR   = "#e9c46a";
-const C_GRID  = "rgba(120,160,200,0.12)";
-const TICK    = { fill: "#7a9ab8", fontSize: 10, fontFamily: "Inter,sans-serif" };
+const C_GRID  = "rgba(100,150,200,0.13)";
+const TICK    = { fill: "#6a8faa", fontSize: 9, fontFamily: "Inter,sans-serif" };
 
-function kFmt(v) {
-  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+function kFmt(v)   { return v >= 1000  ? `${(v / 1000).toFixed(0)}k`  : `${v}`;  }
+function mFmt(v)   { return v >= 1     ? `${v.toFixed(0)}`             : `${v}`;  }
+
+/* ── shared panel title ───────────────────────────────────────────── */
+function PanelTitle({ text }) {
+  return (
+    <p style={{
+      textAlign: "center", margin: "0 0 6px",
+      fontSize: "0.67rem", fontWeight: 700,
+      color: "#7ab4d8", letterSpacing: "0.04em",
+      textTransform: "uppercase",
+    }}>{text}</p>
+  );
 }
 
-/* ─── Tooltip ───────────────────────────────────────────────────── */
-function Tip({ active, payload }) {
+/* ── tooltip ──────────────────────────────────────────────────────── */
+function Tip({ active, payload, unit = "kWh" }) {
   if (!active || !payload?.length) return null;
-  const d   = payload[0]?.payload ?? {};
-  const mn  = d._mn;
-  const tot = (d.heating ?? 0) + (d.electric ?? 0);
+  const d  = payload[0]?.payload ?? {};
+  const mn = d._mn;
   return (
     <div style={{
       background: "rgba(6,14,24,0.96)",
-      border: "1px solid rgba(74,159,224,0.22)",
-      borderRadius: 8, padding: "9px 13px",
-      fontSize: 11, lineHeight: 1.75, minWidth: 158,
-      boxShadow: "0 8px 28px rgba(0,0,0,0.45)",
+      border: "1px solid rgba(74,159,224,0.2)",
+      borderRadius: 8, padding: "8px 12px",
+      fontSize: 11, lineHeight: 1.7, minWidth: 150,
+      boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
     }}>
-      <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 5,
-        color: d.isCur ? C_CUR : "#9dc8e8" }}>
+      <div style={{ fontWeight: 700, color: d.isCur ? C_CUR : "#8ec8e8",
+        marginBottom: 4, fontSize: 12 }}>
         {d.fullMonth || d.month}
         {d.temp != null && (
-          <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 400,
-            color: "#556677" }}>{d.temp > 0 ? "+" : ""}{d.temp}°C</span>
+          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 400,
+            color: "#445566" }}>{d.temp > 0 ? "+" : ""}{d.temp}°C</span>
         )}
       </div>
-      {[
-        { c: C_HEAT, lbl: mn ? "Халаалт"    : "Heating",  v: d.heating  },
-        { c: C_ELEC, lbl: mn ? "Цахилгаан"  : "Electric", v: d.electric },
-      ].map(r => r.v != null && (
-        <div key={r.lbl} style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ width:7, height:7, borderRadius:2, background:r.c, flexShrink:0 }} />
-          <span style={{ color:"#7a99b4", flex:1 }}>{r.lbl}</span>
-          <span style={{ fontFamily:"monospace", color:"#b8d8f0" }}>
-            {r.v.toLocaleString()} kWh
+      {payload.map(({ name, value, color }) => (
+        <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 7, height: 7, borderRadius: 2,
+            background: color, flexShrink: 0 }} />
+          <span style={{ color: "#6a8faa", flex: 1 }}>{name}</span>
+          <span style={{ fontFamily: "monospace", color: "#b0cfe8" }}>
+            {typeof value === "number" ? value.toLocaleString() : value} {unit}
           </span>
         </div>
       ))}
-      <div style={{ borderTop:"1px solid rgba(255,255,255,0.07)",
-        marginTop:4, paddingTop:4,
-        display:"flex", justifyContent:"space-between" }}>
-        <span style={{ color:"#5a8caa" }}>{mn ? "Нийт" : "Total"}</span>
-        <span style={{ fontFamily:"monospace", fontWeight:700, color:"#ddeeff" }}>
-          {tot.toLocaleString()} kWh
-        </span>
-      </div>
     </div>
   );
 }
 
-/* ─── Custom X tick ─────────────────────────────────────────────── */
+function MwhTip(props) { return <Tip {...props} unit="MWh" />; }
+
+/* ── custom X tick (current month = gold) ─────────────────────────── */
 function XTick({ x, y, payload, data }) {
   const isCur = data?.[payload?.index]?.isCur;
   return (
     <text x={x} y={y + 11} textAnchor="middle"
-      fill={isCur ? C_CUR : "#5a7e9a"}
-      fontSize={isCur ? 10 : 9} fontWeight={isCur ? 700 : 400}>
+      fill={isCur ? C_CUR : "#4a7090"}
+      fontSize={isCur ? 10 : 9}
+      fontWeight={isCur ? 700 : 400}>
       {payload.value}
     </text>
   );
 }
 
-/* ─── Main ──────────────────────────────────────────────────────── */
+/* ── legend style ──────────────────────────────────────────────────── */
+const LEG = {
+  wrapperStyle: { paddingTop: 6, fontSize: 10 },
+  iconSize: 9, iconType: "square",
+  formatter: v => <span style={{ color: "#6a8faa" }}>{v}</span>,
+};
+
+/* ════════════════════════════════════════════════════════════════════ */
 export default function EnergyDualChart({
   data = [], lang, height = 220, actualMonthly,
 }) {
@@ -91,108 +111,149 @@ export default function EnergyDualChart({
     total: d.total ?? (d.heating + d.electric),
   }));
 
-  const maxVal = Math.max(...enriched.map(d => d.total ?? 0), actualMonthly ?? 0);
-  const yTop   = Math.ceil((maxVal * 1.1) / 20000) * 20000 || 20000;
+  /* MWh data for right panel */
+  const mwhData = enriched.map(d => ({
+    month:     d.month,
+    fullMonth: d.fullMonth,
+    isCur:     d.isCur,
+    _mn:       mn,
+    [mn ? "Дулаалга"  : "Heating"]:  +(d.heating  / 1000).toFixed(2),
+    [mn ? "Цахилгаан" : "Electric"]: +(d.electric / 1000).toFixed(2),
+    [mn ? "Нийт"      : "Total"]:    +((d.heating + d.electric) / 1000).toFixed(2),
+  }));
 
-  const heatLbl = mn ? "Халаалт (kWh)"    : "Heating (kWh)";
-  const elecLbl = mn ? "Цахилгаан (kWh)"  : "Electric (kWh)";
-  const totLbl  = mn ? "Нийт"             : "Total";
+  const heatKey  = mn ? "Дулаалга"  : "Heating";
+  const elecKey  = mn ? "Цахилгаан" : "Electric";
+  const totalKey = mn ? "Нийт"      : "Total";
+
+  const maxKwh = Math.max(...enriched.map(d => d.total ?? 0), actualMonthly ?? 0);
+  const yTopKwh = Math.ceil((maxKwh * 1.08) / 20000) * 20000 || 20000;
+
+  const maxMwh  = Math.max(...mwhData.map(d => d[totalKey] ?? 0));
+  const yTopMwh = Math.ceil((maxMwh * 1.08) / 0.5) * 0.5 || 1;
+
+  const titleLeft  = mn ? "Стэк: Дулаалга + Цахилгаан = Нийт"
+                        : "Stacked: Heating + Electric = Total";
+  const titleRight = mn ? "Сар бүрийн нийт хэрэглээ (MWh)"
+                        : "Monthly total consumption (MWh)";
+
+  const heatLblL = mn ? "Дулаалга (kWh)"   : "Heating (kWh)";
+  const elecLblL = mn ? "Цахилгаан (kWh)"  : "Electric (kWh)";
+  const totLblL  = mn ? "Нийт"             : "Total";
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.9rem" }}>
 
-      {/* ── Section title ── */}
-      <div style={{
-        textAlign: "center", fontWeight: 700, fontSize: "0.72rem",
-        color: "#7ab4d8", letterSpacing: "0.06em", textTransform: "uppercase",
-        marginBottom: 8, paddingBottom: 6,
-        borderBottom: "1px solid rgba(74,159,224,0.14)",
-      }}>
-        {mn ? "САРЫН ДУНДАЖ ХЭРЭГЛЭЭ" : "MONTHLY AVERAGE CONSUMPTION"}
+      {/* ═══ LEFT — stacked + line ═══════════════════════════════════ */}
+      <div>
+        <PanelTitle text={titleLeft} />
+        <ResponsiveContainer width="100%" height={height}>
+          <ComposedChart data={enriched}
+            margin={{ top: 4, right: 6, left: -10, bottom: 0 }}
+            barCategoryGap="28%">
+
+            <CartesianGrid strokeDasharray="3 3" stroke={C_GRID} vertical={false} />
+
+            {actualMonthly != null && (
+              <ReferenceLine y={actualMonthly}
+                stroke={C_ACT} strokeWidth={1.6} strokeDasharray="6 3" />
+            )}
+            {enriched.find(d => d.isCur) && (
+              <ReferenceLine x={enriched.find(d => d.isCur)?.month}
+                stroke={C_CUR} strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.4} />
+            )}
+
+            <XAxis dataKey="month" axisLine={false} tickLine={false}
+              tick={p => <XTick {...p} data={enriched} />} />
+            <YAxis tick={TICK} tickLine={false} axisLine={false}
+              tickFormatter={kFmt} domain={[0, yTopKwh]} width={36}
+              label={{ value: mn ? "kWh" : "kWh", angle: -90,
+                position: "insideLeft", offset: 14,
+                style: { fill: "#4a6880", fontSize: 9 } }} />
+
+            <Tooltip content={<Tip />}
+              cursor={{ fill: "rgba(74,159,224,0.06)" }} />
+            <Legend {...LEG} />
+
+            <Bar dataKey="heating"  stackId="s" name={heatLblL}
+              fill={C_HEAT} maxBarSize={16}>
+              {enriched.map((d, i) => (
+                <Cell key={i} fill={C_HEAT} opacity={d.isCur ? 1 : 0.82}
+                  stroke={d.isCur ? C_CUR : "none"} strokeWidth={d.isCur ? 1.5 : 0} />
+              ))}
+            </Bar>
+
+            <Bar dataKey="electric" stackId="s" name={elecLblL}
+              fill={C_ELEC} maxBarSize={16} radius={[2, 2, 0, 0]}>
+              {enriched.map((d, i) => (
+                <Cell key={i} fill={C_ELEC} opacity={d.isCur ? 1 : 0.82}
+                  stroke={d.isCur ? C_CUR : "none"} strokeWidth={d.isCur ? 1.5 : 0} />
+              ))}
+            </Bar>
+
+            <Line type="monotone" dataKey="total" name={totLblL}
+              stroke={C_TOTAL} strokeWidth={2}
+              dot={{ fill: C_TOTAL, r: 3, strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: C_TOTAL, strokeWidth: 0 }}
+              isAnimationActive animationDuration={700} />
+
+          </ComposedChart>
+        </ResponsiveContainer>
+
+        {actualMonthly != null && (
+          <div style={{ textAlign: "center", fontSize: "0.63rem",
+            color: C_ACT, marginTop: 2,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+            <span style={{ display: "inline-block", width: 14,
+              borderTop: `2px dashed ${C_ACT}` }} />
+            {mn
+              ? `Бодит дундаж: ${actualMonthly.toLocaleString()} kWh/сар`
+              : `Actual avg: ${actualMonthly.toLocaleString()} kWh/mo`}
+          </div>
+        )}
       </div>
 
-      <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart data={enriched}
-          margin={{ top: 6, right: 10, left: -6, bottom: 2 }}
-          barCategoryGap="28%" barGap={3}>
+      {/* ═══ RIGHT — grouped MWh ═════════════════════════════════════ */}
+      <div>
+        <PanelTitle text={titleRight} />
+        <ResponsiveContainer width="100%" height={height}>
+          <BarChart data={mwhData}
+            margin={{ top: 4, right: 6, left: -10, bottom: 0 }}
+            barCategoryGap="22%" barGap={2}>
 
-          <CartesianGrid strokeDasharray="3 3" stroke={C_GRID} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={C_GRID} vertical={false} />
 
-          {/* Actual avg line */}
-          {actualMonthly != null && (
-            <ReferenceLine y={actualMonthly}
-              stroke={C_ACT} strokeWidth={1.8} strokeDasharray="6 3" />
-          )}
+            {mwhData.find(d => d.isCur) && (
+              <ReferenceLine x={mwhData.find(d => d.isCur)?.month}
+                stroke={C_CUR} strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.4} />
+            )}
 
-          {/* Current month guide */}
-          {enriched.find(d => d.isCur) && (
-            <ReferenceLine
-              x={enriched.find(d => d.isCur)?.month}
-              stroke={C_CUR} strokeWidth={1}
-              strokeDasharray="4 3" strokeOpacity={0.45} />
-          )}
+            <XAxis dataKey="month" axisLine={false} tickLine={false}
+              tick={p => <XTick {...p} data={mwhData} />} />
+            <YAxis tick={TICK} tickLine={false} axisLine={false}
+              tickFormatter={mFmt} domain={[0, yTopMwh]} width={36}
+              label={{ value: "MWh", angle: -90,
+                position: "insideLeft", offset: 14,
+                style: { fill: "#4a6880", fontSize: 9 } }} />
 
-          <XAxis dataKey="month" axisLine={false} tickLine={false}
-            tick={props => <XTick {...props} data={enriched} />} />
+            <Tooltip content={<MwhTip />}
+              cursor={{ fill: "rgba(74,159,224,0.06)" }} />
+            <Legend {...LEG} />
 
-          <YAxis tick={TICK} tickLine={false} axisLine={false}
-            tickFormatter={kFmt} domain={[0, yTop]} width={36} />
+            <Bar dataKey={heatKey}  fill={C_HEAT}  maxBarSize={10}
+              radius={[2, 2, 0, 0]}
+              isAnimationActive animationDuration={600} />
+            <Bar dataKey={elecKey}  fill={C_ELEC}  maxBarSize={10}
+              radius={[2, 2, 0, 0]}
+              isAnimationActive animationDuration={700} />
+            <Bar dataKey={totalKey} fill={C_TOTAL} maxBarSize={10}
+              radius={[2, 2, 0, 0]}
+              isAnimationActive animationDuration={800} />
 
-          <Tooltip content={<Tip />}
-            cursor={{ fill: "rgba(74,159,224,0.06)" }} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-          <Legend
-            iconType="square" iconSize={9}
-            wrapperStyle={{ paddingTop: 8, fontSize: 10, color: "#6a8faa" }}
-            formatter={v => <span style={{ color: "#6a8faa" }}>{v}</span>}
-          />
-
-          {/* Heating bars */}
-          <Bar dataKey="heating" name={heatLbl} maxBarSize={14}
-            fill={C_HEAT} radius={[2, 2, 0, 0]}>
-            {enriched.map((d, i) => (
-              <Cell key={i} fill={C_HEAT}
-                opacity={d.isCur ? 1 : 0.80}
-                stroke={d.isCur ? C_CUR : "none"}
-                strokeWidth={d.isCur ? 1.5 : 0} />
-            ))}
-          </Bar>
-
-          {/* Electric bars */}
-          <Bar dataKey="electric" name={elecLbl} maxBarSize={14}
-            fill={C_ELEC} radius={[2, 2, 0, 0]}>
-            {enriched.map((d, i) => (
-              <Cell key={i} fill={C_ELEC}
-                opacity={d.isCur ? 1 : 0.80}
-                stroke={d.isCur ? C_CUR : "none"}
-                strokeWidth={d.isCur ? 1.5 : 0} />
-            ))}
-          </Bar>
-
-          {/* Total smooth line */}
-          <Line type="monotone" dataKey="total" name={totLbl}
-            stroke={C_TOTAL} strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: C_TOTAL, strokeWidth: 0 }}
-            isAnimationActive animationDuration={600} />
-
-        </ComposedChart>
-      </ResponsiveContainer>
-
-      {/* Actual avg note */}
-      {actualMonthly != null && (
-        <div style={{
-          textAlign: "center", fontSize: "0.65rem",
-          color: C_ACT, marginTop: 2,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-        }}>
-          <span style={{ display:"inline-block", width:16,
-            borderTop:`2px dashed ${C_ACT}` }} />
-          {mn
-            ? `Бодит дундаж: ${actualMonthly.toLocaleString()} kWh/сар`
-            : `Actual avg: ${actualMonthly.toLocaleString()} kWh/mo`}
-        </div>
-      )}
     </div>
   );
 }
