@@ -594,10 +594,10 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
     const s = bounds.getSouth(), w = bounds.getWest();
     const n = bounds.getNorth(), e = bounds.getEast();
 
-    // Clamp bbox to ≤ 0.12° per side (~13 km) to prevent Overpass timeout
+    // At zoom 14 the viewport is ~2× larger — cap tighter so Overpass returns denser results
     const latSpan = n - s, lngSpan = e - w;
     const latMid  = (n + s) / 2,  lngMid = (e + w) / 2;
-    const maxSpan = 0.12;
+    const maxSpan = z >= 15 ? 0.12 : 0.07;
     const s2 = latSpan > maxSpan ? latMid - maxSpan / 2 : s;
     const n2 = latSpan > maxSpan ? latMid + maxSpan / 2 : n;
     const w2 = lngSpan > maxSpan ? lngMid - maxSpan / 2 : w;
@@ -612,7 +612,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
     setLoading(true);
 
     const query =
-      `[out:json][timeout:25][maxsize:8000000];` +
+      `[out:json][timeout:30][maxsize:16000000];` +
       `way["building"]["building"!="no"]["building"!="construction"]` +
       `["building"!="proposed"]["building"!="entrance"]["building"!="roof"]` +
       `(${s2.toFixed(5)},${w2.toFixed(5)},${n2.toFixed(5)},${e2.toFixed(5)});out geom;`;
@@ -623,7 +623,7 @@ function BuildingFetcher({ onNewBuildings, setLoading, onFetched, onZoom }) {
           const json = await tryOverpass(mirror, query);
           const els = (json.elements || [])
             .filter(el => el.geometry?.length > 2)
-            .slice(0, 3000)
+            .slice(0, 6000)
             .map(osmToBuilding)
             .filter(Boolean);
           if (els.length > 0) { onNewBuildings(els); onFetched?.(new Date()); break; }
@@ -1628,8 +1628,9 @@ export default function MapPage() {
   const typeLabels = t.predictor.building_types;
   const filtered   = useMemo(() => {
     let bs = buildings;
-    if (typeFilter !== "all")     bs = bs.filter(b => b.type === typeFilter);
-    if (districtFilter !== "all") bs = bs.filter(b => (b.district || "").includes(districtFilter));
+    if (typeFilter === "user")         bs = bs.filter(b => b.source === "user" || b.source === "predictor");
+    else if (typeFilter !== "all")     bs = bs.filter(b => b.type === typeFilter);
+    if (districtFilter !== "all")      bs = bs.filter(b => (b.district || "").includes(districtFilter));
     return bs;
   }, [buildings, typeFilter, districtFilter]);
 
@@ -1939,9 +1940,15 @@ export default function MapPage() {
                       </div>
                     );
                   }),
-                  <div key="user" className="lgd-row">
-                    <span className="lgd-dot" style={{ background: "#e63946", border: "1px dashed #e63946" }} />
-                    <span style={{ color: "#e63946", fontWeight: 700 }}>{lang === "mn" ? "Таны барилга" : "User input"}</span>
+                  <div
+                    key="user"
+                    className={`lgd-row lgd-row-btn${typeFilter === "user" ? " lgd-row-active" : ""}`}
+                    style={{ cursor: "pointer", background: typeFilter === "user" ? "#e6394618" : undefined, borderRadius: 6, padding: "2px 4px", margin: "0 -4px" }}
+                    onClick={() => { setTypeFilter(typeFilter === "user" ? "all" : "user"); setSelected(null); }}
+                    title={typeFilter === "user" ? (lang === "mn" ? "Шүүлтүүр цэвэрлэх" : "Clear filter") : (lang === "mn" ? "Зөвхөн таны барилга" : "Your buildings only")}
+                  >
+                    <span className="lgd-dot" style={{ background: "#e63946", border: "1px dashed #e63946", boxShadow: typeFilter === "user" ? "0 0 0 2px #e6394655" : undefined }} />
+                    <span style={{ color: "#e63946", fontWeight: typeFilter === "user" ? 900 : 700 }}>{lang === "mn" ? "Таны барилга" : "User input"}</span>
                   </div>,
                 ]
               : colorMode === "grade"
