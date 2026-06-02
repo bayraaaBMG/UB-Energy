@@ -7,7 +7,7 @@ import { useApp } from "../hooks/useApp";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useData } from "../contexts/DataContext";
 import {
-  Building2, Zap, Wind, Ruler, Filter, TrendingUp,
+  Building2, Zap, Wind, Ruler, TrendingUp,
   Database, Calculator, Leaf, BarChart2, Award, Lightbulb,
   ThermometerSnowflake, Layers, MapPin, FlaskConical, Info,
 } from "lucide-react";
@@ -1876,24 +1876,6 @@ export default function MapPage() {
 
           {/* Controls */}
           <div className="map-controls">
-            {/* Type filter — horizontal scroll, single row */}
-            <div className="ctrl-pill ctrl-pill-scroll">
-              <Filter size={11} style={{ color: "#8899aa", flexShrink: 0 }} />
-              {[["all", t.map.all_types, null], ...Object.entries(typeLabels).map(([k, v]) => [k, v, TYPE_COLOR[k]])].map(([k, v, c]) => (
-                <button
-                  key={k}
-                  className="type-filter-btn"
-                  onClick={() => { setTypeFilter(k); setSelected(null); }}
-                  style={{
-                    borderColor: typeFilter === k ? (c || "#3a8fd4") : "rgba(255,255,255,0.12)",
-                    background:  typeFilter === k ? `${(c || "#3a8fd4")}22` : "transparent",
-                    color:       typeFilter === k ? (c || "#3a8fd4") : "#8899aa",
-                  }}
-                >
-                  {typeof v === "string" ? v.slice(0, 7) : k}
-                </button>
-              ))}
-            </div>
             {availableDistricts.length > 0 && (
               <div className="ctrl-pill">
                 <MapPin size={11} style={{ color: "#8899aa" }} />
@@ -1942,12 +1924,21 @@ export default function MapPage() {
           <div className={`map-legend${legendOpen ? " legend-open" : ""}`}>
             {colorMode === "type"
               ? [
-                  ...Object.entries(TYPE_COLOR).map(([type, color]) => (
-                    <div key={type} className="lgd-row">
-                      <span className="lgd-dot" style={{ background: color }} />
-                      <span>{typeLabels[type] || type}</span>
-                    </div>
-                  )),
+                  ...Object.entries(TYPE_COLOR).map(([type, color]) => {
+                    const active = typeFilter === type;
+                    return (
+                      <div
+                        key={type}
+                        className={`lgd-row lgd-row-btn${active ? " lgd-row-active" : ""}`}
+                        style={{ cursor: "pointer", background: active ? `${color}18` : undefined, borderRadius: 6, padding: "2px 4px", margin: "0 -4px" }}
+                        onClick={() => { setTypeFilter(active ? "all" : type); setSelected(null); }}
+                        title={active ? (lang === "mn" ? "Шүүлтүүр цэвэрлэх" : "Clear filter") : (lang === "mn" ? "Зөвхөн энэ төрөл" : "Filter this type")}
+                      >
+                        <span className="lgd-dot" style={{ background: color, boxShadow: active ? `0 0 0 2px ${color}55` : undefined }} />
+                        <span style={{ color: active ? color : undefined, fontWeight: active ? 700 : undefined }}>{typeLabels[type] || type}</span>
+                      </div>
+                    );
+                  }),
                   <div key="user" className="lgd-row">
                     <span className="lgd-dot" style={{ background: "#e63946", border: "1px dashed #e63946" }} />
                     <span style={{ color: "#e63946", fontWeight: 700 }}>{lang === "mn" ? "Таны барилга" : "User input"}</span>
