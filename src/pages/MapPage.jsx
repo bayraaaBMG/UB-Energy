@@ -1436,6 +1436,13 @@ function HowItWorks({ t, lang }) {
   );
 }
 
+// ─── Seasonal smog helper — Ulaanbaatar heating season: Nov–Mar ───────────────
+// month 0=Jan … 11=Dec; Oct(9)–Mar(2) = heating, Apr–Sep = warm season
+function heatingSeasonDefault() {
+  const m = new Date().getMonth();
+  return m <= 2 || m >= 9; // Jan–Mar, Sep–Dec
+}
+
 // ─── Smog / haze overlay ──────────────────────────────────────────────────────
 const SMOG_PARTICLES = Array.from({ length: 22 }, (_, i) => ({
   id: i,
@@ -1475,6 +1482,9 @@ function WeatherWidget({ lang, pm25, showSmog, onToggleSmog, weather }) {
   const liveWind = weather?.wind;
   const liveAqi  = weather?.aqi;
   const liveHdd  = weather?.hdd;
+  const month    = new Date().getMonth();
+  // Jun(5)–Aug(7) = зун; Apr(3)–May(4) = хавар гэх мэт
+  const isSummer = month >= 5 && month <= 8;
 
   const displayPm25 = liveAqi != null ? Math.round(liveAqi * 0.6) : pm25;
   const pm25Color =
@@ -1514,7 +1524,11 @@ function WeatherWidget({ lang, pm25, showSmog, onToggleSmog, weather }) {
       </div>
       <button className={`ww-smog-btn${showSmog ? " active" : ""}`} onClick={onToggleSmog}>
         <span className="ww-smog-dot" />
-        {showSmog ? (mn ? "Утаа харагдаж байна" : "Smog ON") : (mn ? "Утаа нуусан" : "Smog OFF")}
+        {showSmog
+          ? (mn ? "Утаа харагдаж байна" : "Smog visible")
+          : isSummer
+            ? (mn ? "Агаар цэвэр" : "Air is clean")
+            : (mn ? "Утаа нуусан" : "Smog hidden")}
       </button>
       <div className="ww-note" style={{ color: liveTemp != null ? "#2a9d8f" : undefined }}>
         {liveTemp != null ? (mn ? "Бодит цаг · Open-Meteo" : "Live · Open-Meteo") : (mn ? "Уур амьсгал ачааллаж байна…" : "Loading weather…")}
@@ -1538,16 +1552,28 @@ export default function MapPage() {
   const [districtFilter, setDistrictFilter] = useState("all");
   const [layer,          setLayer]          = useState("dark");
   const [colorMode,      setColorMode]      = useState("type");
-  const [showSmog,       setShowSmog]       = useState(true);
+  const [showSmog,       setShowSmog]       = useState(heatingSeasonDefault);
   const [mapZoom,        setMapZoom]        = useState(15);
   const [legendOpen,     setLegendOpen]     = useState(false);
   const [flyTarget,      setFlyTarget]      = useState(null);
   const [sheetSnap,      setSheetSnap]      = useState("mid");
-  const dragStartY = useRef(null);
-  const DEMO_PM25 = 89;
+  const dragStartY   = useRef(null);
+  const smogAutoSet  = useRef(false); // true after first real-AQI load or user toggle
+
+  const liveAqi      = weatherData?.todayData?.aqi;
+  const effectivePm25 = liveAqi != null && liveAqi > 0 ? Math.round(liveAqi * 0.6) : 89;
 
   // Reset sheet snap when building panel closes
   useEffect(() => { if (!selected) setSheetSnap("mid"); }, [selected]);
+
+  // Auto-show/hide smog once real AQI arrives (AQI > 80 = visible, else hidden)
+  useEffect(() => {
+    if (smogAutoSet.current) return;
+    if (liveAqi != null && liveAqi > 0) {
+      smogAutoSet.current = true;
+      setShowSmog(liveAqi > 80);
+    }
+  }, [liveAqi]);
 
   // Merge function: mock + user (from context) + OSM (from cache) — user buildings always win
   const mergeBuildings = useCallback(() => {
@@ -1982,14 +2008,14 @@ export default function MapPage() {
           </div>
 
           {/* Smog overlay */}
-          {showSmog && <SmogOverlay pm25={DEMO_PM25} />}
+          {showSmog && <SmogOverlay pm25={effectivePm25} />}
 
           {/* Weather widget */}
           <WeatherWidget
             lang={lang}
-            pm25={DEMO_PM25}
+            pm25={effectivePm25}
             showSmog={showSmog}
-            onToggleSmog={() => setShowSmog(s => !s)}
+            onToggleSmog={() => { smogAutoSet.current = true; setShowSmog(s => !s); }}
             weather={weatherData?.todayData}
           />
         </div>
