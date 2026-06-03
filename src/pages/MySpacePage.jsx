@@ -14,7 +14,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine, ComposedChart, Area,
 } from "recharts";
-import { clearPredictions, deletePrediction, deleteScenario, removeFavorite } from "../utils/userDataStorage";
 import { deleteUserBuilding, updateUserBuilding } from "../utils/buildingStorage";
 import { useData } from "../contexts/DataContext";
 import { predict } from "../ml/model";
@@ -799,18 +798,17 @@ function DatasetTab({ t, buildings }) {
 function HistoryTab({ t, user, predictions, onRefresh }) {
   const navigate = useNavigate();
   const { lang } = useLang();
+  const { removePrediction } = useData();
   const [expandedId, setExpandedId] = useState(null);
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!window.confirm("Бүх таамаглалын түүхийг устгах уу?")) return;
-    clearPredictions(user?.id);
-    onRefresh();
+    await Promise.all(predictions.map(p => removePrediction(p.id)));
   };
 
-  const handleDelete = (id) => {
-    deletePrediction(user?.id, id);
+  const handleDelete = async (id) => {
+    await removePrediction(id);
     if (expandedId === id) setExpandedId(null);
-    onRefresh();
   };
 
   if (predictions.length === 0) {
@@ -919,9 +917,10 @@ function HistoryTab({ t, user, predictions, onRefresh }) {
 // ── Scenarios Tab ─────────────────────────────────────────────────────────────
 function ScenariosTab({ t, user, scenarios, onRefresh }) {
   const navigate = useNavigate();
+  const { removeScenario } = useData();
 
   const handleLoad   = (s) => navigate("/predictor", { state: { scenario: s } });
-  const handleDelete = (id) => { deleteScenario(user?.id, id); onRefresh(); };
+  const handleDelete = async (id) => { await removeScenario(id); };
 
   if (scenarios.length === 0) return <EmptyState icon={Bookmark} text={t.myspace.scenario_empty} />;
 
@@ -958,7 +957,8 @@ function ScenariosTab({ t, user, scenarios, onRefresh }) {
 
 // ── Favorites Tab ─────────────────────────────────────────────────────────────
 function FavoritesTab({ t, user, favorites, onRefresh }) {
-  const handleRemove = (id) => { removeFavorite(user?.id, id); onRefresh(); };
+  const { toggleFav } = useData();
+  const handleRemove = async (b) => { await toggleFav(b); };
 
   if (favorites.length === 0) return <EmptyState icon={Star} text={t.myspace.favorites_empty} />;
 
@@ -986,7 +986,7 @@ function FavoritesTab({ t, user, favorites, onRefresh }) {
                 </div>
               )}
             </div>
-            <button className="ms-icon-btn ms-danger" onClick={() => handleRemove(b.id)} title={t.myspace.remove_favorite}>
+            <button className="ms-icon-btn ms-danger" onClick={() => handleRemove(b)} title={t.myspace.remove_favorite}>
               <Trash2 size={15} />
             </button>
           </div>
