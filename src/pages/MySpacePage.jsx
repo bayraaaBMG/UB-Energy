@@ -167,12 +167,20 @@ function ForecastPanel({ prediction, lang }) {
           height={200}
           leftTitle={lang === "mn" ? "Stacked: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use"}
           rightTitle={lang === "mn" ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)"}
-          data={splitMonthlyEnergy(annual).map((s, i) => ({
-            month:    lang === "mn" ? fc.monthly[i].label : fc.monthly[i].label_en,
-            heating:  s.heating,
-            electric: s.electric,
-            total:    s.total,
-          }))}
+          data={(() => {
+            const splits = splitMonthlyEnergy(annual);
+            const sm = start.getMonth();
+            return Array.from({ length: 12 }, (_, i) => {
+              const mi = (sm + i) % 12;
+              const s  = splits[mi];
+              return {
+                month:    lang === "mn" ? fc.monthly[i].label : fc.monthly[i].label_en,
+                heating:  s.heating,
+                electric: s.electric,
+                total:    s.total,
+              };
+            });
+          })()}
         />
       ) : (
         <ResponsiveContainer width="100%" height={180}>
