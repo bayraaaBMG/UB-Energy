@@ -11,7 +11,7 @@ import {
 import { ulaanbaatarDistricts } from "../data/mockData";
 import "./DataInputPage.css";
 import { useData } from "../contexts/DataContext";
-import { convertElecMoneyToKwh, convertHeatBillToEstimates, TARIFF_TIERS, predict } from "../ml/model";
+import { convertElecMoneyToKwh, convertHeatBillToEstimates, calcHeatBreakdown, TARIFF_TIERS, predict } from "../ml/model";
 
 const GRADE_COLORS = { A:"#2a9d8f",B:"#57cc99",C:"#a8c686",D:"#f4a261",E:"#e76f51",F:"#e63946",G:"#9b1d20" };
 
@@ -720,10 +720,10 @@ function TypeSpecificSection({ type, form, onChange, lang }) {
 }
 
 // ─── Bill results display ─────────────────────────────────────────────────────
-function BillResults({ elecBill, heatBill, lang }) {
+function BillResults({ elecBill, heatBreakdown, lang }) {
   const ec = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
-  const hc = parseFloat(heatBill) > 0 ? convertHeatBillToEstimates(parseFloat(heatBill)) : null;
-  if (!ec && !hc) return null;
+  if (!ec && !heatBreakdown?.total) return null;
+  const hb = heatBreakdown;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.65rem", marginTop: "0.75rem" }}>
       {ec && (<>
@@ -740,18 +740,26 @@ function BillResults({ elecBill, heatBill, lang }) {
           <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>{lang === "mn" ? "× 12 сар" : "× 12 months"}</div>
         </div>
       </>)}
-      {hc && (<>
-        <div style={{ background: "rgba(244,162,97,0.09)", border: "1px solid rgba(244,162,97,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#f4a261" }}>{hc.heat_gcal_monthly} Гкал</div>
-          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын дулаан" : "Monthly heating"}</div>
-          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.heat_gcal_annual} Гкал/{lang === "mn" ? "жил" : "yr"}</div>
+      {hb?.total > 0 && (
+        <div style={{ gridColumn: "1 / -1", background: "rgba(244,162,97,0.06)", border: "1px solid rgba(244,162,97,0.3)", borderRadius: 10, padding: "0.75rem 0.9rem" }}>
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#f4a261", marginBottom: "0.5rem" }}>
+            {lang === "mn" ? "🔥 Халаалтын зардлын задаргаа (сар)" : "🔥 Heating cost breakdown (monthly)"}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.4rem" }}>
+            {[
+              { label: lang === "mn" ? "Халаалт" : "Heating",    value: hb.heating,    color: "#f4a261" },
+              { label: lang === "mn" ? "Халуун ус" : "Hot water", value: hb.hotWater,   color: "#2a9d8f" },
+              { label: lang === "mn" ? "Үйлчилгээ" : "Service",   value: hb.serviceFee, color: "#9b72cf" },
+              { label: lang === "mn" ? "Нийт" : "Total",          value: hb.total,      color: "#e9c46a" },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{ background: "var(--bg2)", borderRadius: 8, padding: "0.45rem 0.5rem", textAlign: "center", border: `1px solid ${color}33` }}>
+                <div style={{ fontSize: "1rem", fontWeight: 800, color }}>{(value || 0).toLocaleString()}₮</div>
+                <div style={{ fontSize: "0.64rem", color: "var(--text3)", marginTop: 2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ background: "rgba(42,157,143,0.09)", border: "1px solid rgba(42,157,143,0.28)", borderRadius: 10, padding: "0.85rem" }}>
-          <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#2a9d8f" }}>{hc.water_m3_monthly} м³</div>
-          <div style={{ fontSize: "0.71rem", color: "var(--text3)", marginTop: 3 }}>{lang === "mn" ? "Сарын ус" : "Monthly water"}</div>
-          <div style={{ fontSize: "0.69rem", color: "var(--text3)", marginTop: 4 }}>≈ {hc.water_m3_annual} м³/{lang === "mn" ? "жил" : "yr"}</div>
-        </div>
-      </>)}
+      )}
     </div>
   );
 }
@@ -775,6 +783,9 @@ export default function DataInputPage() {
   const [previewContent, setPreviewContent] = useState(null);
   const [elecBill, setElecBill] = useState("");
   const [heatBill, setHeatBill] = useState("");
+  const [knowsBill, setKnowsBill] = useState(null); // null | true | false
+  const [heatTariffType, setHeatTariffType] = useState("apt_area");
+  const [heatTariffInput, setHeatTariffInput] = useState({ gj: "", m3: "" });
   const [formErrors, setFormErrors] = useState({});
   const [parseResults, setParseResults] = useState({}); // keyed by file.name
   const [csvText, setCsvText] = useState("");
@@ -871,7 +882,24 @@ export default function DataInputPage() {
     try { return predict(mlInput); } catch { return null; }
   }, [form]);
 
-  const qualityScore = computeQualityScore(form, elecBill, heatBill);
+  const heatBreakdown = React.useMemo(() => {
+    const area = parseFloat(form.area) || 0;
+    if (knowsBill === true && parseFloat(heatBill) > 0) {
+      const hc = convertHeatBillToEstimates(parseFloat(heatBill), area);
+      return { heating: hc.heating, hotWater: hc.hotWater, serviceFee: hc.serviceFee, total: hc.total };
+    }
+    if (knowsBill === false) {
+      return calcHeatBreakdown({
+        tariffType: heatTariffType,
+        area,
+        gjValue: parseFloat(heatTariffInput.gj) || 0,
+        m3Value: parseFloat(heatTariffInput.m3) || 0,
+      });
+    }
+    return null;
+  }, [knowsBill, heatBill, heatTariffType, heatTariffInput, form.area]);
+
+  const qualityScore = computeQualityScore(form, elecBill, String(heatBreakdown?.total || heatBill || ""));
 
   // Close file preview on Escape
   useEffect(() => {
@@ -972,6 +1000,7 @@ export default function DataInputPage() {
     // Build record — normalizeBuilding in buildingStorage will run ML
     const elecConverted = parseFloat(elecBill) > 0 ? convertElecMoneyToKwh(parseFloat(elecBill)) : null;
     const monthly_usage = elecConverted ? elecConverted.kwh_monthly : null;
+    const heatDataSource = knowsBill === true ? "user_bill" : knowsBill === false ? "tariff_estimate" : "ml_prediction";
     const schema  = TYPE_SCHEMA[form.building_type];
     const derived = schema ? schema.derive(form) : {};
     const record = {
@@ -983,6 +1012,13 @@ export default function DataInputPage() {
       year:         parseInt(form.year) || new Date().getFullYear(),
       district:     form.district,
       monthly_usage,
+      monthly_heat_cost: heatBreakdown?.total ?? null,
+      // Heating bill breakdown saved separately
+      heat_heating:     heatBreakdown?.heating     ?? null,
+      heat_hotwater:    heatBreakdown?.hotWater     ?? null,
+      heat_service:     heatBreakdown?.serviceFee   ?? null,
+      heat_total:       heatBreakdown?.total        ?? null,
+      heat_data_source: heatDataSource,
       rooms:        derived.rooms    ?? parseInt(form.rooms) ?? null,
       residents:    derived.residents ?? null,
       appliances:   derived.appliances ?? null,
@@ -1003,7 +1039,7 @@ export default function DataInputPage() {
     };
     addBuilding(record);
     setSubmitted(true);
-    setElecBill(""); setHeatBill("");
+    setElecBill(""); setHeatBill(""); setKnowsBill(null); setHeatTariffInput({ gj: "", m3: "" });
     setTimeout(() => setSubmitted(false), 5000);
     setForm(f => ({
       ...f,
@@ -1247,29 +1283,106 @@ export default function DataInputPage() {
                     : "Enter your monthly bill amounts. Estimates are calculated automatically based on tariffs and norms."}
                 </p>
 
-                <div className="grid grid-2">
-                  <div className="form-group">
-                    <label className="form-label">
-                      <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                      {lang === "mn" ? "Цахилгааны зардал (₮/сар)" : "Electricity cost (₮/month)"}
-                    </label>
-                    <input className="form-input" type="number"
-                      placeholder={lang === "mn" ? "Жишээ: 35,000" : "e.g. 35,000"}
-                      value={elecBill} onChange={e => setElecBill(e.target.value)} min={0} />
+                {/* Electricity bill */}
+                <div className="form-group" style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">
+                    <Zap size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                    {lang === "mn" ? "Цахилгааны зардал (₮/сар)" : "Electricity cost (₮/month)"}
+                  </label>
+                  <input className="form-input" type="number"
+                    placeholder={lang === "mn" ? "Жишээ: 35,000" : "e.g. 35,000"}
+                    value={elecBill} onChange={e => setElecBill(e.target.value)} min={0} />
+                </div>
+
+                {/* Heating bill — 2-path: user knows bill / tariff calculator */}
+                <div style={{ border: "1px solid rgba(244,162,97,0.3)", borderRadius: 10, padding: "0.75rem 0.9rem", background: "rgba(244,162,97,0.04)" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#f4a261", marginBottom: "0.55rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <Flame size={13} />
+                    {lang === "mn" ? "Халаалтын зардал" : "Heating cost"}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      <Flame size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                      {lang === "mn" ? "Халаалтын зардал (₮/сар)" : "Heating cost (₮/month)"}
-                    </label>
-                    <input className="form-input" type="number"
-                      placeholder={lang === "mn" ? "Жишээ: 80,000" : "e.g. 80,000"}
-                      value={heatBill} onChange={e => setHeatBill(e.target.value)} min={0} />
+                  <p style={{ fontSize: "0.73rem", color: "var(--text3)", marginBottom: "0.6rem" }}>
+                    {lang === "mn" ? "Та сарын халаалтын нэхэмжлэлийн дүнгээ мэдэж байна уу?" : "Do you know your monthly heating bill amount?"}
+                  </p>
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                    {[{ val: true, label: lang === "mn" ? "✓ Мэдэж байна" : "✓ I know it" },
+                      { val: false, label: lang === "mn" ? "⊘ Мэдэхгүй" : "⊘ Don't know" }].map(({ val, label }) => (
+                      <button key={String(val)} type="button"
+                        onClick={() => { setKnowsBill(val); if (val) { setHeatTariffInput({ gj: "", m3: "" }); } else { setHeatBill(""); } }}
+                        style={{ flex: 1, padding: "0.4rem", borderRadius: 8, border: `1.5px solid ${knowsBill === val ? "#f4a261" : "var(--border)"}`, background: knowsBill === val ? "rgba(244,162,97,0.15)" : "var(--bg2)", color: knowsBill === val ? "#f4a261" : "var(--text2)", fontWeight: knowsBill === val ? 700 : 400, fontSize: "0.75rem", cursor: "pointer", transition: "all .15s" }}>
+                        {label}
+                      </button>
+                    ))}
                   </div>
+
+                  {/* Path A: user knows their total bill */}
+                  {knowsBill === true && (
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label" style={{ fontSize: "0.72rem" }}>
+                        {lang === "mn" ? "Сарын нийт халаалтын төлбөр (₮)" : "Total monthly heating bill (₮)"}
+                      </label>
+                      <input className="form-input" type="number" min={0}
+                        placeholder={lang === "mn" ? "Жишээ: 80,000" : "e.g. 80,000"}
+                        value={heatBill} onChange={e => setHeatBill(e.target.value)} />
+                    </div>
+                  )}
+
+                  {/* Path B: tariff calculator */}
+                  {knowsBill === false && (() => {
+                    const TARIFF_OPTIONS = [
+                      { value: "apt_area",     label: lang === "mn" ? "Орон сууц — талбайгаар (506₮/м²)" : "Apartment — by area (506₮/m²)",              extra: null },
+                      { value: "apt_gj",       label: lang === "mn" ? "Орон сууц — ГДж хэмжүүрээр (3,421₮/ГДж)" : "Apartment — by GJ meter (3,421₮/GJ)", extra: "gj" },
+                      { value: "hotwater_m3",  label: lang === "mn" ? "Халуун ус — м³-ээр (1,632₮/м³)" : "Hot water — by m³ (1,632₮/m³)",                extra: "m3" },
+                      { value: "service_only", label: lang === "mn" ? "Үйлчилгээний тариф (талбайгаар)" : "Service fee only (by area)",                   extra: null },
+                      { value: "org_heat_m3",  label: lang === "mn" ? "Байгууллага — халаалт м³-ээр (604₮/м³)" : "Org — heat by m³ (604₮/m³)",           extra: "m3" },
+                      { value: "org_heat_gj",  label: lang === "mn" ? "Байгууллага — халаалт+халуун ус ГДж-ээр (9,314₮/ГДж)" : "Org — heat+HW by GJ (9,314₮/GJ)", extra: "gj" },
+                    ];
+                    const chosen = TARIFF_OPTIONS.find(o => o.value === heatTariffType);
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontSize: "0.72rem" }}>
+                            {lang === "mn" ? "Тарифын төрөл" : "Tariff type"}
+                          </label>
+                          <select className="form-input" value={heatTariffType}
+                            onChange={e => { setHeatTariffType(e.target.value); setHeatTariffInput({ gj: "", m3: "" }); }}
+                            style={{ fontSize: "0.75rem" }}>
+                            {TARIFF_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+                        {chosen?.extra === "gj" && (
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label" style={{ fontSize: "0.72rem" }}>
+                              {lang === "mn" ? "Сарын хэрэглээ (ГДж)" : "Monthly consumption (GJ)"}
+                            </label>
+                            <input className="form-input" type="number" min={0} step={0.1}
+                              placeholder={lang === "mn" ? "Жишээ: 5.5" : "e.g. 5.5"}
+                              value={heatTariffInput.gj}
+                              onChange={e => setHeatTariffInput(p => ({ ...p, gj: e.target.value }))} />
+                          </div>
+                        )}
+                        {chosen?.extra === "m3" && (
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label" style={{ fontSize: "0.72rem" }}>
+                              {lang === "mn" ? "Сарын хэрэглээ (м³)" : "Monthly consumption (m³)"}
+                            </label>
+                            <input className="form-input" type="number" min={0} step={0.1}
+                              placeholder={lang === "mn" ? "Жишээ: 8.0" : "e.g. 8.0"}
+                              value={heatTariffInput.m3}
+                              onChange={e => setHeatTariffInput(p => ({ ...p, m3: e.target.value }))} />
+                          </div>
+                        )}
+                        {(heatTariffType === "apt_area" || heatTariffType === "service_only") && form.area && (
+                          <div style={{ fontSize: "0.7rem", color: "var(--text3)", padding: "0.3rem 0.5rem", background: "var(--bg3)", borderRadius: 6 }}>
+                            {lang === "mn" ? `Талбай: ${form.area} м² — автоматаар тооцоолно` : `Area: ${form.area} m² — auto-calculated`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Live results */}
-                {(parseFloat(elecBill) > 0 || parseFloat(heatBill) > 0) && <BillResults elecBill={elecBill} heatBill={heatBill} lang={lang} />}
+                {(parseFloat(elecBill) > 0 || heatBreakdown?.total > 0) && <BillResults elecBill={elecBill} heatBreakdown={heatBreakdown} lang={lang} />}
 
                 {/* Tariff reference card */}
                 <div style={{ marginTop: "1rem", padding: "0.9rem 1rem", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 10, fontSize: "0.78rem", lineHeight: 1.7, color: "var(--text2)" }}>
@@ -1413,16 +1526,6 @@ export default function DataInputPage() {
                             <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Орон сууцны халаалт" : "Apartment heating"}</td>
                             <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/ГДж</td>
                             <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>3,421</td>
-                          </tr>
-                          <tr style={{ borderTop:"1px solid var(--border)" }}>
-                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — халаалтын улиралд" : "Hot water — heating season"}</td>
-                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/хүн</td>
-                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>1,870</td>
-                          </tr>
-                          <tr style={{ borderTop:"1px solid var(--border)" }}>
-                            <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — халаалтын бус улиралд" : "Hot water — off-season"}</td>
-                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", color:"var(--text3)" }}>Төг/хүн</td>
-                            <td style={{ padding:"0.2rem 0.5rem", textAlign:"right", fontWeight:700, color:"#f4a261" }}>2,806</td>
                           </tr>
                           <tr style={{ borderTop:"1px solid var(--border)" }}>
                             <td style={{ padding:"0.2rem 0.5rem", color:"var(--text2)" }}>{lang==="mn" ? "Халуун ус — усны зарцуулалтаар" : "Hot water — by consumption"}</td>

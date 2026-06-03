@@ -629,9 +629,8 @@ export default function PredictorPage() {
                   const annualElecCost  = Math.round(mCost * 12);
                   const monthlyElecCost = Math.round(mCost);
                   const heatingCost     = heating?.annual_heat_cost || 0;
-                  const hotWaterCost    = heating?.hot_water_annual  || 0;
                   const serviceCost     = heating?.service_annual    || 0;
-                  const totalAnnualCost = annualElecCost + heatingCost + hotWaterCost + serviceCost;
+                  const totalAnnualCost = annualElecCost + heatingCost + serviceCost;
                   const heatKwhAnnual   = heating?.annual_kwh_equiv || 0;
                   const totalKwhAnnual  = result.annual;
                   const totalIntensity  = result.intensity;
@@ -975,8 +974,6 @@ export default function PredictorPage() {
                           {[
                             [lang === "mn" ? "Орон сууцны халаалт" : "Apartment heating", "Төг/м²/сар", "506"],
                             [lang === "mn" ? "Орон сууцны халаалт" : "Apartment heating", "Төг/ГДж", "3,421"],
-                            [lang === "mn" ? "Халуун ус — халаалтын улиралд" : "Hot water — heating season", "Төг/хүн", "1,870"],
-                            [lang === "mn" ? "Халуун ус — халаалтын бус улиралд" : "Hot water — off-season", "Төг/хүн", "2,806"],
                             [lang === "mn" ? "Халуун ус — усны зарцуулалтаар" : "Hot water — by volume", "Төг/м³", "1,632"],
                           ].map(([label, unit, price]) => (
                             <tr key={label + unit} style={{ borderTop: "1px solid var(--border)" }}>

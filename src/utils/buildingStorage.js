@@ -59,6 +59,12 @@ export function normalizeBuilding(raw) {
     longitude:          parseFloat(raw.longitude ?? raw.lng)  || null,
     monthly_elec_cost:  parseFloat(raw.monthly_elec_cost) || null,
     monthly_heat_cost:  parseFloat(raw.monthly_heat_cost) || null,
+    // Heating bill breakdown (heating / hotWater / serviceFee / total)
+    heat_heating:     raw.heat_heating     ?? null,
+    heat_hotwater:    raw.heat_hotwater    ?? null,
+    heat_service:     raw.heat_service     ?? null,
+    heat_total:       raw.heat_total       ?? null,
+    heat_data_source: raw.heat_data_source || "ml_prediction",
     source:             raw.source      || "mock",
     userId:             raw.userId      || null,
     submittedAt:        raw.submittedAt || null,

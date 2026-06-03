@@ -330,7 +330,7 @@ const en = {
     elec_hint: "Take this from your electricity bill or supplier data.",
     tariff_note_title: "Unit Conversion Guide: Monetary Amounts to Energy Units",
     tariff_note_p1: "Most households are familiar with their energy costs in monetary terms and may not know their consumption in technical units such as kWh or Gcal (Energy Regulatory Commission). In Mongolia, residential electricity uses a tiered tariff: 0–150 kWh → 175₮, 150–300 kWh → 256₮, 300+ kWh → 285₮ per kWh (УБЦТС ТӨХК). To estimate electricity consumption from a monetary amount, use the following formula: Electricity (kWh) ≈ Amount paid ÷ Tariff (УБЦТС ТӨХК).",
-    tariff_note_p2: "Residential heating tariff: 506₮/m² or 3,421₮/GJ; hot water per person: 1,870₮/person during heating season, 2,806₮/person off-season; by consumption: 1,632₮/m³ (Energy Regulatory Commission, dulaan.mn). Where available, actual meter readings are preferred for greater accuracy.",
+    tariff_note_p2: "Residential heating tariff: 506₮/m² or 3,421₮/GJ; hot water by consumption: 1,632₮/m³ (Energy Regulatory Commission, dulaan.mn). Where available, actual meter readings are preferred for greater accuracy.",
   },
   database: {
     title: "Database",

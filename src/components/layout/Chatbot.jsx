@@ -31,8 +31,8 @@ const KB = [
   },
   {
     keys: ["дулааны тариф", "heating tariff", "дулааны үнэ", "гкал", "gcal", "дулаан хэдэн", "халаалтын төлбөр"],
-    mn: `Улаанбаатарын дулааны тариф (НӨАТ-гүй) — Эрчим хүчний зохицуулах хороо:\n\n**Ахуйн хэрэглэгч:**\n• Орон сууцны халаалт: **506₮/м²/сар** эсвэл **3,421₮/ГДж**\n• Халуун ус (халаалтын улиралд): **1,870₮/хүн**\n• Халуун ус (халаалтын бус улиралд): **2,806₮/хүн**\n• Халуун ус (усны зарцуулалтаар): **1,632₮/м³**\n\n**Аж ахуйн нэгж:**\n• Халаалт: **604₮/м³**\n• Халаалт + халуун ус: **9,314₮/ГДж**\n\nХалааны улирал: **9 сар** (10-р — 6-р сар)\nЭх сурвалж: dulaan.mn/page/tariff`,
-    en: `Ulaanbaatar district heating tariff (excl. VAT) — Energy Regulatory Commission:\n\n**Residential:**\n• Apartment heating: **506₮/m²/month** or **3,421₮/GJ**\n• Hot water (heating season): **1,870₮/person**\n• Hot water (off-season): **2,806₮/person**\n• Hot water (by volume): **1,632₮/m³**\n\n**Commercial:**\n• Heating: **604₮/m³**\n• Heating + hot water: **9,314₮/GJ**\n\nHeating season: **9 months** (October–June)\nSource: dulaan.mn/page/tariff`,
+    mn: `Улаанбаатарын дулааны тариф (НӨАТ-гүй) — Эрчим хүчний зохицуулах хороо:\n\n**Ахуйн хэрэглэгч:**\n• Орон сууцны халаалт: **506₮/м²/сар** эсвэл **3,421₮/ГДж**\n• Халуун ус (усны зарцуулалтаар): **1,632₮/м³**\n\n**Аж ахуйн нэгж:**\n• Халаалт: **604₮/м³**\n• Халаалт + халуун ус: **9,314₮/ГДж**\n\nХалааны улирал: **9 сар** (10-р — 6-р сар)\nЭх сурвалж: dulaan.mn/page/tariff`,
+    en: `Ulaanbaatar district heating tariff (excl. VAT) — Energy Regulatory Commission:\n\n**Residential:**\n• Apartment heating: **506₮/m²/month** or **3,421₮/GJ**\n• Hot water (by volume): **1,632₮/m³**\n\n**Commercial:**\n• Heating: **604₮/m³**\n• Heating + hot water: **9,314₮/GJ**\n\nHeating season: **9 months** (October–June)\nSource: dulaan.mn/page/tariff`,
     sources: ["Эрчим хүчний зохицуулах хороо — dulaan.mn/page/tariff"],
   },
   {

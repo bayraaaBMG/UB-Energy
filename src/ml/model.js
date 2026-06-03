@@ -676,22 +676,64 @@ export function convertElecMoneyToKwh(tugrug_monthly) {
 
 // Water + heating combined bill → estimates
 // Sources: Улаанбаатар Дулааны Сүлжээ ТӨХК 2024, УСУГ 2024
-export function convertHeatBillToEstimates(tugrug_monthly) {
+// area (m²) is used to derive service fee before splitting heating/water shares
+export function convertHeatBillToEstimates(tugrug_monthly, area = 0) {
   const HEAT_RATE  = 160000; // ₮/Gcal (УБ ДС ТӨХК avg 2024)
   const WATER_RATE = 2100;   // ₮/m³ (УСУГ 2024 cold+hot avg)
+  const svcFee     = area > 0 ? (area <= 40 ? 3300 : area <= 80 ? 5500 : 11000) : 0;
+  const afterSvc   = Math.max(0, tugrug_monthly - svcFee);
   const HEAT_SHARE = 0.72;   // typical share: 72% heating, 28% water
-  const heat_t  = Math.round(tugrug_monthly * HEAT_SHARE);
-  const water_t = Math.round(tugrug_monthly * (1 - HEAT_SHARE));
+  const heat_t  = Math.round(afterSvc * HEAT_SHARE);
+  const water_t = Math.round(afterSvc * (1 - HEAT_SHARE));
   const heat_gcal_monthly = Math.round(heat_t  / HEAT_RATE  * 100) / 100;
   const water_m3_monthly  = Math.round(water_t / WATER_RATE * 10)  / 10;
   return {
+    // Backward-compatible fields (used by PredictorPage)
     heat_tugrug_monthly:  heat_t,
     water_tugrug_monthly: water_t,
     heat_gcal_monthly,
     heat_gcal_annual:  Math.round(heat_gcal_monthly * 9  * 100) / 100,
     water_m3_monthly,
     water_m3_annual:   Math.round(water_m3_monthly  * 12 * 10)  / 10,
+    // Breakdown fields for storage
+    heating:    heat_t,
+    hotWater:   water_t,
+    serviceFee: svcFee,
+    total:      tugrug_monthly,
   };
+}
+
+// Tariff-based heating bill breakdown calculator
+// tariffType: 'apt_area' | 'apt_gj' | 'hotwater_m3' | 'service_only' | 'org_heat_m3' | 'org_heat_gj'
+// Rates: Эрчим хүчний зохицуулах хороо — dulaan.mn/page/tariff (НӨАТ-гүй)
+export function calcHeatBreakdown({ tariffType, area = 0, gjValue = 0, m3Value = 0 }) {
+  const svcFee = area <= 40 ? 3300 : area <= 80 ? 5500 : 11000; // ₮/month
+  switch (tariffType) {
+    case 'apt_area': {
+      const h = Math.round(area * 506);
+      return { heating: h, hotWater: 0, serviceFee: svcFee, total: h + svcFee };
+    }
+    case 'apt_gj': {
+      const h = Math.round(gjValue * 3421);
+      return { heating: h, hotWater: 0, serviceFee: svcFee, total: h + svcFee };
+    }
+    case 'hotwater_m3': {
+      const w = Math.round(m3Value * 1632);
+      return { heating: 0, hotWater: w, serviceFee: svcFee, total: w + svcFee };
+    }
+    case 'service_only':
+      return { heating: 0, hotWater: 0, serviceFee: svcFee, total: svcFee };
+    case 'org_heat_m3': {
+      const h = Math.round(m3Value * 604);
+      return { heating: h, hotWater: 0, serviceFee: 0, total: h };
+    }
+    case 'org_heat_gj': {
+      const h = Math.round(gjValue * 9314);
+      return { heating: h, hotWater: 0, serviceFee: 0, total: h };
+    }
+    default:
+      return { heating: 0, hotWater: 0, serviceFee: 0, total: 0 };
+  }
 }
 
 // ─── 14. Heating model (Gcal/year) ───────────────────────────────────────────
@@ -704,7 +746,6 @@ export function predictHeating(form) {
   const hdd       = hddRaw > 0 ? Math.max(3000, hddRaw) : 4500;
   const hddIsDefault = !(hddRaw > 0);
   const floors    = Math.max(1, Number(form.floors) || 3);
-  const residents = Math.max(1, Number(form.residents) || Math.max(1, Math.round(area / 20)));
 
   // Specific heat load (Gcal/m²/year) by insulation quality — calibrated to UB district data
   const base       = { good: 0.065, medium: 0.100, poor: 0.130 }[form.insulation_quality] || 0.100;
@@ -725,9 +766,6 @@ export function predictHeating(form) {
   // Equivalent kWh (1 Gcal = 1,163 kWh thermal)
   const annual_kwh_equiv = Math.round(annual_gcal * 1163);
 
-  // Hot water cost: heating season 1,870₮/person/month × 9 months + off-season 2,806₮/person/month × 3 months
-  const hot_water_annual = Math.round(residents * (1870 * 9 + 2806 * 3));
-
   // Service fee by floor area (monthly × 12)
   const service_monthly = area <= 40 ? 3300 : area <= 80 ? 5500 : 11000;
   const service_annual  = service_monthly * 12;
@@ -744,7 +782,6 @@ export function predictHeating(form) {
     gcal_per_m2:    +gcal_per_m2.toFixed(3),
     annual_heat_cost,
     annual_kwh_equiv,
-    hot_water_annual,
     service_annual,
     service_monthly,
     hdd_used:       hdd,
