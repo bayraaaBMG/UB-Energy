@@ -7,8 +7,10 @@
  * Props
  *   data          [{month, heating, electric, total?, fullMonth?, temp?, isCur?}]
  *   lang          "mn" | "en"
- *   height        number (default 220)
+ *   height        number (default 240)
  *   actualMonthly number | null  — real bill average → dashed line on left
+ *   leftTitle     string override
+ *   rightTitle    string override
  */
 
 import {
@@ -25,19 +27,32 @@ const C_TOTAL = "#2ca87f";
 const C_ACT   = "#2a9d8f";
 const C_CUR   = "#e9c46a";
 const C_GRID  = "rgba(100,150,200,0.13)";
-const TICK    = { fill: "#6a8faa", fontSize: 9, fontFamily: "Inter,sans-serif" };
+const TICK    = { fill: "#6a8faa", fontSize: 10, fontFamily: "Inter,sans-serif" };
 
-function kFmt(v)   { return v >= 1000  ? `${(v / 1000).toFixed(0)}k`  : `${v}`;  }
-function mFmt(v)   { return v >= 1     ? `${v.toFixed(0)}`             : `${v}`;  }
+/* ── adaptive Y-axis ceiling ──────────────────────────────────────── */
+function niceTop(v) {
+  if (!v || v <= 0) return 100;
+  const rough = v * 1.12;
+  const mag   = Math.pow(10, Math.floor(Math.log10(rough)));
+  const n     = rough / mag;
+  const nice  = n <= 1 ? 1 : n <= 2 ? 2 : n <= 3 ? 3 : n <= 5 ? 5 : n <= 7 ? 7 : 10;
+  return nice * mag;
+}
+
+function kFmt(v) {
+  if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+  if (v >= 1000)    return `${(v / 1000).toFixed(0)}k`;
+  return `${v}`;
+}
+function mFmt(v) { return v >= 1 ? `${v.toFixed(0)}` : v > 0 ? v.toFixed(1) : "0"; }
 
 /* ── shared panel title ───────────────────────────────────────────── */
 function PanelTitle({ text }) {
   return (
     <p style={{
       textAlign: "center", margin: "0 0 6px",
-      fontSize: "0.67rem", fontWeight: 700,
-      color: "#7ab4d8", letterSpacing: "0.04em",
-      textTransform: "uppercase",
+      fontSize: "0.72rem", fontWeight: 700,
+      color: "#7ab4d8", letterSpacing: "0.03em",
     }}>{text}</p>
   );
 }
@@ -45,8 +60,7 @@ function PanelTitle({ text }) {
 /* ── tooltip ──────────────────────────────────────────────────────── */
 function Tip({ active, payload, unit = "kWh" }) {
   if (!active || !payload?.length) return null;
-  const d  = payload[0]?.payload ?? {};
-  const mn = d._mn;
+  const d = payload[0]?.payload ?? {};
   return (
     <div style={{
       background: "rgba(6,14,24,0.96)",
@@ -83,9 +97,9 @@ function MwhTip(props) { return <Tip {...props} unit="MWh" />; }
 function XTick({ x, y, payload, data }) {
   const isCur = data?.[payload?.index]?.isCur;
   return (
-    <text x={x} y={y + 11} textAnchor="middle"
-      fill={isCur ? C_CUR : "#4a7090"}
-      fontSize={isCur ? 10 : 9}
+    <text x={x} y={y + 12} textAnchor="middle"
+      fill={isCur ? C_CUR : "#5a7a98"}
+      fontSize={isCur ? 11 : 10}
       fontWeight={isCur ? 700 : 400}>
       {payload.value}
     </text>
@@ -94,20 +108,20 @@ function XTick({ x, y, payload, data }) {
 
 /* ── legend style ──────────────────────────────────────────────────── */
 const LEG = {
-  wrapperStyle: { paddingTop: 6, fontSize: 10 },
-  iconSize: 9, iconType: "square",
-  formatter: v => <span style={{ color: "#6a8faa" }}>{v}</span>,
+  wrapperStyle: { paddingTop: 8, fontSize: 11 },
+  iconSize: 10, iconType: "square",
+  formatter: v => <span style={{ color: "#7a9ab8" }}>{v}</span>,
 };
 
 /* ════════════════════════════════════════════════════════════════════ */
 export default function EnergyDualChart({
-  data = [], lang, height = 220, actualMonthly,
+  data = [], lang, height = 240, actualMonthly,
+  leftTitle: leftTitleProp, rightTitle: rightTitleProp,
 }) {
   const mn = lang === "mn";
 
   const enriched = data.map(d => ({
     ...d,
-    _mn:   mn,
     total: d.total ?? (d.heating + d.electric),
   }));
 
@@ -116,41 +130,40 @@ export default function EnergyDualChart({
     month:     d.month,
     fullMonth: d.fullMonth,
     isCur:     d.isCur,
-    _mn:       mn,
     [mn ? "Дулаалга"  : "Heating"]:  +(d.heating  / 1000).toFixed(2),
     [mn ? "Цахилгаан" : "Electric"]: +(d.electric / 1000).toFixed(2),
-    [mn ? "Нийт"      : "Total"]:    +((d.heating + d.electric) / 1000).toFixed(2),
+    [mn ? "Нийт"      : "Use (нийт)"]:    +((d.heating + d.electric) / 1000).toFixed(2),
   }));
 
   const heatKey  = mn ? "Дулаалга"  : "Heating";
   const elecKey  = mn ? "Цахилгаан" : "Electric";
-  const totalKey = mn ? "Нийт"      : "Total";
+  const totalKey = mn ? "Нийт"      : "Use (нийт)";
 
   const maxKwh = Math.max(...enriched.map(d => d.total ?? 0), actualMonthly ?? 0);
-  const yTopKwh = Math.ceil((maxKwh * 1.08) / 20000) * 20000 || 20000;
+  const yTopKwh = niceTop(maxKwh);
 
   const maxMwh  = Math.max(...mwhData.map(d => d[totalKey] ?? 0));
-  const yTopMwh = Math.ceil((maxMwh * 1.08) / 0.5) * 0.5 || 1;
+  const yTopMwh = niceTop(maxMwh);
 
-  const titleLeft  = mn ? "Стэк: Дулаалга + Цахилгаан = Нийт"
-                        : "Stacked: Heating + Electric = Total";
-  const titleRight = mn ? "Сар бүрийн нийт хэрэглээ (MWh)"
-                        : "Monthly total consumption (MWh)";
+  const titleLeft  = leftTitleProp
+    ?? (mn ? "Стэк: Дулаалга + Цахилгаан = Нийт" : "Stacked: Heating + Electric = Use");
+  const titleRight = rightTitleProp
+    ?? (mn ? "Сар бүрийн нийт хэрэглээ (MWh)" : "Monthly total consumption (MWh)");
 
-  const heatLblL = mn ? "Дулаалга (kWh)"   : "Heating (kWh)";
-  const elecLblL = mn ? "Цахилгаан (kWh)"  : "Electric (kWh)";
-  const totLblL  = mn ? "Нийт"             : "Total";
+  const heatLblL  = mn ? "Heating_kW (Дулаалга)"  : "Heating_kW (Дулаалга)";
+  const elecLblL  = mn ? "Electric_kW (Цахилгаан)" : "Electric_kW (Цахилгаан)";
+  const totLblL   = mn ? "Use_kW (Нийт)"           : "Use_kW (Нийт)";
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.9rem" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
 
       {/* ═══ LEFT — stacked + line ═══════════════════════════════════ */}
       <div>
         <PanelTitle text={titleLeft} />
         <ResponsiveContainer width="100%" height={height}>
           <ComposedChart data={enriched}
-            margin={{ top: 4, right: 6, left: -10, bottom: 0 }}
-            barCategoryGap="28%">
+            margin={{ top: 6, right: 8, left: -4, bottom: 0 }}
+            barCategoryGap="30%">
 
             <CartesianGrid strokeDasharray="3 3" stroke={C_GRID} vertical={false} />
 
@@ -166,43 +179,43 @@ export default function EnergyDualChart({
             <XAxis dataKey="month" axisLine={false} tickLine={false}
               tick={p => <XTick {...p} data={enriched} />} />
             <YAxis tick={TICK} tickLine={false} axisLine={false}
-              tickFormatter={kFmt} domain={[0, yTopKwh]} width={36}
-              label={{ value: mn ? "kWh" : "kWh", angle: -90,
-                position: "insideLeft", offset: 14,
-                style: { fill: "#4a6880", fontSize: 9 } }} />
+              tickFormatter={kFmt} domain={[0, yTopKwh]} width={42}
+              label={{ value: "kWh", angle: -90,
+                position: "insideLeft", offset: 16,
+                style: { fill: "#4a6880", fontSize: 10 } }} />
 
             <Tooltip content={<Tip />}
               cursor={{ fill: "rgba(74,159,224,0.06)" }} />
             <Legend {...LEG} />
 
             <Bar dataKey="heating"  stackId="s" name={heatLblL}
-              fill={C_HEAT} maxBarSize={16}>
+              fill={C_HEAT} maxBarSize={48}>
               {enriched.map((d, i) => (
-                <Cell key={i} fill={C_HEAT} opacity={d.isCur ? 1 : 0.82}
+                <Cell key={i} fill={C_HEAT} opacity={d.isCur ? 1 : 0.85}
                   stroke={d.isCur ? C_CUR : "none"} strokeWidth={d.isCur ? 1.5 : 0} />
               ))}
             </Bar>
 
             <Bar dataKey="electric" stackId="s" name={elecLblL}
-              fill={C_ELEC} maxBarSize={16} radius={[2, 2, 0, 0]}>
+              fill={C_ELEC} maxBarSize={48} radius={[3, 3, 0, 0]}>
               {enriched.map((d, i) => (
-                <Cell key={i} fill={C_ELEC} opacity={d.isCur ? 1 : 0.82}
+                <Cell key={i} fill={C_ELEC} opacity={d.isCur ? 1 : 0.85}
                   stroke={d.isCur ? C_CUR : "none"} strokeWidth={d.isCur ? 1.5 : 0} />
               ))}
             </Bar>
 
             <Line type="monotone" dataKey="total" name={totLblL}
-              stroke={C_TOTAL} strokeWidth={2}
-              dot={{ fill: C_TOTAL, r: 3, strokeWidth: 0 }}
-              activeDot={{ r: 5, fill: C_TOTAL, strokeWidth: 0 }}
+              stroke={C_TOTAL} strokeWidth={2.5}
+              dot={{ fill: C_TOTAL, r: 3.5, strokeWidth: 0 }}
+              activeDot={{ r: 5.5, fill: C_TOTAL, strokeWidth: 0 }}
               isAnimationActive animationDuration={700} />
 
           </ComposedChart>
         </ResponsiveContainer>
 
         {actualMonthly != null && (
-          <div style={{ textAlign: "center", fontSize: "0.63rem",
-            color: C_ACT, marginTop: 2,
+          <div style={{ textAlign: "center", fontSize: "0.66rem",
+            color: C_ACT, marginTop: 3,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
             <span style={{ display: "inline-block", width: 14,
               borderTop: `2px dashed ${C_ACT}` }} />
@@ -218,8 +231,8 @@ export default function EnergyDualChart({
         <PanelTitle text={titleRight} />
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={mwhData}
-            margin={{ top: 4, right: 6, left: -10, bottom: 0 }}
-            barCategoryGap="22%" barGap={2}>
+            margin={{ top: 6, right: 8, left: -4, bottom: 0 }}
+            barCategoryGap="22%" barGap={3}>
 
             <CartesianGrid strokeDasharray="3 3" stroke={C_GRID} vertical={false} />
 
@@ -231,23 +244,23 @@ export default function EnergyDualChart({
             <XAxis dataKey="month" axisLine={false} tickLine={false}
               tick={p => <XTick {...p} data={mwhData} />} />
             <YAxis tick={TICK} tickLine={false} axisLine={false}
-              tickFormatter={mFmt} domain={[0, yTopMwh]} width={36}
+              tickFormatter={mFmt} domain={[0, yTopMwh]} width={42}
               label={{ value: "MWh", angle: -90,
-                position: "insideLeft", offset: 14,
-                style: { fill: "#4a6880", fontSize: 9 } }} />
+                position: "insideLeft", offset: 16,
+                style: { fill: "#4a6880", fontSize: 10 } }} />
 
             <Tooltip content={<MwhTip />}
               cursor={{ fill: "rgba(74,159,224,0.06)" }} />
             <Legend {...LEG} />
 
-            <Bar dataKey={heatKey}  fill={C_HEAT}  maxBarSize={10}
-              radius={[2, 2, 0, 0]}
+            <Bar dataKey={heatKey}  fill={C_HEAT}  maxBarSize={32}
+              radius={[3, 3, 0, 0]}
               isAnimationActive animationDuration={600} />
-            <Bar dataKey={elecKey}  fill={C_ELEC}  maxBarSize={10}
-              radius={[2, 2, 0, 0]}
+            <Bar dataKey={elecKey}  fill={C_ELEC}  maxBarSize={32}
+              radius={[3, 3, 0, 0]}
               isAnimationActive animationDuration={700} />
-            <Bar dataKey={totalKey} fill={C_TOTAL} maxBarSize={10}
-              radius={[2, 2, 0, 0]}
+            <Bar dataKey={totalKey} fill={C_TOTAL} maxBarSize={32}
+              radius={[3, 3, 0, 0]}
               isAnimationActive animationDuration={800} />
 
           </BarChart>
